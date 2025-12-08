@@ -1,0 +1,248 @@
+@page "/store/orders/{OrderId:int}/bill"
+@layout StoreLayout
+
+@using BlazorApp1.Services
+@using StoreManagementAPI.Models
+@using Blazorise
+
+@inject ICustomerOrderService OrderService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Invoice #@OrderId</PageTitle>
+
+@if (isLoading)
+{
+    <div class="loading-spinner">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+}
+else if (order == null)
+{
+    <div class="empty-state bg-white rounded-lg shadow-lg p-12">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationCircle" class="text-6xl text-gray-400 mb-4" />
+        <Heading Size="HeadingSize.Is4" class="mb-2">Order not found</Heading>
+        <Paragraph TextColor="TextColor.Muted" class="mb-6">The order you're looking for doesn't exist.</Paragraph>
+        <Button Color="Color.Primary" To="/store/orders" Type="ButtonType.Link">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowLeft" class="mr-2" /> Back to Orders
+        </Button>
+    </div>
+}
+else
+{
+    <div class="mb-6 no-print">
+        <Buttons>
+            <Button Color="Color.Secondary" Outline To="@($"/store/orders/{OrderId}")" Type="ButtonType.Link">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowLeft" class="mr-2" /> Back to Order
+            </Button>
+            <Button Color="Color.Primary" Clicked="PrintInvoice">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Print" class="mr-2" /> Print Invoice
+            </Button>
+        </Buttons>
+    </div>
+
+    <Card class="card-shadow-lg max-w-4xl mx-auto">
+        <!-- Invoice Header -->
+        <div class="invoice-header">
+            <div class="flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <Heading Size="HeadingSize.Is2" TextColor="TextColor.White" class="mb-1">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" /> E-Store
+                    </Heading>
+                    <Paragraph class="opacity-75 mb-0">Your trusted online shopping destination</Paragraph>
+                </div>
+                <div class="text-right">
+                    <Heading Size="HeadingSize.Is3" TextColor="TextColor.White" class="mb-1">INVOICE</Heading>
+                    <Paragraph class="opacity-90 mb-0">#INV-@order.OrderId.ToString("D6")</Paragraph>
+                </div>
+            </div>
+        </div>
+
+        <CardBody class="p-8">
+            <!-- Invoice Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div>
+                    <Heading Size="HeadingSize.Is6" TextColor="TextColor.Muted" class="uppercase tracking-wide mb-3">Bill To</Heading>
+                    @if (order.Customer != null)
+                    {
+                        <Heading Size="HeadingSize.Is5" class="mb-2">@order.Customer.Name</Heading>
+                        @if (!string.IsNullOrEmpty(order.Customer.Address))
+                        {
+                            <Paragraph class="mb-1">@order.Customer.Address</Paragraph>
+                        }
+                        @if (!string.IsNullOrEmpty(order.Customer.Email))
+                        {
+                            <Paragraph class="mb-1">@order.Customer.Email</Paragraph>
+                        }
+                        @if (!string.IsNullOrEmpty(order.Customer.Phone))
+                        {
+                            <Paragraph class="mb-0">@order.Customer.Phone</Paragraph>
+                        }
+                    }
+                    else
+                    {
+                        <Paragraph TextColor="TextColor.Muted">Guest Customer</Paragraph>
+                    }
+                </div>
+                <div class="md:text-right">
+                    <div class="space-y-2">
+                        <div class="flex justify-between md:justify-end md:gap-8">
+                            <span class="text-gray-500">Invoice Date:</span>
+                            <span class="font-semibold">@DateTime.Now.ToString("MMM dd, yyyy")</span>
+                        </div>
+                        <div class="flex justify-between md:justify-end md:gap-8">
+                            <span class="text-gray-500">Order Date:</span>
+                            <span class="font-semibold">@order.OrderDate.ToString("MMM dd, yyyy")</span>
+                        </div>
+                        <div class="flex justify-between md:justify-end md:gap-8 items-center">
+                            <span class="text-gray-500">Status:</span>
+                            <Badge Color="@GetStatusColor(order.Status)" Pill>@order.Status.ToUpper()</Badge>
+                        </div>
+                        @if (order.Payments.Any())
+                        {
+                            <div class="flex justify-between md:justify-end md:gap-8">
+                                <span class="text-gray-500">Payment:</span>
+                                <span class="font-semibold">@GetPaymentMethodDisplay(order.Payments.First().PaymentMethod)</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoice Items Table -->
+            <Table Striped class="mb-8">
+                <TableHeader ThemeContrast="ThemeContrast.Light">
+                    <TableRow>
+                        <TableHeaderCell class="w-1/2">Description</TableHeaderCell>
+                        <TableHeaderCell TextAlignment="TextAlignment.Center">Quantity</TableHeaderCell>
+                        <TableHeaderCell TextAlignment="TextAlignment.End">Unit Price</TableHeaderCell>
+                        <TableHeaderCell TextAlignment="TextAlignment.End">Amount</TableHeaderCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    @foreach (var item in order.OrderItems)
+                    {
+                        <TableRow>
+                            <TableRowCell>
+                                <strong>@item.Product?.ProductName</strong>
+                                @if (!string.IsNullOrEmpty(item.Product?.Unit))
+                                {
+                                    <br /><small class="text-gray-500">Unit: @item.Product.Unit</small>
+                                }
+                            </TableRowCell>
+                            <TableRowCell TextAlignment="TextAlignment.Center">@item.Quantity</TableRowCell>
+                            <TableRowCell TextAlignment="TextAlignment.End">$@item.Price.ToString("N2")</TableRowCell>
+                            <TableRowCell TextAlignment="TextAlignment.End">$@item.Subtotal.ToString("N2")</TableRowCell>
+                        </TableRow>
+                    }
+                </TableBody>
+            </Table>
+
+            <!-- Invoice Summary -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <Card Background="Background.Light">
+                    <CardBody>
+                        <Heading Size="HeadingSize.Is6" class="mb-3">Payment Information</Heading>
+                        @if (order.Payments.Any())
+                        {
+                            var payment = order.Payments.First();
+                            <Paragraph class="mb-1">
+                                <small class="text-gray-500">Method:</small> @GetPaymentMethodDisplay(payment.PaymentMethod)
+                            </Paragraph>
+                            <Paragraph class="mb-1">
+                                <small class="text-gray-500">Date:</small> @payment.PaymentDate.ToString("MMM dd, yyyy hh:mm tt")
+                            </Paragraph>
+                            <Paragraph class="mb-0">
+                                <small class="text-gray-500">Status:</small>
+                                <span class="text-green-600 font-semibold">Paid</span>
+                            </Paragraph>
+                        }
+                        else
+                        {
+                            <Paragraph TextColor="TextColor.Warning" class="mb-0">Payment Pending</Paragraph>
+                        }
+                    </CardBody>
+                </Card>
+                <Card>
+                    <CardBody>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span>Subtotal:</span>
+                                <span>$@((order.TotalAmount + order.DiscountAmount).ToString("N2"))</span>
+                            </div>
+                            @if (order.DiscountAmount > 0)
+                            {
+                                <div class="flex justify-between text-green-600">
+                                    <span>Discount:</span>
+                                    <span>-$@order.DiscountAmount.ToString("N2")</span>
+                                </div>
+                            }
+                            <div class="flex justify-between">
+                                <span>Shipping:</span>
+                                <span>$0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Tax:</span>
+                                <span>$0.00</span>
+                            </div>
+                            <Divider />
+                            <div class="flex justify-between text-xl font-bold">
+                                <span>Total:</span>
+                                <span class="text-green-600">$@order.TotalAmount.ToString("N2")</span>
+                            </div>
+                        </div>
+                    </CardBody>
+                </Card>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center mt-8 pt-8 border-t border-gray-200">
+                <Paragraph TextColor="TextColor.Muted" class="mb-1">Thank you for shopping with us!</Paragraph>
+                <Paragraph TextColor="TextColor.Muted" class="text-sm mb-0">
+                    For questions about your order, please contact support@estore.com
+                </Paragraph>
+            </div>
+        </CardBody>
+    </Card>
+}
+
+@code {
+    [Parameter]
+    public int OrderId { get; set; }
+
+    private Order? order;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrder();
+    }
+
+    private async Task LoadOrder()
+    {
+        isLoading = true;
+        order = await OrderService.GetOrderWithDetailsAsync(OrderId);
+        isLoading = false;
+    }
+
+    private void PrintInvoice()
+    {
+        // JavaScript interop for printing
+    }
+
+    private Color GetStatusColor(string status) => status.ToLower() switch
+    {
+        "pending" => Color.Warning,
+        "completed" => Color.Success,
+        "cancelled" or "canceled" => Color.Danger,
+        "processing" => Color.Info,
+        _ => Color.Secondary
+    };
+
+    private string GetPaymentMethodDisplay(string method) => method.ToLower() switch
+    {
+        "cash" => "Cash on Delivery",
+        "card" => "Credit/Debit Card",
+        "transfer" => "Bank Transfer",
+        _ => method
+    };
+}

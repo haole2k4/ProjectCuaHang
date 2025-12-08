@@ -1,0 +1,276 @@
+@page "/store/checkout"
+@layout StoreLayout
+
+@using BlazorApp1.Services
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using Blazorise
+
+@inject ICartService CartService
+@inject ICustomerOrderService OrderService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Checkout</PageTitle>
+
+<Heading Size="HeadingSize.Is2" class="mb-6">
+    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CreditCard" class="mr-2" /> Checkout
+</Heading>
+
+@if (cartItems == null || !cartItems.Any())
+{
+    <div class="empty-state bg-white rounded-lg shadow-lg p-12">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" class="text-6xl text-gray-400 mb-4" />
+        <Heading Size="HeadingSize.Is4" class="mb-2">Your cart is empty</Heading>
+        <Paragraph TextColor="TextColor.Muted" class="mb-6">Add some products before checking out.</Paragraph>
+        <Button Color="Color.Primary" To="/store" Type="ButtonType.Link">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" /> Browse Products
+        </Button>
+    </div>
+}
+else if (orderPlaced)
+{
+    <div class="text-center py-16 bg-white rounded-lg shadow-lg">
+        <div class="text-green-500 text-7xl mb-6">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" />
+        </div>
+        <Heading Size="HeadingSize.Is3" class="mb-4">Order Placed Successfully!</Heading>
+        <Paragraph Lead class="mb-2">Thank you for your order. Your order number is:</Paragraph>
+        <Heading Size="HeadingSize.Is4" TextColor="TextColor.Primary" class="mb-8">#@orderId</Heading>
+        <Buttons class="justify-center">
+            <Button Color="Color.Primary" To="@($"/store/orders/{orderId}")" Type="ButtonType.Link">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Receipt" class="mr-2" /> View Order
+            </Button>
+            <Button Color="Color.Primary" Outline To="/store" Type="ButtonType.Link">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" /> Continue Shopping
+            </Button>
+        </Buttons>
+    </div>
+}
+else
+{
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+            <Validations @ref="validationsRef" Mode="ValidationMode.Auto" Model="@checkoutModel">
+                <!-- Customer Information -->
+                <Card class="card-shadow">
+                    <CardHeader>
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" class="mr-2" /> Customer Information
+                    </CardHeader>
+                    <CardBody>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Validation>
+                                <Field>
+                                    <FieldLabel>Full Name *</FieldLabel>
+                                    <TextEdit @bind-Text="@checkoutModel.CustomerName" Placeholder="Enter your name">
+                                        <Feedback>
+                                            <ValidationError />
+                                        </Feedback>
+                                    </TextEdit>
+                                </Field>
+                            </Validation>
+                            <Validation>
+                                <Field>
+                                    <FieldLabel>Email *</FieldLabel>
+                                    <TextEdit @bind-Text="@checkoutModel.Email" Placeholder="Enter your email" Role="TextRole.Email">
+                                        <Feedback>
+                                            <ValidationError />
+                                        </Feedback>
+                                    </TextEdit>
+                                </Field>
+                            </Validation>
+                        </div>
+                        <Validation>
+                            <Field class="mt-4">
+                                <FieldLabel>Phone *</FieldLabel>
+                                <TextEdit @bind-Text="@checkoutModel.Phone" Placeholder="Enter your phone number">
+                                    <Feedback>
+                                        <ValidationError />
+                                    </Feedback>
+                                </TextEdit>
+                            </Field>
+                        </Validation>
+                    </CardBody>
+                </Card>
+
+                <!-- Shipping Address -->
+                <Card class="card-shadow">
+                    <CardHeader>
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.MapMarkerAlt" class="mr-2" /> Shipping Address
+                    </CardHeader>
+                    <CardBody>
+                        <Validation>
+                            <Field>
+                                <FieldLabel>Address *</FieldLabel>
+                                <MemoEdit @bind-Text="@checkoutModel.Address" Rows="3" Placeholder="Enter your full address">
+                                    <Feedback>
+                                        <ValidationError />
+                                    </Feedback>
+                                </MemoEdit>
+                            </Field>
+                        </Validation>
+                        <Field class="mt-4">
+                            <FieldLabel>Notes (optional)</FieldLabel>
+                            <MemoEdit @bind-Text="@checkoutModel.Notes" Rows="2" Placeholder="Special delivery instructions..." />
+                        </Field>
+                    </CardBody>
+                </Card>
+
+                <!-- Payment Method -->
+                <Card class="card-shadow">
+                    <CardHeader>
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Wallet" class="mr-2" /> Payment Method
+                    </CardHeader>
+                    <CardBody>
+                        <RadioGroup TValue="string" @bind-CheckedValue="@checkoutModel.PaymentMethod" Name="paymentMethod">
+                            <div class="space-y-3">
+                                <div class="@GetPaymentClass("cash")" @onclick='() => checkoutModel.PaymentMethod = "cash"'>
+                                    <Radio TValue="string" Value="@("cash")" class="mr-3" />
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.MoneyBillAlt" TextColor="TextColor.Success" class="mr-2" />
+                                    <span>Cash on Delivery</span>
+                                </div>
+                                <div class="@GetPaymentClass("card")" @onclick='() => checkoutModel.PaymentMethod = "card"'>
+                                    <Radio TValue="string" Value="@("card")" class="mr-3" />
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CreditCard" TextColor="TextColor.Primary" class="mr-2" />
+                                    <span>Credit/Debit Card</span>
+                                </div>
+                                <div class="@GetPaymentClass("transfer")" @onclick='() => checkoutModel.PaymentMethod = "transfer"'>
+                                    <Radio TValue="string" Value="@("transfer")" class="mr-3" />
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.University" TextColor="TextColor.Info" class="mr-2" />
+                                    <span>Bank Transfer</span>
+                                </div>
+                            </div>
+                        </RadioGroup>
+                    </CardBody>
+                </Card>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <Alert Color="Color.Danger" Visible>
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationTriangle" class="mr-2" /> @errorMessage
+                    </Alert>
+                }
+
+                <Button Color="Color.Success" Size="Size.Large" Loading="@isProcessing" Clicked="PlaceOrder">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="mr-2" /> Place Order
+                </Button>
+            </Validations>
+        </div>
+
+        <!-- Order Summary Sidebar -->
+        <div class="lg:col-span-1">
+            <Card class="card-shadow sticky top-20">
+                <CardHeader Background="Background.Primary" TextColor="TextColor.White">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> Order Summary
+                </CardHeader>
+                <CardBody>
+                    <div class="space-y-3">
+                        @foreach (var item in cartItems)
+                        {
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">
+                                    @item.ProductName
+                                    <span class="text-gray-400">×@item.Quantity</span>
+                                </span>
+                                <span>$@item.Subtotal.ToString("N2")</span>
+                            </div>
+                        }
+                        <Divider />
+                        <div class="flex justify-between">
+                            <span>Subtotal</span>
+                            <span>$@CartService.GetTotal().ToString("N2")</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Shipping</span>
+                            <span class="text-green-600">Free</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Tax</span>
+                            <span>$0.00</span>
+                        </div>
+                        <Divider />
+                        <div class="flex justify-between font-bold text-lg">
+                            <span>Total</span>
+                            <span class="price">$@CartService.GetTotal().ToString("N2")</span>
+                        </div>
+                    </div>
+                </CardBody>
+                <CardFooter>
+                    <Button Color="Color.Light" Block To="/store/cart" Type="ButtonType.Link">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowLeft" class="mr-2" /> Back to Cart
+                    </Button>
+                </CardFooter>
+            </Card>
+        </div>
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private Validations? validationsRef;
+    private List<CartItem>? cartItems;
+    private CheckoutModel checkoutModel = new();
+    private bool isProcessing;
+    private bool orderPlaced;
+    private int orderId;
+    private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        cartItems = CartService.GetCartItems();
+    }
+
+    private string GetPaymentClass(string method)
+    {
+        var isSelected = checkoutModel.PaymentMethod == method;
+        return isSelected
+            ? "flex items-center p-3 border rounded-lg cursor-pointer border-blue-500 bg-blue-50"
+            : "flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50";
+    }
+
+    private async Task PlaceOrder()
+    {
+        if (validationsRef != null && !await validationsRef.ValidateAll())
+            return;
+
+        isProcessing = true;
+        errorMessage = null;
+
+        try
+        {
+            var order = await OrderService.CreateOrderAsync(null, cartItems!, checkoutModel.PaymentMethod);
+            orderId = order.OrderId;
+            CartService.ClearCart();
+            orderPlaced = true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to place order. Please try again. " + ex.Message;
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private class CheckoutModel
+    {
+        [Required(ErrorMessage = "Name is required")]
+        public string CustomerName { get; set; } = "";
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email address")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Phone is required")]
+        public string Phone { get; set; } = "";
+
+        [Required(ErrorMessage = "Address is required")]
+        public string Address { get; set; } = "";
+
+        public string? Notes { get; set; }
+
+        public string PaymentMethod { get; set; } = "cash";
+    }
+}

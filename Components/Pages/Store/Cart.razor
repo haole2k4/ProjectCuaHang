@@ -1,0 +1,206 @@
+@page "/store/cart"
+@layout StoreLayout
+
+@using BlazorApp1.Services
+@using Blazorise
+
+@inject ICartService CartService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Shopping Cart</PageTitle>
+
+<div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+    <Heading Size="HeadingSize.Is2">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" class="mr-2" /> Shopping Cart
+    </Heading>
+    <Button Color="Color.Primary" Outline To="/store" Type="ButtonType.Link">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowLeft" class="mr-2" /> Continue Shopping
+    </Button>
+</div>
+
+@if (cartItems == null || !cartItems.Any())
+{
+    <div class="empty-state bg-white rounded-lg shadow-lg p-12">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" class="text-6xl text-gray-400 mb-4" />
+        <Heading Size="HeadingSize.Is4" class="mb-2">Your cart is empty</Heading>
+        <Paragraph TextColor="TextColor.Muted" class="mb-6">Add some products to get started!</Paragraph>
+        <Button Color="Color.Primary" To="/store" Type="ButtonType.Link">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" /> Browse Products
+        </Button>
+    </div>
+}
+else
+{
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Cart Items -->
+        <div class="lg:col-span-2">
+            <Card class="card-shadow">
+                <CardHeader Background="Background.Light">
+                    <div class="grid grid-cols-12 gap-4 font-semibold text-gray-600">
+                        <div class="col-span-6">Product</div>
+                        <div class="col-span-2 text-center">Price</div>
+                        <div class="col-span-2 text-center">Quantity</div>
+                        <div class="col-span-2 text-right">Subtotal</div>
+                    </div>
+                </CardHeader>
+                <CardBody>
+                    @foreach (var item in cartItems)
+                    {
+                        <div class="cart-item">
+                            <div class="grid grid-cols-12 gap-4 items-center">
+                                <div class="col-span-6">
+                                    <div class="flex items-center gap-4">
+                                        @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                        {
+                                            <img src="@item.ImageUrl" class="cart-item-image" alt="@item.ProductName" />
+                                        }
+                                        else
+                                        {
+                                            <div class="cart-item-placeholder">
+                                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" />
+                                            </div>
+                                        }
+                                        <div>
+                                            <Heading Size="HeadingSize.Is6" class="mb-1">@item.ProductName</Heading>
+                                            <Button Color="Color.Danger" Size="Size.Small" Outline Clicked="() => RemoveItem(item.ProductId)">
+                                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.TrashAlt" class="mr-1" /> Remove
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 text-center text-gray-600">
+                                    $@item.Price.ToString("N2")
+                                </div>
+                                <div class="col-span-2">
+                                    <div class="quantity-control justify-center">
+                                        <Button Color="Color.Light" Size="Size.Small" Clicked="() => UpdateQuantity(item.ProductId, item.Quantity - 1)">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Minus" />
+                                        </Button>
+                                        <NumericEdit TValue="int" Value="@item.Quantity" 
+                                                     ValueChanged="(val) => UpdateQuantity(item.ProductId, val)"
+                                                     class="w-16 text-center" Min="1" />
+                                        <Button Color="Color.Light" Size="Size.Small" Clicked="() => UpdateQuantity(item.ProductId, item.Quantity + 1)">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" />
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 text-right">
+                                    <span class="price">$@item.Subtotal.ToString("N2")</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </CardBody>
+                <CardFooter Background="Background.Light">
+                    <Button Color="Color.Danger" Outline Clicked="ClearCart">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.TrashAlt" class="mr-2" /> Clear Cart
+                    </Button>
+                </CardFooter>
+            </Card>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="lg:col-span-1">
+            <Card class="card-shadow sticky top-20">
+                <CardHeader Background="Background.Primary" TextColor="TextColor.White">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Receipt" class="mr-2" /> Order Summary
+                </CardHeader>
+                <CardBody>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Subtotal (@cartItems.Sum(x => x.Quantity) items)</span>
+                            <span>$@CartService.GetTotal().ToString("N2")</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Shipping</span>
+                            <span class="text-green-600">Free</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Tax</span>
+                            <span>$0.00</span>
+                        </div>
+                        <Divider />
+                        <div class="flex justify-between font-bold text-lg">
+                            <span>Total</span>
+                            <span class="price">$@CartService.GetTotal().ToString("N2")</span>
+                        </div>
+                    </div>
+
+                    <Field class="mt-6">
+                        <FieldLabel>Promo Code</FieldLabel>
+                        <Addons>
+                            <Addon AddonType="AddonType.Body">
+                                <TextEdit Placeholder="Enter code" @bind-Text="promoCode" />
+                            </Addon>
+                            <Addon AddonType="AddonType.End">
+                                <Button Color="Color.Secondary" Clicked="ApplyPromo">Apply</Button>
+                            </Addon>
+                        </Addons>
+                    </Field>
+
+                    <Button Color="Color.Success" Size="Size.Large" Block class="mt-6" Clicked="ProceedToCheckout">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CreditCard" class="mr-2" /> Proceed to Checkout
+                    </Button>
+                </CardBody>
+            </Card>
+
+            <Card class="card-shadow mt-4">
+                <CardBody>
+                    <Heading Size="HeadingSize.Is6" class="mb-2">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShieldAlt" TextColor="TextColor.Success" class="mr-2" /> Secure Checkout
+                    </Heading>
+                    <Paragraph TextColor="TextColor.Muted" class="text-sm mb-0">
+                        Your payment information is processed securely.
+                    </Paragraph>
+                </CardBody>
+            </Card>
+        </div>
+    </div>
+}
+
+@code {
+    private List<CartItem>? cartItems;
+    private string promoCode = "";
+
+    protected override void OnInitialized()
+    {
+        CartService.OnChange += RefreshCart;
+        RefreshCart();
+    }
+
+    private void RefreshCart()
+    {
+        cartItems = CartService.GetCartItems();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateQuantity(int productId, int quantity)
+    {
+        CartService.UpdateQuantity(productId, quantity);
+    }
+
+    private void RemoveItem(int productId)
+    {
+        CartService.RemoveFromCart(productId);
+    }
+
+    private void ClearCart()
+    {
+        CartService.ClearCart();
+    }
+
+    private void ApplyPromo()
+    {
+        // TODO: Implement promo code logic
+    }
+
+    private void ProceedToCheckout()
+    {
+        NavigationManager.NavigateTo("/store/checkout");
+    }
+
+    public void Dispose()
+    {
+        CartService.OnChange -= RefreshCart;
+    }
+}

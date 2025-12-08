@@ -1,0 +1,158 @@
+@page "/store/orders"
+@layout StoreLayout
+
+@using Microsoft.EntityFrameworkCore
+@using StoreManagementAPI.Data
+@using StoreManagementAPI.Models
+@using BlazorApp1.Services
+@using Blazorise
+
+@inject StoreDbContext DbContext
+@inject NavigationManager NavigationManager
+
+<PageTitle>My Orders</PageTitle>
+
+<div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+    <Heading Size="HeadingSize.Is2">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> My Orders
+    </Heading>
+    <Button Color="Color.Primary" Outline To="/store" Type="ButtonType.Link">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" /> Continue Shopping
+    </Button>
+</div>
+
+@if (isLoading)
+{
+    <div class="loading-spinner">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+}
+else if (orders == null || !orders.Any())
+{
+    <div class="empty-state bg-white rounded-lg shadow-lg p-12">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="text-6xl text-gray-400 mb-4" />
+        <Heading Size="HeadingSize.Is4" class="mb-2">No orders yet</Heading>
+        <Paragraph TextColor="TextColor.Muted" class="mb-6">You haven't placed any orders yet.</Paragraph>
+        <Button Color="Color.Primary" To="/store" Type="ButtonType.Link">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" /> Start Shopping
+        </Button>
+    </div>
+}
+else
+{
+    <div class="space-y-6">
+        @foreach (var order in orders)
+        {
+            <Card class="card-shadow hover:card-shadow-lg transition-shadow">
+                <CardHeader Background="Background.Light">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+                        <div>
+                            <small class="text-gray-500">Order #</small>
+                            <Heading Size="HeadingSize.Is6" class="mb-0">@order.OrderId</Heading>
+                        </div>
+                        <div>
+                            <small class="text-gray-500">Date</small>
+                            <Heading Size="HeadingSize.Is6" class="mb-0">@order.OrderDate.ToString("MMM dd, yyyy")</Heading>
+                        </div>
+                        <div>
+                            <small class="text-gray-500">Total</small>
+                            <Heading Size="HeadingSize.Is6" TextColor="TextColor.Success" class="mb-0">$@order.TotalAmount.ToString("N2")</Heading>
+                        </div>
+                        <div class="text-right">
+                            <Badge Color="@GetStatusColor(order.Status)" Pill class="px-3 py-1">
+                                @GetStatusIcon(order.Status) @order.Status.ToUpper()
+                            </Badge>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardBody>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        @foreach (var item in order.OrderItems.Take(3))
+                        {
+                            <div class="flex items-center gap-3">
+                                @if (!string.IsNullOrEmpty(item.Product?.ImageUrl))
+                                {
+                                    <img src="@item.Product.ImageUrl" class="w-12 h-12 rounded object-cover" alt="@item.Product?.ProductName" />
+                                }
+                                else
+                                {
+                                    <div class="w-12 h-12 rounded bg-gray-200 flex items-center justify-center">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" TextColor="TextColor.Muted" />
+                                    </div>
+                                }
+                                <div>
+                                    <small class="block font-medium">@item.Product?.ProductName</small>
+                                    <small class="text-gray-500">Qty: @item.Quantity × $@item.Price.ToString("N2")</small>
+                                </div>
+                            </div>
+                        }
+                        @if (order.OrderItems.Count > 3)
+                        {
+                            <div class="flex items-center">
+                                <small class="text-gray-500">+@(order.OrderItems.Count - 3) more items</small>
+                            </div>
+                        }
+                    </div>
+                </CardBody>
+                <CardFooter class="flex flex-wrap justify-between items-center gap-4">
+                    <div>
+                        @if (order.Payments.Any())
+                        {
+                            <small class="text-gray-500">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Wallet" class="mr-1" /> Paid via @order.Payments.First().PaymentMethod
+                            </small>
+                        }
+                    </div>
+                    <Buttons>
+                        <Button Color="Color.Primary" Outline Size="Size.Small" To="@($"/store/orders/{order.OrderId}")" Type="ButtonType.Link">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Eye" class="mr-1" /> View Details
+                        </Button>
+                        <Button Color="Color.Secondary" Outline Size="Size.Small" To="@($"/store/orders/{order.OrderId}/bill")" Type="ButtonType.Link">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Receipt" class="mr-1" /> View Bill
+                        </Button>
+                    </Buttons>
+                </CardFooter>
+            </Card>
+        }
+    </div>
+}
+
+@code {
+    private List<Order>? orders;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        isLoading = true;
+        orders = await DbContext.Orders
+            .Include(o => o.OrderItems)
+            .ThenInclude(oi => oi.Product)
+            .Include(o => o.Payments)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync();
+        isLoading = false;
+    }
+
+    private Color GetStatusColor(string status) => status.ToLower() switch
+    {
+        "pending" => Color.Warning,
+        "completed" => Color.Success,
+        "cancelled" or "canceled" => Color.Danger,
+        "processing" => Color.Info,
+        _ => Color.Secondary
+    };
+
+    private string GetStatusIcon(string status) => status.ToLower() switch
+    {
+        "pending" => "?",
+        "completed" => "?",
+        "cancelled" or "canceled" => "?",
+        "processing" => "??",
+        _ => "•"
+    };
+}

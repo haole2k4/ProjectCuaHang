@@ -1,0 +1,176 @@
+@page "/login"
+@layout StoreLayout
+
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using StoreManagementAPI.DTOs
+@using StoreManagementAPI.Services
+@using Blazorise
+
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Login</PageTitle>
+
+<div class="min-h-[60vh] flex items-center justify-center">
+    <div class="w-full max-w-md">
+        <Card class="card-shadow-lg">
+            <CardHeader Background="Background.Primary" TextColor="TextColor.White" class="text-center py-6">
+                <Heading Size="HeadingSize.Is3" TextColor="TextColor.White" class="mb-0">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignInAlt" class="mr-2" /> Login
+                </Heading>
+            </CardHeader>
+            <CardBody class="p-6">
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <Alert Color="Color.Danger" Visible class="mb-4">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationTriangle" class="mr-2" /> @errorMessage
+                    </Alert>
+                }
+
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <Alert Color="Color.Success" Visible class="mb-4">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="mr-2" /> @successMessage
+                    </Alert>
+                }
+
+                <Validations @ref="validationsRef" Mode="ValidationMode.Auto" Model="@loginModel">
+                    <Validation>
+                        <Field class="mb-4">
+                            <FieldLabel>Username</FieldLabel>
+                            <TextEdit @bind-Text="@loginModel.Username" Placeholder="Enter your username">
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+                    <Validation>
+                        <Field class="mb-4">
+                            <FieldLabel>Password</FieldLabel>
+                            <TextEdit @bind-Text="@loginModel.Password" Role="TextRole.Password" Placeholder="Enter your password">
+                                <Feedback>
+                                    <ValidationError />
+                                </Feedback>
+                            </TextEdit>
+                        </Field>
+                    </Validation>
+
+                    <Field class="mb-6">
+                        <Check TValue="bool" @bind-Checked="@loginModel.RememberMe">Remember me</Check>
+                    </Field>
+
+                    <Button Color="Color.Primary" Size="Size.Large" Block Loading="@isLoading" Clicked="HandleLogin">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignInAlt" class="mr-2" /> Login
+                    </Button>
+                </Validations>
+
+                <Divider class="my-6" />
+
+                <div class="text-center">
+                    <Paragraph TextColor="TextColor.Muted" class="mb-2">Don't have an account?</Paragraph>
+                    <Anchor To="/store" class="text-blue-600 hover:underline">
+                        Continue as Guest <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowRight" />
+                    </Anchor>
+                </div>
+            </CardBody>
+        </Card>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm]
+    private LoginModel loginModel { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private Validations? validationsRef;
+    private string? errorMessage;
+    private string? successMessage;
+    private bool isLoading;
+
+    private async Task HandleLogin()
+    {
+        if (validationsRef != null && !await validationsRef.ValidateAll())
+            return;
+
+        errorMessage = null;
+        successMessage = null;
+        isLoading = true;
+
+        try
+        {
+            var loginDto = new LoginDto
+            {
+                Username = loginModel.Username,
+                Password = loginModel.Password
+            };
+
+            var result = await AuthService.LoginAsync(loginDto);
+
+            if (result != null)
+            {
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, result.UserId.ToString()),
+                    new Claim(ClaimTypes.Name, result.Username),
+                    new Claim(ClaimTypes.Role, result.Role),
+                    new Claim("FullName", result.FullName ?? ""),
+                    new Claim("Token", result.Token)
+                };
+
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = loginModel.RememberMe,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24)
+                };
+
+                if (HttpContext != null)
+                {
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        new ClaimsPrincipal(claimsIdentity),
+                        authProperties);
+                }
+
+                successMessage = "Login successful! Redirecting...";
+
+                var redirectUrl = string.IsNullOrEmpty(ReturnUrl) ? "/" : ReturnUrl;
+                NavigationManager.NavigateTo(redirectUrl, forceLoad: true);
+            }
+            else
+            {
+                errorMessage = "Invalid username or password.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private sealed class LoginModel
+    {
+        [Required(ErrorMessage = "Username is required")]
+        public string Username { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Password is required")]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = string.Empty;
+
+        public bool RememberMe { get; set; }
+    }
+}

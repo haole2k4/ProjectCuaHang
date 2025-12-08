@@ -1,0 +1,261 @@
+@page "/store"
+@layout StoreLayout
+
+@using Microsoft.EntityFrameworkCore
+@using StoreManagementAPI.Data
+@using StoreManagementAPI.Models
+@using BlazorApp1.Services
+@using Blazorise
+
+@inject StoreDbContext DbContext
+@inject ICartService CartService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Store - Products</PageTitle>
+
+<!-- Hero Section -->
+<div class="hero-section text-center mb-8">
+    <Heading Size="HeadingSize.Is1" class="text-3xl font-bold mb-2">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" /> Welcome to E-Store
+    </Heading>
+    <Paragraph class="opacity-90 mb-6">Discover amazing products at great prices</Paragraph>
+    <div class="max-w-md mx-auto">
+        <Addons>
+            <Addon AddonType="AddonType.Body">
+                <TextEdit Placeholder="Search products..." @bind-Text="searchTerm" />
+            </Addon>
+            <Addon AddonType="AddonType.End">
+                <Button Color="Color.Light" Clicked="SearchProducts">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" />
+                </Button>
+            </Addon>
+        </Addons>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Categories Sidebar -->
+    <div class="lg:col-span-1">
+        <Card class="card-shadow sticky top-20">
+            <CardHeader Background="Background.Primary" TextColor="TextColor.White">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="mr-2" /> Categories
+            </CardHeader>
+            <CardBody Padding="Padding.Is0">
+                <ListGroup Flush>
+                    <ListGroupItem Clicked="() => FilterByCategory(null)" 
+                                   Class="@GetCategoryClass(null)">
+                        All Products
+                    </ListGroupItem>
+                    @if (categories != null)
+                    {
+                        @foreach (var category in categories)
+                        {
+                            <ListGroupItem Clicked="() => FilterByCategory(category.CategoryId)"
+                                           Class="@GetCategoryClass(category.CategoryId)">
+                                <div class="flex justify-between items-center w-full">
+                                    <span>@category.CategoryName</span>
+                                    <Badge Color="Color.Secondary" Pill>@category.Products.Count(p => p.Status == "active")</Badge>
+                                </div>
+                            </ListGroupItem>
+                        }
+                    }
+                </ListGroup>
+            </CardBody>
+        </Card>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="lg:col-span-3">
+        @if (isLoading)
+        {
+            <div class="loading-spinner">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        }
+        else if (products == null || !products.Any())
+        {
+            <div class="empty-state bg-white rounded-lg shadow p-12">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-6xl text-gray-400 mb-4" />
+                <Heading Size="HeadingSize.Is4" class="mb-2">No products found</Heading>
+                <Paragraph TextColor="TextColor.Muted">Try adjusting your search or filter criteria</Paragraph>
+            </div>
+        }
+        else
+        {
+            <!-- Header with sorting -->
+            <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                <Heading Size="HeadingSize.Is5" class="mb-0">
+                    @if (selectedCategoryId.HasValue)
+                    {
+                        <span>@selectedCategoryName</span>
+                    }
+                    else
+                    {
+                        <span>All Products</span>
+                    }
+                    <small class="text-gray-500 font-normal ml-2">(@products.Count items)</small>
+                </Heading>
+                <Buttons>
+                    <Button Color="@(sortBy == "name" ? Color.Primary : Color.Light)" Size="Size.Small" Clicked='() => SortProducts("name")'>
+                        Name
+                    </Button>
+                    <Button Color="@(sortBy == "price-asc" ? Color.Primary : Color.Light)" Size="Size.Small" Clicked='() => SortProducts("price-asc")'>
+                        Price ?
+                    </Button>
+                    <Button Color="@(sortBy == "price-desc" ? Color.Primary : Color.Light)" Size="Size.Small" Clicked='() => SortProducts("price-desc")'>
+                        Price ?
+                    </Button>
+                </Buttons>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                @foreach (var product in products)
+                {
+                    <Card class="product-card card-shadow">
+                        @if (!string.IsNullOrEmpty(product.ImageUrl))
+                        {
+                            <CardImage Source="@product.ImageUrl" Alt="@product.ProductName" class="product-card-image" />
+                        }
+                        else
+                        {
+                            <div class="product-card-placeholder">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" />
+                            </div>
+                        }
+                        <CardBody class="flex flex-col">
+                            <CardTitle Size="5" class="font-semibold">@product.ProductName</CardTitle>
+                            <CardText TextColor="TextColor.Muted" class="text-sm flex-grow">
+                                @(product.Description?.Length > 80 ? product.Description.Substring(0, 80) + "..." : product.Description ?? "No description")
+                            </CardText>
+                            <div class="mt-4">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="price text-xl">$@product.Price.ToString("N2")</span>
+                                    <Badge Color="Color.Secondary">@product.Category?.CategoryName</Badge>
+                                </div>
+                                <Button Color="Color.Primary" Block Clicked="() => AddToCart(product)">
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CartPlus" class="mr-2" /> Add to Cart
+                                </Button>
+                            </div>
+                        </CardBody>
+                    </Card>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@if (showToast)
+{
+    <div class="toast-container">
+        <Alert Color="Color.Success" Visible="true" class="shadow-lg">
+            <AlertMessage>
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="mr-2" /> @toastMessage
+            </AlertMessage>
+            <CloseButton Clicked="() => showToast = false" />
+        </Alert>
+    </div>
+}
+
+@code {
+    private List<Product>? products;
+    private List<Category>? categories;
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private int? selectedCategoryId;
+    private string? selectedCategoryName;
+    private string sortBy = "name";
+    private bool showToast;
+    private string toastMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+        await LoadProducts();
+    }
+
+    private string GetCategoryClass(int? categoryId)
+    {
+        var isSelected = selectedCategoryId == categoryId;
+        return isSelected 
+            ? "cursor-pointer bg-blue-50 text-blue-600 font-semibold" 
+            : "cursor-pointer hover:bg-gray-50";
+    }
+
+    private async Task LoadCategories()
+    {
+        categories = await DbContext.Categories
+            .Include(c => c.Products)
+            .Where(c => c.Status == "active")
+            .ToListAsync();
+    }
+
+    private async Task LoadProducts()
+    {
+        isLoading = true;
+
+        var query = DbContext.Products
+            .Include(p => p.Category)
+            .Where(p => p.Status == "active");
+
+        if (selectedCategoryId.HasValue)
+        {
+            query = query.Where(p => p.CategoryId == selectedCategoryId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(p => p.ProductName.Contains(searchTerm) || 
+                                    (p.Description != null && p.Description.Contains(searchTerm)));
+        }
+
+        products = await query.ToListAsync();
+        ApplySort();
+        isLoading = false;
+    }
+
+    private void ApplySort()
+    {
+        if (products == null) return;
+
+        products = sortBy switch
+        {
+            "price-asc" => products.OrderBy(p => p.Price).ToList(),
+            "price-desc" => products.OrderByDescending(p => p.Price).ToList(),
+            _ => products.OrderBy(p => p.ProductName).ToList()
+        };
+    }
+
+    private async Task FilterByCategory(int? categoryId)
+    {
+        selectedCategoryId = categoryId;
+        selectedCategoryName = categoryId.HasValue 
+            ? categories?.FirstOrDefault(c => c.CategoryId == categoryId)?.CategoryName 
+            : null;
+        await LoadProducts();
+    }
+
+    private async Task SearchProducts()
+    {
+        await LoadProducts();
+    }
+
+    private void SortProducts(string sort)
+    {
+        sortBy = sort;
+        ApplySort();
+    }
+
+    private void AddToCart(Product product)
+    {
+        CartService.AddToCart(product);
+        toastMessage = $"{product.ProductName} added to cart!";
+        showToast = true;
+
+        Task.Delay(3000).ContinueWith(_ =>
+        {
+            showToast = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+}

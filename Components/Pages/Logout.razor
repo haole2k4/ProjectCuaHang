@@ -1,0 +1,36 @@
+@page "/logout"
+
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+
+@inject NavigationManager NavigationManager
+
+<PageTitle>Logout</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h3>You have been logged out</h3>
+                    <p class="text-muted">Thank you for using our application.</p>
+                    <a href="/login" class="btn btn-primary">Login Again</a>
+                    <a href="/" class="btn btn-secondary">Go to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext != null)
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+    }
+}

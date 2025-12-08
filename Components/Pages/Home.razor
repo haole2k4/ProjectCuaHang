@@ -1,0 +1,110 @@
+﻿@page "/"
+@layout StoreLayout
+
+@using BlazorApp1.Services
+@using Blazorise
+
+@inject NavigationManager NavigationManager
+
+<PageTitle>E-Store - Home</PageTitle>
+
+<!-- Hero Section -->
+<div class="hero-section text-center mb-10">
+    <Heading Size="HeadingSize.Is1" class="text-4xl md:text-5xl font-bold mb-4">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-3" /> Welcome to E-Store
+    </Heading>
+    <Paragraph Lead class="text-xl opacity-90 mb-8">
+        Discover amazing products at unbeatable prices
+    </Paragraph>
+    <div class="flex flex-wrap justify-center gap-4">
+        <Button Color="Color.Light" Size="Size.Large" To="/store" Type="ButtonType.Link">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ThLarge" class="mr-2" /> Browse Products
+        </Button>
+        <Button Color="Color.Light" Size="Size.Large" Outline To="/store/categories" Type="ButtonType.Link">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="mr-2" /> View Categories
+        </Button>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+    <Card class="card-shadow hover:card-shadow-lg transition-shadow">
+        <CardBody class="text-center py-10">
+            <div class="text-primary text-5xl mb-4">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Truck" />
+            </div>
+            <Heading Size="HeadingSize.Is5" class="mb-2">Free Shipping</Heading>
+            <Paragraph TextColor="TextColor.Muted">Free shipping on all orders over $50</Paragraph>
+        </CardBody>
+    </Card>
+    
+    <Card class="card-shadow hover:card-shadow-lg transition-shadow">
+        <CardBody class="text-center py-10">
+            <div class="text-primary text-5xl mb-4">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShieldAlt" />
+            </div>
+            <Heading Size="HeadingSize.Is5" class="mb-2">Secure Payment</Heading>
+            <Paragraph TextColor="TextColor.Muted">100% secure payment processing</Paragraph>
+        </CardBody>
+    </Card>
+    
+    <Card class="card-shadow hover:card-shadow-lg transition-shadow">
+        <CardBody class="text-center py-10">
+            <div class="text-primary text-5xl mb-4">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SyncAlt" />
+            </div>
+            <Heading Size="HeadingSize.Is5" class="mb-2">Easy Returns</Heading>
+            <Paragraph TextColor="TextColor.Muted">30-day money-back guarantee</Paragraph>
+        </CardBody>
+    </Card>
+</div>
+
+<!-- Call to Action -->
+<Card Background="Background.Primary" TextColor="TextColor.White" class="mb-10">
+    <CardBody class="text-center py-12">
+        <Heading Size="HeadingSize.Is3" TextColor="TextColor.White" class="mb-4">Ready to start shopping?</Heading>
+        <Paragraph class="mb-6 opacity-90">Browse our wide selection of products and find exactly what you need.</Paragraph>
+        <Button Color="Color.Light" Size="Size.Large" To="/store" Type="ButtonType.Link">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" class="mr-2" /> Start Shopping Now
+        </Button>
+    </CardBody>
+</Card>
+
+<!-- Quick Links -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <Card class="card-shadow">
+        <CardBody>
+            <Heading Size="HeadingSize.Is5" class="mb-3">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" TextColor="TextColor.Primary" class="mr-2" /> Account
+            </Heading>
+            <Paragraph TextColor="TextColor.Muted" class="mb-4">Manage your account and view your orders</Paragraph>
+            <AuthorizeView>
+                <Authorized>
+                    <Button Color="Color.Primary" Outline To="/store/orders" Type="ButtonType.Link">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> My Orders
+                    </Button>
+                </Authorized>
+                <NotAuthorized>
+                    <Button Color="Color.Primary" Outline To="/login" Type="ButtonType.Link">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignInAlt" class="mr-2" /> Login
+                    </Button>
+                </NotAuthorized>
+            </AuthorizeView>
+        </CardBody>
+    </Card>
+    
+    <Card class="card-shadow">
+        <CardBody>
+            <Heading Size="HeadingSize.Is5" class="mb-3">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Headset" TextColor="TextColor.Primary" class="mr-2" /> Need Help?
+            </Heading>
+            <Paragraph TextColor="TextColor.Muted" class="mb-4">Our customer support team is here to help</Paragraph>
+            <Paragraph class="mb-1">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Envelope" class="mr-2" /> support@estore.com
+            </Paragraph>
+            <Paragraph>
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Phone" class="mr-2" /> +1 234 567 890
+            </Paragraph>
+        </CardBody>
+    </Card>
+</div>
