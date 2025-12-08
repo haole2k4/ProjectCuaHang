@@ -90,6 +90,8 @@ namespace StoreManagementAPI.Services
                 CostPrice = p.CostPrice,
                 Unit = p.Unit,
                 Status = p.Status,
+                Description = p.Description,
+                ImageUrl = p.ImageUrl,
                 StockQuantity = p.Inventories?.Sum(i => i.Quantity) ?? 0,
                 HasOrders = p.OrderItems != null && p.OrderItems.Any()
             });
@@ -129,6 +131,8 @@ namespace StoreManagementAPI.Services
                 CostPrice = p.CostPrice,
                 Unit = p.Unit,
                 Status = p.Status,
+                Description = p.Description,
+                ImageUrl = p.ImageUrl,
                 StockQuantity = p.Inventories?.Sum(i => i.Quantity) ?? 0,
                 HasOrders = p.OrderItems != null && p.OrderItems.Any()
             });
@@ -158,6 +162,8 @@ namespace StoreManagementAPI.Services
                 CostPrice = product.CostPrice,
                 Unit = product.Unit,
                 Status = product.Status,
+                Description = product.Description,
+                ImageUrl = product.ImageUrl,
                 StockQuantity = product.Inventories?.Sum(i => i.Quantity) ?? 0,
                 HasOrders = product.OrderItems != null && product.OrderItems.Any()
             };
@@ -192,6 +198,8 @@ namespace StoreManagementAPI.Services
                 CostPrice = product.CostPrice,
                 Unit = product.Unit,
                 Status = product.Status,
+                Description = product.Description,
+                ImageUrl = product.ImageUrl,
                 StockQuantity = product.Inventories?.Sum(i => i.Quantity) ?? 0,
                 HasOrders = product.OrderItems != null && product.OrderItems.Any()
             };
@@ -218,6 +226,8 @@ namespace StoreManagementAPI.Services
                     Price = dto.Price,
                     CostPrice = 0, // Giá nhập sẽ được cập nhật khi nhập hàng
                     Unit = dto.Unit,
+                    Description = dto.Description,
+                    ImageUrl = dto.ImageUrl,
                     CreatedAt = DateTime.Now
                 };
 
@@ -259,7 +269,9 @@ namespace StoreManagementAPI.Services
                         CostPrice = createdProduct.CostPrice,
                         CategoryId = createdProduct.CategoryId,
                         SupplierId = createdProduct.SupplierId,
-                        Unit = createdProduct.Unit
+                        Unit = createdProduct.Unit,
+                        Description = createdProduct.Description,
+                        ImageUrl = createdProduct.ImageUrl
                     },
                     changesSummary: $"Tạo sản phẩm mới: {createdProduct.ProductName} (Barcode: {createdProduct.Barcode}, Giá: {createdProduct.Price:N0} VNĐ)",
                     userId: userId,
@@ -348,7 +360,9 @@ namespace StoreManagementAPI.Services
                     CategoryId = product.CategoryId,
                     SupplierId = product.SupplierId,
                     Unit = product.Unit,
-                    Status = product.Status
+                    Status = product.Status,
+                    Description = product.Description,
+                    ImageUrl = product.ImageUrl
                 };
 
                 var changes = new List<string>();
@@ -393,7 +407,18 @@ namespace StoreManagementAPI.Services
                     changes.Add($"Trạng thái: {product.Status} → {dto.Status}");
                     product.Status = dto.Status;
                 }
+                if (dto.Description != null && product.Description != dto.Description)
+                {
+                    changes.Add($"Mô tả đã thay đổi");
+                    product.Description = dto.Description;
+                }
+                if (dto.ImageUrl != null && product.ImageUrl != dto.ImageUrl)
+                {
+                    changes.Add($"Hình ảnh đã thay đổi");
+                    product.ImageUrl = dto.ImageUrl;
+                }
 
+                product.UpdatedAt = DateTime.Now;
                 await _productRepository.UpdateAsync(product);
 
                 // Log audit
@@ -416,7 +441,9 @@ namespace StoreManagementAPI.Services
                             CategoryId = product.CategoryId,
                             SupplierId = product.SupplierId,
                             Unit = product.Unit,
-                            Status = product.Status
+                            Status = product.Status,
+                            Description = product.Description,
+                            ImageUrl = product.ImageUrl
                         },
                         changesSummary: $"Cập nhật sản phẩm '{product.ProductName}': {string.Join(", ", changes)}",
                         userId: userId,

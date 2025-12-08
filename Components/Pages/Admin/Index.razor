@@ -1,0 +1,9 @@
+@page "/admin"
+@inject NavigationManager NavigationManager
+
+@code {
+    protected override void OnInitialized()
+    {
+        NavigationManager.NavigateTo("/admin/dashboard", replace: true);
+    }
+}

@@ -5,6 +5,7 @@ using BlazorApp1.Services;
 using Blazorise;
 using Blazorise.Tailwind;
 using Blazorise.Icons.FontAwesome;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -33,10 +34,13 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
+// Configure Authentication - Use Cookie as default scheme for custom login
 builder.Services.AddAuthentication(options =>
     {
-        options.DefaultScheme = IdentityConstants.ApplicationScheme;
-        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     })
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
@@ -45,8 +49,10 @@ builder.Services.AddAuthentication(options =>
         options.AccessDeniedPath = "/access-denied";
         options.ExpireTimeSpan = TimeSpan.FromHours(24);
         options.SlidingExpiration = true;
-    })
-    .AddIdentityCookies();
+        options.Cookie.Name = "EStore.Auth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=app.db";
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -59,9 +65,10 @@ builder.Services.AddDbContext<StoreDbContext>(options =>
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+// Configure Identity for ApplicationUser (optional - for future use)
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
-        options.SignIn.RequireConfirmedAccount = true;
+        options.SignIn.RequireConfirmedAccount = false;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -73,12 +80,25 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 // Register Repository and Services for custom authentication
 builder.Services.AddScoped<IRepository<User>, Repository<User>>();
 builder.Services.AddScoped<IRepository<AuditLog>, Repository<AuditLog>>();
+builder.Services.AddScoped<IRepository<Product>, Repository<Product>>();
+builder.Services.AddScoped<IRepository<Inventory>, Repository<Inventory>>();
+builder.Services.AddScoped<IRepository<Category>, Repository<Category>>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Register Cart and Order services for store functionality
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<ICustomerOrderService, CustomerOrderService>();
+
+// Register Product and Category services for admin functionality
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+
+// Register Statistics service for admin dashboard
+builder.Services.AddScoped<IStatisticsService, StatisticsService>();
+
+// Register HttpContextAccessor for audit logging
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
@@ -118,24 +138,15 @@ using (var scope = app.Services.CreateScope())
         storeContext.SaveChanges();
     }
 
-    // Seed sample products if not exists
-    if (!storeContext.Products.Any())
+    // Seed default warehouse if not exists
+    if (!storeContext.Warehouses.Any())
     {
-        var electronics = storeContext.Categories.First(c => c.CategoryName == "Electronics");
-        var clothing = storeContext.Categories.First(c => c.CategoryName == "Clothing");
-        var books = storeContext.Categories.First(c => c.CategoryName == "Books");
-
-        var products = new[]
+        storeContext.Warehouses.Add(new Warehouse
         {
-            new Product { ProductName = "Wireless Headphones", Price = 79.99m, CostPrice = 45.00m, CategoryId = electronics.CategoryId, Description = "High-quality wireless headphones with noise cancellation", Status = "active", Unit = "pcs" },
-            new Product { ProductName = "Smart Watch", Price = 199.99m, CostPrice = 120.00m, CategoryId = electronics.CategoryId, Description = "Feature-rich smartwatch with health tracking", Status = "active", Unit = "pcs" },
-            new Product { ProductName = "Bluetooth Speaker", Price = 49.99m, CostPrice = 25.00m, CategoryId = electronics.CategoryId, Description = "Portable bluetooth speaker with amazing sound", Status = "active", Unit = "pcs" },
-            new Product { ProductName = "Men's T-Shirt", Price = 24.99m, CostPrice = 12.00m, CategoryId = clothing.CategoryId, Description = "Comfortable cotton t-shirt for everyday wear", Status = "active", Unit = "pcs" },
-            new Product { ProductName = "Women's Dress", Price = 59.99m, CostPrice = 30.00m, CategoryId = clothing.CategoryId, Description = "Elegant dress for special occasions", Status = "active", Unit = "pcs" },
-            new Product { ProductName = "Programming Guide", Price = 39.99m, CostPrice = 20.00m, CategoryId = books.CategoryId, Description = "Complete guide to modern programming", Status = "active", Unit = "pcs" },
-            new Product { ProductName = "Novel Collection", Price = 29.99m, CostPrice = 15.00m, CategoryId = books.CategoryId, Description = "Bestselling novel collection", Status = "active", Unit = "pcs" }
-        };
-        storeContext.Products.AddRange(products);
+            WarehouseName = "Main Warehouse",
+            Address = "Main Street 123",
+            Status = "active"
+        });
         storeContext.SaveChanges();
     }
 }
@@ -153,11 +164,21 @@ else
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// Add custom logout endpoint with different path to avoid conflict with Identity
+app.MapGet("/auth/logout", async (HttpContext context) =>
+{
+    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    return Results.Redirect("/");
+});
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();

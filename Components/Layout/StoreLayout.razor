@@ -8,71 +8,77 @@
 
 <div class="store-layout">
     <!-- Navigation Header -->
-    <Bar Breakpoint="Breakpoint.Desktop" Background="Background.Primary" ThemeContrast="ThemeContrast.Dark" class="sticky top-0 z-50">
-        <BarBrand href="/">
-            <BarItem>
-                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" />
-                <span class="font-bold text-xl">E-Store</span>
-            </BarItem>
-        </BarBrand>
-        <BarToggler />
-        <BarMenu>
-            <BarStart>
-                <BarItem>
-                    <BarLink To="/store">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ThLarge" class="mr-1" /> Products
-                    </BarLink>
-                </BarItem>
-                <BarItem>
-                    <BarLink To="/store/categories">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="mr-1" /> Categories
-                    </BarLink>
-                </BarItem>
-            </BarStart>
-            <BarEnd>
-                <BarItem>
-                    <BarLink To="/store/cart" class="relative">
+    <nav class="bg-gray-800 text-white sticky top-0 z-50 shadow-lg">
+        <div class="container mx-auto px-4 max-w-7xl">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand -->
+                <a href="/" class="flex items-center gap-2 text-white hover:text-gray-200 transition">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="text-xl" />
+                    <span class="font-bold text-xl">E-Store</span>
+                </a>
+
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center gap-6">
+                    <a href="/store" class="flex items-center gap-1 text-gray-300 hover:text-white transition">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ThLarge" /> Products
+                    </a>
+                    <a href="/store/categories" class="flex items-center gap-1 text-gray-300 hover:text-white transition">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" /> Categories
+                    </a>
+                </div>
+
+                <!-- Right Side -->
+                <div class="flex items-center gap-4">
+                    <!-- Cart -->
+                    <a href="/store/cart" class="flex items-center gap-1 text-gray-300 hover:text-white transition relative">
                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" />
-                        <span class="ml-1">Cart</span>
+                        <span>Cart</span>
                         @if (cartItemCount > 0)
                         {
-                            <Badge Color="Color.Danger" Pill class="absolute -top-2 -right-2 text-xs">
+                            <span class="absolute -top-2 -right-4 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                                 @cartItemCount
-                            </Badge>
+                            </span>
                         }
-                    </BarLink>
-                </BarItem>
-                <AuthorizeView>
-                    <Authorized>
-                        <BarItem>
-                            <BarDropdown>
-                                <BarDropdownToggle>
-                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" class="mr-1" />
-                                    @context.User.Identity?.Name
-                                </BarDropdownToggle>
-                                <BarDropdownMenu>
-                                    <BarDropdownItem To="/store/orders">
-                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> My Orders
-                                    </BarDropdownItem>
-                                    <BarDropdownDivider />
-                                    <BarDropdownItem To="/logout">
-                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignOutAlt" class="mr-2" /> Logout
-                                    </BarDropdownItem>
-                                </BarDropdownMenu>
-                            </BarDropdown>
-                        </BarItem>
-                    </Authorized>
-                    <NotAuthorized>
-                        <BarItem>
-                            <BarLink To="/login">
-                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignInAlt" class="mr-1" /> Login
-                            </BarLink>
-                        </BarItem>
-                    </NotAuthorized>
-                </AuthorizeView>
-            </BarEnd>
-        </BarMenu>
-    </Bar>
+                    </a>
+
+                    <!-- User Menu -->
+                    <AuthorizeView>
+                        <Authorized>
+                            <div class="relative group">
+                                <button class="flex items-center gap-2 text-gray-300 hover:text-white transition px-3 py-2 rounded-lg hover:bg-gray-700">
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" />
+                                    <span>@context.User.Identity?.Name</span>
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronDown" class="text-xs" />
+                                </button>
+                                <!-- Dropdown Menu -->
+                                <div class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block z-50">
+                                    @if (context.User.IsInRole("admin"))
+                                    {
+                                        <a href="/admin/dashboard" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChartLine" /> Admin Dashboard
+                                        </a>
+                                        <hr class="my-1 border-gray-200" />
+                                    }
+                                    <a href="/store/orders" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" /> My Orders
+                                    </a>
+                                    <hr class="my-1 border-gray-200" />
+                                    <a href="/auth/logout" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignOutAlt" /> Logout
+                                    </a>
+                                </div>
+                            </div>
+                        </Authorized>
+                        <NotAuthorized>
+                            <a href="/login" class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignInAlt" /> Login
+                            </a>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <!-- Main Content -->
     <main class="flex-1 container mx-auto px-4 py-8 max-w-7xl">
@@ -84,33 +90,33 @@
         <div class="container mx-auto px-4 max-w-7xl">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
-                    <Heading Size="HeadingSize.Is5" TextColor="TextColor.White" class="mb-4">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" /> E-Store
-                    </Heading>
-                    <Paragraph class="text-gray-400">Your trusted online shopping destination.</Paragraph>
+                    <h5 class="text-white font-semibold text-lg mb-4 flex items-center gap-2">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" /> E-Store
+                    </h5>
+                    <p class="text-gray-400">Your trusted online shopping destination.</p>
                 </div>
                 <div>
-                    <Heading Size="HeadingSize.Is5" TextColor="TextColor.White" class="mb-4">Quick Links</Heading>
+                    <h5 class="text-white font-semibold text-lg mb-4">Quick Links</h5>
                     <ul class="space-y-2">
-                        <li><Anchor To="/store" TextColor="TextColor.Muted" class="hover:text-white transition">Products</Anchor></li>
-                        <li><Anchor To="/store/cart" TextColor="TextColor.Muted" class="hover:text-white transition">Cart</Anchor></li>
-                        <li><Anchor To="/store/orders" TextColor="TextColor.Muted" class="hover:text-white transition">Orders</Anchor></li>
+                        <li><a href="/store" class="text-gray-400 hover:text-white transition">Products</a></li>
+                        <li><a href="/store/cart" class="text-gray-400 hover:text-white transition">Cart</a></li>
+                        <li><a href="/store/orders" class="text-gray-400 hover:text-white transition">Orders</a></li>
                     </ul>
                 </div>
                 <div>
-                    <Heading Size="HeadingSize.Is5" TextColor="TextColor.White" class="mb-4">Contact</Heading>
-                    <Paragraph class="text-gray-400 mb-1">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Envelope" class="mr-2" /> support@estore.com
-                    </Paragraph>
-                    <Paragraph class="text-gray-400">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Phone" class="mr-2" /> +1 234 567 890
-                    </Paragraph>
+                    <h5 class="text-white font-semibold text-lg mb-4">Contact</h5>
+                    <p class="text-gray-400 mb-1 flex items-center gap-2">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Envelope" /> support@estore.com
+                    </p>
+                    <p class="text-gray-400 flex items-center gap-2">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Phone" /> +1 234 567 890
+                    </p>
                 </div>
             </div>
-            <Divider class="my-6 border-gray-700" />
-            <Paragraph TextAlignment="TextAlignment.Center" class="text-gray-500">
+            <hr class="my-6 border-gray-700" />
+            <p class="text-center text-gray-500">
                 &copy; @DateTime.Now.Year E-Store. All rights reserved.
-            </Paragraph>
+            </p>
         </div>
     </footer>
 </div>
@@ -118,7 +124,7 @@
 <div id="blazor-error-ui" data-nosnippet class="fixed bottom-0 left-0 right-0 bg-red-600 text-white p-4 text-center hidden">
     An unhandled error has occurred.
     <a href="." class="reload underline ml-2">Reload</a>
-    <span class="dismiss cursor-pointer ml-4">??</span>
+    <span class="dismiss cursor-pointer ml-4">×</span>
 </div>
 
 @code {

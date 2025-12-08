@@ -1,0 +1,197 @@
+@inherits LayoutComponentBase
+@using Blazorise
+@using System.Security.Claims
+
+@inject NavigationManager NavigationManager
+
+<div class="admin-layout flex min-h-screen bg-gray-100">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar w-64 bg-white shadow-lg flex flex-col fixed h-full z-40 border-r border-gray-200">
+        <!-- Logo -->
+        <div class="p-6 border-b border-gray-200">
+            <a href="/admin/dashboard" class="flex items-center gap-3 no-underline">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="text-white" />
+                </div>
+                <div>
+                    <span class="font-bold text-xl text-gray-900">E-Store</span>
+                    <span class="text-xs text-gray-500 block font-medium">Admin Panel</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Search -->
+        <div class="px-4 py-4">
+            <div class="relative">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                <input type="text" placeholder="Search..." class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition text-gray-900 placeholder-gray-500" />
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 px-4 py-2 overflow-y-auto">
+            <div class="space-y-1">
+                <NavLink href="/admin/dashboard" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600" Match="NavLinkMatch.All">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChartLine" />
+                    <span>Dashboard</span>
+                </NavLink>
+                
+                <NavLink href="/admin/products" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" />
+                    <span>Products</span>
+                </NavLink>
+
+                <NavLink href="/admin/categories" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" />
+                    <span>Categories</span>
+                </NavLink>
+                
+                <NavLink href="/admin/orders" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" />
+                    <span>Orders</span>
+                </NavLink>
+                
+                <NavLink href="/admin/customers" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Users" />
+                    <span>Customers</span>
+                </NavLink>
+                
+                <NavLink href="/admin/inventory" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Warehouse" />
+                    <span>Inventory</span>
+                </NavLink>
+                
+                <NavLink href="/admin/promotions" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Percent" />
+                    <span>Promotions</span>
+                </NavLink>
+            </div>
+        </nav>
+
+        <!-- Bottom Links -->
+        <div class="px-4 py-4 border-t border-gray-200">
+            <div class="space-y-1">
+                <a href="/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" />
+                    <span>View Store</span>
+                </a>
+                <NavLink href="/admin/settings" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Cog" />
+                    <span>Settings</span>
+                </NavLink>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 ml-64">
+        <!-- Top Header -->
+        <header class="bg-white shadow-sm sticky top-0 z-30">
+            <div class="flex items-center justify-between px-8 py-4">
+                <!-- Left: Greeting -->
+                <div>
+                    <AuthorizeView>
+                        <Authorized>
+                            <h4 class="text-xl font-semibold text-gray-900 mb-0">
+                                Hey, @(context.User.FindFirst("FullName")?.Value ?? context.User.Identity?.Name ?? "Administrator") 👋
+                            </h4>
+                        </Authorized>
+                        <NotAuthorized>
+                            <h4 class="text-xl font-semibold text-gray-900 mb-0">
+                                Welcome 👋
+                            </h4>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                    <p class="text-gray-500 text-sm mb-0 font-medium">
+                        @DateTime.Now.ToString("dddd, MMMM dd, yyyy")
+                    </p>
+                </div>
+
+                <!-- Right: Actions -->
+                <div class="flex items-center gap-4">
+                    <!-- Period Selector -->
+                    <div class="relative group">
+                        <button class="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg transition text-sm border border-gray-200 shadow-sm">
+                            This month <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronDown" class="text-xs" />
+                        </button>
+                        <div class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block z-50 border border-gray-100">
+                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">Today</a>
+                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">This week</a>
+                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">This month</a>
+                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">This year</a>
+                        </div>
+                    </div>
+
+                    <!-- Move Money Button -->
+                    <button class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-lg transition text-sm font-medium shadow-sm">
+                        Move money
+                    </button>
+
+                    <!-- Notifications -->
+                    <button class="relative bg-white hover:bg-gray-50 text-gray-700 p-2.5 rounded-lg transition border border-gray-200 shadow-sm">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Bell" />
+                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">3</span>
+                    </button>
+
+                    <!-- User Dropdown -->
+                    <AuthorizeView>
+                        <Authorized>
+                            <div class="relative group">
+                                <button class="flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg transition border border-gray-200 shadow-sm">
+                                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-sm">
+                                        @(context.User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "A")
+                                    </div>
+                                    <span class="text-gray-900 font-medium text-sm">@(context.User.Identity?.Name ?? "admin")</span>
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronDown" class="text-xs text-gray-500" />
+                                </button>
+                                <div class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block z-50 border border-gray-100">
+                                    <a href="/admin/profile" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 text-sm transition">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" /> Profile
+                                    </a>
+                                    <a href="/admin/settings" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 text-sm transition">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Cog" /> Settings
+                                    </a>
+                                    <hr class="my-1 border-gray-100" />
+                                    <a href="/auth/logout" class="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 text-sm transition">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignOutAlt" /> Logout
+                                    </a>
+                                </div>
+                            </div>
+                        </Authorized>
+                        <NotAuthorized>
+                            <a href="/login" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg transition font-medium shadow-sm">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignInAlt" /> Login
+                            </a>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="p-8">
+            @Body
+        </main>
+    </div>
+</div>
+
+<style>
+    .admin-layout .nav-link.active {
+        background-color: rgb(239 246 255) !important;
+        color: rgb(37 99 235) !important;
+        font-weight: 500;
+    }
+    
+    .admin-sidebar {
+        transition: transform 0.3s ease;
+    }
+    
+    @@media (max-width: 1024px) {
+        .admin-sidebar {
+            transform: translateX(-100%);
+        }
+        .admin-layout .ml-64 {
+            margin-left: 0;
+        }
+    }
+</style>

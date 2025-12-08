@@ -1,0 +1,252 @@
+@page "/admin/categories"
+@rendermode InteractiveServer
+
+@using StoreManagementAPI.Data
+@using StoreManagementAPI.Models
+@using StoreManagementAPI.DTOs
+@using StoreManagementAPI.Services
+@using Microsoft.EntityFrameworkCore
+@using Blazorise
+
+@inject StoreDbContext DbContext
+@inject ICategoryService CategoryService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Categories - Admin</PageTitle>
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+            Categories
+        </Heading>
+        <Paragraph class="text-gray-600 mb-0">Manage product categories</Paragraph>
+    </div>
+    <Button Color="Color.Primary" Clicked="OpenAddModal" class="!text-white !bg-blue-600 hover:!bg-blue-700 shadow-md">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Add Category
+    </Button>
+</div>
+
+<Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
+    <CardBody Padding="Padding.Is0">
+        <div class="overflow-x-auto">
+            <Table class="mb-0 w-full">
+                <TableHeader>
+                    <TableRow class="bg-white border-b-2 border-gray-200">
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Category Name</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Products Count</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody class="bg-white divide-y divide-gray-200">
+                    @if (categories != null && categories.Any())
+                    {
+                        @foreach (var category in categories)
+                        {
+                            <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
+                                <TableRowCell class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="text-blue-600" />
+                                        </div>
+                                        <span class="font-bold text-gray-900">@category.CategoryName</span>
+                                    </div>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <span class="text-gray-900 font-semibold">@category.ProductCount</span>
+                                    <span class="text-gray-600 text-sm ml-1">products</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <Badge Color="@(category.Status == "active" ? Color.Success : Color.Secondary)" class="px-3 py-1.5 rounded-full font-medium">
+                                        @category.Status
+                                    </Badge>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-right">
+                                    <Buttons class="gap-2 justify-end">
+                                        <Button Color="Color.Light" Size="Size.Small" Clicked="() => OpenEditModal(category)" class="!border-2 !border-gray-300 hover:!bg-gray-200 !text-gray-900 shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
+                                        </Button>
+                                        <Button Color="Color.Danger" Size="Size.Small" Clicked="() => DeleteCategory(category)" class="!bg-red-600 hover:!bg-red-700 !text-white shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" />
+                                        </Button>
+                                    </Buttons>
+                                </TableRowCell>
+                            </TableRow>
+                        }
+                    }
+                    else
+                    {
+                        <TableRow class="bg-white">
+                            <TableRowCell ColumnSpan="4" class="text-center py-12">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="text-gray-400 text-4xl mb-3" />
+                                <p class="text-gray-600 font-medium">No categories found</p>
+                            </TableRowCell>
+                        </TableRow>
+                    }
+                </TableBody>
+            </Table>
+        </div>
+    </CardBody>
+</Card>
+
+<Modal @ref="categoryModal">
+    <ModalContent Size="ModalSize.Default">
+        <ModalHeader class="bg-white border-b border-gray-200">
+            <ModalTitle class="text-gray-900 font-bold">@(isEditMode ? "Edit Category" : "Add New Category")</ModalTitle>
+            <CloseButton Clicked="CloseModal" />
+        </ModalHeader>
+        <ModalBody class="bg-white">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Category Name *</label>
+                    <TextEdit @bind-Text="currentCategory.CategoryName" Placeholder="Enter category name" class="w-full !border-gray-300" />
+                </div>
+
+                @if (isEditMode)
+                {
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Status</label>
+                        <Select TValue="string" @bind-SelectedValue="currentCategory.Status" class="w-full !border-gray-300">
+                            <SelectItem Value="@("active")">Active</SelectItem>
+                            <SelectItem Value="@("inactive")">Inactive</SelectItem>
+                        </Select>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <Alert Color="Color.Danger" Visible class="!bg-red-50 !border-red-200 !text-red-900">
+                        @errorMessage
+                    </Alert>
+                }
+            </div>
+        </ModalBody>
+        <ModalFooter class="bg-gray-50 border-t border-gray-200">
+            <Button Color="Color.Secondary" Clicked="CloseModal" class="!bg-white !border-2 !border-gray-300 !text-gray-900 hover:!bg-gray-100 shadow-sm">Cancel</Button>
+            <Button Color="Color.Primary" Clicked="SaveCategory" Loading="isSaving" class="!bg-blue-600 hover:!bg-blue-700 !text-white shadow-md">
+                @(isEditMode ? "Update" : "Create")
+            </Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+@code {
+    private List<CategoryDto>? categories;
+    private Modal categoryModal = null!;
+    private bool isEditMode = false;
+    private bool isSaving = false;
+    private string? errorMessage;
+
+    private class CategoryFormModel
+    {
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public string Status { get; set; } = "active";
+    }
+
+    private CategoryFormModel currentCategory = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        var categoryDtos = await CategoryService.GetAllCategoriesAsync();
+        categories = categoryDtos.ToList();
+    }
+
+    private void OpenAddModal()
+    {
+        isEditMode = false;
+        currentCategory = new CategoryFormModel { Status = "active" };
+        errorMessage = null;
+        categoryModal.Show();
+    }
+
+    private void OpenEditModal(CategoryDto category)
+    {
+        isEditMode = true;
+        currentCategory = new CategoryFormModel
+        {
+            CategoryId = category.CategoryId,
+            CategoryName = category.CategoryName,
+            Status = category.Status
+        };
+        errorMessage = null;
+        categoryModal.Show();
+    }
+
+    private void CloseModal()
+    {
+        categoryModal.Hide();
+        errorMessage = null;
+    }
+
+    private async Task SaveCategory()
+    {
+        errorMessage = null;
+        
+        if (string.IsNullOrWhiteSpace(currentCategory.CategoryName))
+        {
+            errorMessage = "Category name is required";
+            return;
+        }
+
+        isSaving = true;
+        try
+        {
+            if (isEditMode)
+            {
+                var updateDto = new UpdateCategoryDto
+                {
+                    CategoryName = currentCategory.CategoryName,
+                    Status = currentCategory.Status
+                };
+                await CategoryService.UpdateCategoryAsync(currentCategory.CategoryId, updateDto);
+            }
+            else
+            {
+                var createDto = new CreateCategoryDto
+                {
+                    CategoryName = currentCategory.CategoryName
+                };
+                await CategoryService.CreateCategoryAsync(createDto);
+            }
+
+            await LoadData();
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteCategory(CategoryDto category)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete category '{category.CategoryName}'?");
+        if (!confirmed) return;
+
+        try
+        {
+            var result = await CategoryService.DeleteCategoryAsync(category.CategoryId);
+            
+            await LoadData();
+            
+            if (result.SoftDeleted)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", result.Message);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+        }
+    }
+}

@@ -1,0 +1,156 @@
+@page "/admin/inventory"
+@rendermode InteractiveServer
+
+@using StoreManagementAPI.Data
+@using StoreManagementAPI.Models
+@using StoreManagementAPI.Services
+@using StoreManagementAPI.DTOs
+@using Microsoft.EntityFrameworkCore
+@using Blazorise
+
+@inject StoreDbContext DbContext
+@inject IStatisticsService StatisticsService
+
+<PageTitle>Inventory - Admin</PageTitle>
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <Heading Size="HeadingSize.Is3" class="text-gray-800 mb-1">Inventory</Heading>
+        <Paragraph TextColor="TextColor.Muted" class="mb-0">Monitor stock levels and warehouse inventory</Paragraph>
+    </div>
+    <div class="flex gap-3">
+        <Button Color="Color.Light">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Download" class="mr-2" /> Export
+        </Button>
+        <Button Color="Color.Primary">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Add Stock
+        </Button>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <Card class="shadow-sm border-0">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph TextColor="TextColor.Muted" class="text-sm mb-1">Total Products</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="mb-0">@(inventoryStats?.TotalProducts ?? 0)</Heading>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-blue-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-sm border-0">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph TextColor="TextColor.Muted" class="text-sm mb-1">Low Stock</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-orange-500 mb-0">@(inventoryStats?.LowStockProducts ?? 0)</Heading>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationTriangle" class="text-orange-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-sm border-0">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph TextColor="TextColor.Muted" class="text-sm mb-1">Out of Stock</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-red-500 mb-0">@(inventoryStats?.OutOfStockProducts ?? 0)</Heading>
+                </div>
+                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.TimesCircle" class="text-red-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-sm border-0">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph TextColor="TextColor.Muted" class="text-sm mb-1">Total Value</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="mb-0">$@((inventoryStats?.TotalInventoryValue ?? 0).ToString("N0"))</Heading>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.DollarSign" class="text-green-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+</div>
+
+<!-- Low Stock Items -->
+<Card class="shadow-sm border-0">
+    <CardHeader Background="Background.White" class="border-b p-6">
+        <Heading Size="HeadingSize.Is5" class="mb-0">Low Stock Items</Heading>
+    </CardHeader>
+    <CardBody Padding="Padding.Is0">
+        <Table Hoverable class="mb-0">
+            <TableHeader>
+                <TableRow class="bg-gray-50">
+                    <TableHeaderCell class="px-6 py-4">Product</TableHeaderCell>
+                    <TableHeaderCell class="px-6 py-4">Warehouse</TableHeaderCell>
+                    <TableHeaderCell class="px-6 py-4">Current Stock</TableHeaderCell>
+                    <TableHeaderCell class="px-6 py-4">Price</TableHeaderCell>
+                    <TableHeaderCell class="px-6 py-4 text-right">Actions</TableHeaderCell>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                @if (inventoryStats?.LowStockItems != null && inventoryStats.LowStockItems.Any())
+                {
+                    @foreach (var item in inventoryStats.LowStockItems.Take(10))
+                    {
+                        <TableRow>
+                            <TableRowCell class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-gray-400" />
+                                    </div>
+                                    <span class="font-medium">@item.ProductName</span>
+                                </div>
+                            </TableRowCell>
+                            <TableRowCell class="px-6 py-4">@item.WarehouseName</TableRowCell>
+                            <TableRowCell class="px-6 py-4">
+                                <Badge Color="@(item.CurrentStock == 0 ? Color.Danger : Color.Warning)">
+                                    @item.CurrentStock units
+                                </Badge>
+                            </TableRowCell>
+                            <TableRowCell class="px-6 py-4">$@item.Price.ToString("N2")</TableRowCell>
+                            <TableRowCell class="px-6 py-4 text-right">
+                                <Button Color="Color.Primary" Size="Size.Small">
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-1" /> Restock
+                                </Button>
+                            </TableRowCell>
+                        </TableRow>
+                    }
+                }
+                else
+                {
+                    <TableRow>
+                        <TableRowCell ColumnSpan="5" class="text-center py-8 text-gray-500">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="text-green-500 text-2xl mb-2" />
+                            <div>All products are well stocked!</div>
+                        </TableRowCell>
+                    </TableRow>
+                }
+            </TableBody>
+        </Table>
+    </CardBody>
+</Card>
+
+@code {
+    private InventoryStatisticsDto? inventoryStats;
+
+    protected override async Task OnInitializedAsync()
+    {
+        inventoryStats = await StatisticsService.GetInventoryStatisticsAsync(10);
+    }
+}

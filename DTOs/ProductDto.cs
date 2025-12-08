@@ -13,6 +13,8 @@ namespace StoreManagementAPI.DTOs
         public decimal CostPrice { get; set; }
         public string Unit { get; set; } = "pcs";
         public string Status { get; set; } = "active";
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
         public int? StockQuantity { get; set; }
         public bool HasOrders { get; set; } // True nếu sản phẩm đã được bán
     }
@@ -32,7 +34,8 @@ namespace StoreManagementAPI.DTOs
         public string? Barcode { get; set; }
         public decimal Price { get; set; }
         public string Unit { get; set; } = "pcs";
-        // CostPrice được cập nhật khi nhập hàng, không cần thiết khi tạo sản phẩm
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
     }
 
     public class UpdateProductDto
@@ -45,6 +48,8 @@ namespace StoreManagementAPI.DTOs
         public decimal? CostPrice { get; set; }
         public string? Unit { get; set; }
         public string? Status { get; set; } // Thêm Status để có thể ẩn/hiện sản phẩm
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
     }
 
     public class UpdateStockDto

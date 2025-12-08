@@ -1,0 +1,422 @@
+@page "/admin/products"
+@rendermode InteractiveServer
+
+@using StoreManagementAPI.Data
+@using StoreManagementAPI.Models
+@using StoreManagementAPI.DTOs
+@using StoreManagementAPI.Services
+@using Microsoft.EntityFrameworkCore
+@using Blazorise
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject StoreDbContext DbContext
+@inject IProductService ProductService
+@inject IJSRuntime JSRuntime
+@inject IWebHostEnvironment Environment
+
+<PageTitle>Products - Admin</PageTitle>
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+            Products
+        </Heading>
+        <Paragraph class="text-gray-600 mb-0">Manage your product catalog</Paragraph>
+    </div>
+    <Button Color="Color.Primary" Clicked="OpenAddModal" class="!text-white !bg-blue-600 hover:!bg-blue-700 shadow-md">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Add Product
+    </Button>
+</div>
+
+<Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
+    <CardBody Padding="Padding.Is0">
+        <div class="overflow-x-auto">
+            <Table class="mb-0 w-full">
+                <TableHeader>
+                    <TableRow class="bg-white border-b-2 border-gray-200">
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Image</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Product</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Category</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Price</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Stock</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody class="bg-white divide-y divide-gray-200">
+                    @if (products != null && products.Any())
+                    {
+                        @foreach (var product in products)
+                        {
+                            <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
+                                <TableRowCell class="px-6 py-4">
+                                    <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm">
+                                        @if (!string.IsNullOrEmpty(product.ImageUrl))
+                                        {
+                                            <img src="@product.ImageUrl" alt="@product.ProductName" class="w-full h-full object-cover" />
+                                        }
+                                        else
+                                        {
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-gray-400" />
+                                        }
+                                    </div>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <div>
+                                        <div class="font-bold text-gray-900">@product.ProductName</div>
+                                        <div class="text-gray-600 text-sm">@product.Barcode | @product.Unit</div>
+                                    </div>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <span class="text-gray-900 font-medium">@(product.CategoryName ?? "N/A")</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <span class="font-bold text-gray-900">$@product.Price.ToString("N2")</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <span class="text-gray-900 font-semibold">@(product.StockQuantity ?? 0)</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <Badge Color="@(product.Status == "active" ? Color.Success : Color.Secondary)" class="px-3 py-1.5 rounded-full font-medium">
+                                        @product.Status
+                                    </Badge>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-right">
+                                    <Buttons class="gap-2 justify-end">
+                                        <Button Color="Color.Light" Size="Size.Small" Clicked="() => OpenEditModal(product)" class="!border-2 !border-gray-300 hover:!bg-gray-200 !text-gray-900 shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
+                                        </Button>
+                                        <Button Color="Color.Danger" Size="Size.Small" Clicked="() => DeleteProduct(product)" class="!bg-red-600 hover:!bg-red-700 !text-white shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" />
+                                        </Button>
+                                    </Buttons>
+                                </TableRowCell>
+                            </TableRow>
+                        }
+                    }
+                    else
+                    {
+                        <TableRow class="bg-white">
+                            <TableRowCell ColumnSpan="7" class="text-center py-12">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-gray-400 text-4xl mb-3" />
+                                <p class="text-gray-600 font-medium">No products found</p>
+                            </TableRowCell>
+                        </TableRow>
+                    }
+                </TableBody>
+            </Table>
+        </div>
+    </CardBody>
+</Card>
+
+<Modal @ref="productModal">
+    <ModalContent Size="ModalSize.Large">
+        <ModalHeader class="bg-white border-b border-gray-200">
+            <ModalTitle class="text-gray-900 font-bold">@(isEditMode ? "Edit Product" : "Add New Product")</ModalTitle>
+            <CloseButton Clicked="CloseModal" />
+        </ModalHeader>
+        <ModalBody class="bg-white">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Product Name *</label>
+                        <TextEdit @bind-Text="currentProduct.ProductName" Placeholder="Enter product name" class="w-full !border-gray-300" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Barcode</label>
+                        <TextEdit @bind-Text="currentProduct.Barcode" Placeholder="Auto-generated if empty" class="w-full !border-gray-300" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Category</label>
+                        <Select TValue="int?" @bind-SelectedValue="currentProduct.CategoryId" class="w-full !border-gray-300">
+                            <SelectItem Value="@((int?)null)">Select Category</SelectItem>
+                            @foreach (var category in categories)
+                            {
+                                <SelectItem Value="@category.CategoryId">@category.CategoryName</SelectItem>
+                            }
+                        </Select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Price *</label>
+                        <NumericEdit TValue="decimal" @bind-Value="currentProduct.Price" Placeholder="0.00" class="w-full !border-gray-300" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Unit</label>
+                        <TextEdit @bind-Text="currentProduct.Unit" Placeholder="pcs" class="w-full !border-gray-300" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Description</label>
+                    <MemoEdit @bind-Text="currentProduct.Description" Rows="3" Placeholder="Enter product description" class="w-full !border-gray-300" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Product Image</label>
+                    <div class="flex gap-4 items-start">
+                        @if (!string.IsNullOrEmpty(currentProduct.ImageUrl))
+                        {
+                            <div class="relative">
+                                <img src="@currentProduct.ImageUrl" alt="Preview" class="w-32 h-32 object-cover rounded-lg border-2 border-gray-300 shadow-md" />
+                                <Button Color="Color.Danger" Size="Size.Small" Clicked="RemoveImage" class="absolute -top-2 -right-2 !rounded-full !w-8 !h-8 !p-0 shadow-lg">
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Times" />
+                                </Button>
+                            </div>
+                        }
+                        <div class="flex-1">
+                            <InputFile OnChange="HandleImageUpload" accept="image/*" class="hidden" id="imageUpload" />
+                            <label for="imageUpload" class="cursor-pointer inline-flex items-center px-4 py-2 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-100 text-gray-900 font-bold shadow-sm">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Upload" class="mr-2" />
+                                Choose Image
+                            </label>
+                            <p class="text-sm text-gray-600 mt-2">Max 5MB, PNG/JPG/JPEG</p>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <Alert Color="Color.Danger" Visible class="!bg-red-50 !border-red-200 !text-red-900">
+                        @errorMessage
+                    </Alert>
+                }
+            </div>
+        </ModalBody>
+        <ModalFooter class="bg-gray-50 border-t border-gray-200">
+            <Button Color="Color.Secondary" Clicked="CloseModal" class="!bg-white !border-2 !border-gray-300 !text-gray-900 hover:!bg-gray-100 shadow-sm">Cancel</Button>
+            <Button Color="Color.Primary" Clicked="SaveProduct" Loading="isSaving" class="!bg-blue-600 hover:!bg-blue-700 !text-white shadow-md">
+                @(isEditMode ? "Update" : "Create")
+            </Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+@code {
+    private List<ProductDto>? products;
+    private List<Category> categories = new();
+    private Modal productModal = null!;
+    private bool isEditMode = false;
+    private bool isSaving = false;
+    private string? errorMessage;
+
+    private class ProductFormModel
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = string.Empty;
+        public string? Barcode { get; set; }
+        public int? CategoryId { get; set; }
+        public decimal Price { get; set; }
+        public string Unit { get; set; } = "pcs";
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
+    }
+
+    private ProductFormModel currentProduct = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        var productDtos = await ProductService.GetAllProductsAsync();
+        products = productDtos.ToList();
+        
+        categories = await DbContext.Categories
+            .Where(c => c.Status == "active")
+            .OrderBy(c => c.CategoryName)
+            .ToListAsync();
+    }
+
+    private void OpenAddModal()
+    {
+        isEditMode = false;
+        currentProduct = new ProductFormModel { Unit = "pcs", Price = 0 };
+        errorMessage = null;
+        productModal.Show();
+    }
+
+    private void OpenEditModal(ProductDto product)
+    {
+        isEditMode = true;
+        currentProduct = new ProductFormModel
+        {
+            ProductId = product.ProductId,
+            ProductName = product.ProductName,
+            Barcode = product.Barcode,
+            CategoryId = product.CategoryId,
+            Price = product.Price,
+            Unit = product.Unit,
+            Description = product.Description,
+            ImageUrl = product.ImageUrl
+        };
+        errorMessage = null;
+        productModal.Show();
+    }
+
+    private void CloseModal()
+    {
+        productModal.Hide();
+        errorMessage = null;
+    }
+
+    private async Task SaveProduct()
+    {
+        errorMessage = null;
+        
+        if (string.IsNullOrWhiteSpace(currentProduct.ProductName))
+        {
+            errorMessage = "Product name is required";
+            return;
+        }
+
+        if (currentProduct.Price <= 0)
+        {
+            errorMessage = "Price must be greater than 0";
+            return;
+        }
+
+        isSaving = true;
+        try
+        {
+            if (isEditMode)
+            {
+                var updateDto = new UpdateProductDto
+                {
+                    ProductName = currentProduct.ProductName,
+                    Barcode = currentProduct.Barcode,
+                    CategoryId = currentProduct.CategoryId,
+                    Price = currentProduct.Price,
+                    Unit = currentProduct.Unit,
+                    Description = currentProduct.Description,
+                    ImageUrl = currentProduct.ImageUrl
+                };
+                await ProductService.UpdateProductAsync(currentProduct.ProductId, updateDto);
+            }
+            else
+            {
+                var createDto = new CreateProductDto
+                {
+                    ProductName = currentProduct.ProductName,
+                    Barcode = currentProduct.Barcode,
+                    CategoryId = currentProduct.CategoryId,
+                    Price = currentProduct.Price,
+                    Unit = currentProduct.Unit,
+                    Description = currentProduct.Description,
+                    ImageUrl = currentProduct.ImageUrl
+                };
+                await ProductService.CreateProductAsync(createDto);
+            }
+
+            await LoadData();
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        errorMessage = null;
+        var file = e.File;
+
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            errorMessage = "File size must be less than 5MB";
+            return;
+        }
+
+        var allowedTypes = new[] { "image/png", "image/jpeg", "image/jpg" };
+        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+        {
+            errorMessage = "Only PNG, JPG, and JPEG files are allowed";
+            return;
+        }
+
+        try
+        {
+            var staticsPath = Path.Combine(Environment.WebRootPath, "Statics");
+            if (!Directory.Exists(staticsPath))
+            {
+                Directory.CreateDirectory(staticsPath);
+            }
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
+            var filePath = Path.Combine(staticsPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).CopyToAsync(stream);
+            }
+
+            currentProduct.ImageUrl = $"/Statics/{fileName}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error uploading image: {ex.Message}";
+        }
+    }
+
+    private void RemoveImage()
+    {
+        if (!string.IsNullOrEmpty(currentProduct.ImageUrl))
+        {
+            try
+            {
+                var imagePath = Path.Combine(Environment.WebRootPath, currentProduct.ImageUrl.TrimStart('/'));
+                if (File.Exists(imagePath))
+                {
+                    File.Delete(imagePath);
+                }
+            }
+            catch { }
+            
+            currentProduct.ImageUrl = null;
+        }
+    }
+
+    private async Task DeleteProduct(ProductDto product)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{product.ProductName}'?");
+        if (!confirmed) return;
+
+        try
+        {
+            var result = await ProductService.DeleteProductAsync(product.ProductId);
+            
+            if (!string.IsNullOrEmpty(product.ImageUrl))
+            {
+                try
+                {
+                    var imagePath = Path.Combine(Environment.WebRootPath, product.ImageUrl.TrimStart('/'));
+                    if (File.Exists(imagePath))
+                    {
+                        File.Delete(imagePath);
+                    }
+                }
+                catch { }
+            }
+
+            await LoadData();
+            
+            if (result.SoftDeleted)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", result.Message);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+        }
+    }
+}

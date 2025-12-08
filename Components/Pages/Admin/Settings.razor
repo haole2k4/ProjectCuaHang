@@ -1,0 +1,115 @@
+@page "/admin/settings"
+@rendermode InteractiveServer
+
+@using Blazorise
+
+<PageTitle>Settings - Admin</PageTitle>
+
+<div class="mb-6">
+    <Heading Size="HeadingSize.Is3" class="text-gray-800 mb-1">Settings</Heading>
+    <Paragraph TextColor="TextColor.Muted" class="mb-0">Manage your store settings and preferences</Paragraph>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Settings Navigation -->
+    <div class="lg:col-span-1">
+        <Card class="shadow-sm border-0">
+            <CardBody Padding="Padding.Is0">
+                <div class="divide-y">
+                    <div class="p-4 bg-blue-50 border-l-4 border-blue-600 cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="text-blue-600" />
+                            <span class="font-medium text-blue-600">Store Settings</span>
+                        </div>
+                    </div>
+                    <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CreditCard" class="text-gray-500" />
+                            <span>Payment Methods</span>
+                        </div>
+                    </div>
+                    <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Truck" class="text-gray-500" />
+                            <span>Shipping</span>
+                        </div>
+                    </div>
+                    <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Bell" class="text-gray-500" />
+                            <span>Notifications</span>
+                        </div>
+                    </div>
+                    <div class="p-4 hover:bg-gray-50 cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.UserShield" class="text-gray-500" />
+                            <span>Security</span>
+                        </div>
+                    </div>
+                </div>
+            </CardBody>
+        </Card>
+    </div>
+
+    <!-- Settings Content -->
+    <div class="lg:col-span-2">
+        <Card class="shadow-sm border-0">
+            <CardHeader Background="Background.White" class="border-b p-6">
+                <Heading Size="HeadingSize.Is5" class="mb-0">Store Settings</Heading>
+            </CardHeader>
+            <CardBody class="p-6">
+                <div class="space-y-6">
+                    <Field>
+                        <FieldLabel>Store Name</FieldLabel>
+                        <TextEdit Placeholder="Enter store name" @bind-Text="storeName" />
+                    </Field>
+
+                    <Field>
+                        <FieldLabel>Store Email</FieldLabel>
+                        <TextEdit Placeholder="support@store.com" @bind-Text="storeEmail" />
+                    </Field>
+
+                    <Field>
+                        <FieldLabel>Store Phone</FieldLabel>
+                        <TextEdit Placeholder="+1 234 567 890" @bind-Text="storePhone" />
+                    </Field>
+
+                    <Field>
+                        <FieldLabel>Currency</FieldLabel>
+                        <Select @bind-SelectedValue="currency">
+                            <SelectItem Value='"USD"'>USD ($)</SelectItem>
+                            <SelectItem Value='"EUR"'>EUR (€)</SelectItem>
+                            <SelectItem Value='"GBP"'>GBP (£)</SelectItem>
+                        </Select>
+                    </Field>
+
+                    <Field>
+                        <FieldLabel>Timezone</FieldLabel>
+                        <Select @bind-SelectedValue="timezone">
+                            <SelectItem Value='"UTC"'>UTC</SelectItem>
+                            <SelectItem Value='"EST"'>Eastern Time (EST)</SelectItem>
+                            <SelectItem Value='"PST"'>Pacific Time (PST)</SelectItem>
+                        </Select>
+                    </Field>
+
+                    <Divider />
+
+                    <div class="flex justify-end gap-3">
+                        <Button Color="Color.Light">Cancel</Button>
+                        <Button Color="Color.Primary">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Save" class="mr-2" /> Save Changes
+                        </Button>
+                    </div>
+                </div>
+            </CardBody>
+        </Card>
+    </div>
+</div>
+
+@code {
+    private string storeName = "E-Store";
+    private string storeEmail = "support@estore.com";
+    private string storePhone = "+1 234 567 890";
+    private string currency = "USD";
+    private string timezone = "UTC";
+}

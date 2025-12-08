@@ -1,0 +1,115 @@
+@page "/admin/promotions"
+@rendermode InteractiveServer
+
+@using StoreManagementAPI.Data
+@using StoreManagementAPI.Models
+@using Microsoft.EntityFrameworkCore
+@using Blazorise
+
+@inject StoreDbContext DbContext
+
+<PageTitle>Promotions - Admin</PageTitle>
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <Heading Size="HeadingSize.Is3" class="text-gray-800 mb-1">Promotions</Heading>
+        <Paragraph TextColor="TextColor.Muted" class="mb-0">Manage discount codes and promotions</Paragraph>
+    </div>
+    <Button Color="Color.Primary">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Create Promotion
+    </Button>
+</div>
+
+<Card class="shadow-sm border-0">
+    <CardBody Padding="Padding.Is0">
+        <Table Hoverable class="mb-0">
+            <TableHeader>
+                <TableRow class="bg-gray-50">
+                    <TableHeaderCell class="px-6 py-4">Code</TableHeaderCell>
+                    <TableHeaderCell class="px-6 py-4">Type</TableHeaderCell>
+                    <TableHeaderCell class="px-6 py-4">Discount</TableHeaderCell>
+                    <TableHeaderCell class="px-6 py-4">Usage</TableHeaderCell>
+                    <TableHeaderCell class="px-6 py-4">Valid Until</TableHeaderCell>
+                    <TableHeaderCell class="px-6 py-4">Status</TableHeaderCell>
+                    <TableHeaderCell class="px-6 py-4 text-right">Actions</TableHeaderCell>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                @if (promotions != null && promotions.Any())
+                {
+                    @foreach (var promo in promotions)
+                    {
+                        <TableRow>
+                            <TableRowCell class="px-6 py-4">
+                                <div class="flex items-center gap-2">
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tag" class="text-purple-500" />
+                                    <span class="font-mono font-semibold">@promo.PromoCode</span>
+                                </div>
+                            </TableRowCell>
+                            <TableRowCell class="px-6 py-4">
+                                <Badge Color="Color.Info">@promo.ApplyType</Badge>
+                            </TableRowCell>
+                            <TableRowCell class="px-6 py-4">
+                                @if (promo.DiscountType == "percent")
+                                {
+                                    <span class="text-green-600 font-semibold">@promo.DiscountValue%</span>
+                                }
+                                else
+                                {
+                                    <span class="text-green-600 font-semibold">$@promo.DiscountValue</span>
+                                }
+                            </TableRowCell>
+                            <TableRowCell class="px-6 py-4">
+                                @promo.UsedCount / @(promo.UsageLimit == 0 ? "?" : promo.UsageLimit.ToString())
+                            </TableRowCell>
+                            <TableRowCell class="px-6 py-4">
+                                @if (promo.EndDate < DateTime.Now)
+                                {
+                                    <span class="text-red-500">Expired</span>
+                                }
+                                else
+                                {
+                                    <span>@promo.EndDate.ToString("MMM dd, yyyy")</span>
+                                }
+                            </TableRowCell>
+                            <TableRowCell class="px-6 py-4">
+                                <Badge Color="@(promo.Status == "active" ? Color.Success : Color.Secondary)">
+                                    @promo.Status
+                                </Badge>
+                            </TableRowCell>
+                            <TableRowCell class="px-6 py-4 text-right">
+                                <Buttons>
+                                    <Button Color="Color.Light" Size="Size.Small">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
+                                    </Button>
+                                    <Button Color="Color.Danger" Size="Size.Small" Outline>
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" />
+                                    </Button>
+                                </Buttons>
+                            </TableRowCell>
+                        </TableRow>
+                    }
+                }
+                else
+                {
+                    <TableRow>
+                        <TableRowCell ColumnSpan="7" class="text-center py-8 text-gray-500">
+                            No promotions found
+                        </TableRowCell>
+                    </TableRow>
+                }
+            </TableBody>
+        </Table>
+    </CardBody>
+</Card>
+
+@code {
+    private List<Promotion>? promotions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        promotions = await DbContext.Promotions
+            .OrderByDescending(p => p.StartDate)
+            .ToListAsync();
+    }
+}

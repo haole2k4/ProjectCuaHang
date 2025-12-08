@@ -184,3 +184,129 @@
 .card-shadow-lg {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }
+
+/* Admin Dashboard Styles */
+.admin-layout {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.admin-sidebar .nav-link.active {
+    background-color: rgb(239 246 255) !important;
+    color: rgb(37 99 235) !important;
+    font-weight: 500;
+}
+
+.admin-sidebar .nav-link:hover {
+    background-color: rgb(243 244 246);
+}
+
+.dashboard-container .card {
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.dashboard-container .card-header {
+    background: transparent;
+}
+
+/* Revenue Chart Animation */
+.revenue-chart .bar {
+    transition: height 0.3s ease, background-color 0.2s ease;
+}
+
+/* Chart Container */
+.chart-container {
+    position: relative;
+}
+
+.chart-container svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Progress Bar Styling */
+.dashboard-container .progress {
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+/* Table Styles for Admin */
+.dashboard-container table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.dashboard-container table th {
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.dashboard-container table td {
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.dashboard-container table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Circular Progress */
+.circular-progress {
+    position: relative;
+}
+
+.circular-progress svg {
+    transform: rotate(-90deg);
+}
+
+/* Status Badge Styles */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Admin Notification Badge */
+.notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.625rem;
+    font-weight: 600;
+    border-radius: 9999px;
+}
+
+/* Smooth transitions */
+.admin-layout * {
+    transition-property: color, background-color, border-color, box-shadow;
+    transition-timing-function: ease-in-out;
+    transition-duration: 150ms;
+}
+
+/* Scrollbar Styling */
+.admin-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.admin-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
