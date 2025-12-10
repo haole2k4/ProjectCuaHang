@@ -1,0 +1,438 @@
+@page "/admin/warehouses"
+@rendermode InteractiveServer
+
+@using StoreManagementAPI.Data
+@using StoreManagementAPI.Models
+@using StoreManagementAPI.Services
+@using StoreManagementAPI.DTOs
+@using Microsoft.EntityFrameworkCore
+@using Blazorise
+
+@inject StoreDbContext DbContext
+@inject IWarehouseService WarehouseService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Warehouses - Admin</PageTitle>
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+            Warehouses
+        </Heading>
+        <Paragraph class="text-gray-600 mb-0">Manage warehouse locations and inventory</Paragraph>
+    </div>
+    <Button Color="Color.Primary" Clicked="OpenAddModal" class="!text-white !bg-blue-600 hover:!bg-blue-700 shadow-md">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Add Warehouse
+    </Button>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Total Warehouses</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-gray-900 mb-0">@warehouses?.Count</Heading>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Warehouse" class="text-blue-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Active</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-green-600 mb-0">@warehouses?.Count(w => w.Status == "active")</Heading>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="text-green-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Total Items</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-purple-600 mb-0">@(warehouses?.Sum(w => w.TotalItems) ?? 0)</Heading>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-purple-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Total Stock</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-orange-600 mb-0">@(warehouses?.Sum(w => w.TotalStock) ?? 0)</Heading>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.LayerGroup" class="text-orange-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+</div>
+
+<!-- Warehouses Table -->
+<Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
+    <CardBody Padding="Padding.Is0">
+        <div class="overflow-x-auto">
+            <Table class="mb-0 w-full">
+                <TableHeader>
+                    <TableRow class="bg-white border-b-2 border-gray-200">
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Warehouse</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Address</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Items</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Stock Quantity</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody class="bg-white divide-y divide-gray-200">
+                    @if (warehouses != null && warehouses.Any())
+                    {
+                        @foreach (var warehouse in warehouses)
+                        {
+                            <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
+                                <TableRowCell class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Warehouse" />
+                                        </div>
+                                        <span class="font-bold text-gray-900">@warehouse.WarehouseName</span>
+                                    </div>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.MapMarkerAlt" class="text-gray-400 text-sm" />
+                                        <span class="text-gray-900">@(warehouse.Address ?? "N/A")</span>
+                                    </div>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <Badge Color="Color.Info" class="font-semibold">
+                                        @warehouse.TotalItems unique items
+                                    </Badge>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <span class="font-bold text-gray-900">@warehouse.TotalStock units</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    @if (warehouse.Status == "active")
+                                    {
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                                            Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
+                                            Inactive
+                                        </span>
+                                    }
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-right">
+                                    <Buttons class="gap-2 justify-end">
+                                        <Button Color="Color.Info" Size="Size.Small" Clicked="() => ViewWarehouseDetails(warehouse)" class="!bg-blue-50 !text-blue-600 hover:!bg-blue-100 !border-blue-200 shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Eye" />
+                                        </Button>
+                                        <Button Color="Color.Light" Size="Size.Small" Clicked="() => OpenEditModal(warehouse)" class="!border-2 !border-gray-300 hover:!bg-gray-200 !text-gray-900 shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
+                                        </Button>
+                                        <Button Color="Color.Danger" Size="Size.Small" Clicked="() => DeleteWarehouse(warehouse)" class="!bg-red-600 hover:!bg-red-700 !text-white shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" />
+                                        </Button>
+                                    </Buttons>
+                                </TableRowCell>
+                            </TableRow>
+                        }
+                    }
+                    else
+                    {
+                        <TableRow class="bg-white">
+                            <TableRowCell ColumnSpan="6" class="text-center py-12">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Warehouse" class="text-gray-400 text-4xl mb-3" />
+                                <p class="text-gray-600 font-medium">No warehouses found</p>
+                            </TableRowCell>
+                        </TableRow>
+                    }
+                </TableBody>
+            </Table>
+        </div>
+    </CardBody>
+</Card>
+
+<!-- Add/Edit Warehouse Modal -->
+<Modal @ref="warehouseModal">
+    <ModalContent Size="ModalSize.Large">
+        <ModalHeader class="bg-white border-b border-gray-200">
+            <ModalTitle class="text-gray-900 font-bold">@(isEditMode ? "Edit Warehouse" : "Add New Warehouse")</ModalTitle>
+            <CloseButton Clicked="CloseModal" />
+        </ModalHeader>
+        <ModalBody class="bg-white">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Warehouse Name *</label>
+                    <TextEdit @bind-Text="currentWarehouse.WarehouseName" Placeholder="Enter warehouse name" class="w-full !border-gray-300" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Address *</label>
+                    <MemoEdit @bind-Text="currentWarehouse.Address" Rows="3" Placeholder="Enter warehouse address" class="w-full !border-gray-300" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Status</label>
+                    <Select TValue="string" @bind-SelectedValue="currentWarehouse.Status" class="w-full !border-gray-300">
+                        <SelectItem Value="@("active")">Active</SelectItem>
+                        <SelectItem Value="@("inactive")">Inactive</SelectItem>
+                    </Select>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <Alert Color="Color.Danger" Visible class="!bg-red-50 !border-red-200 !text-red-900">
+                        @errorMessage
+                    </Alert>
+                }
+            </div>
+        </ModalBody>
+        <ModalFooter class="bg-gray-50 border-t border-gray-200">
+            <Button Color="Color.Secondary" Clicked="CloseModal" class="!bg-white !border-2 !border-gray-300 !text-gray-900 hover:!bg-gray-100 shadow-sm">Cancel</Button>
+            <Button Color="Color.Primary" Clicked="SaveWarehouse" Loading="isSaving" class="!bg-blue-600 hover:!bg-blue-700 !text-white shadow-md">
+                @(isEditMode ? "Update" : "Create")
+            </Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+<!-- Warehouse Details Modal -->
+<Modal @ref="detailsModal">
+    <ModalContent Size="ModalSize.ExtraLarge">
+        <ModalHeader class="bg-white border-b border-gray-200">
+            <ModalTitle class="text-gray-900 font-bold">Warehouse Details: @selectedWarehouse?.WarehouseName</ModalTitle>
+            <CloseButton Clicked="() => detailsModal.Hide()" />
+        </ModalHeader>
+        <ModalBody class="bg-white">
+            @if (selectedWarehouse != null)
+            {
+                <div class="space-y-6">
+                    <!-- Info -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-1">Warehouse Name</p>
+                            <p class="font-bold text-gray-900">@selectedWarehouse.WarehouseName</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-1">Address</p>
+                            <p class="font-medium text-gray-900">@selectedWarehouse.Address</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-1">Total Items</p>
+                            <p class="font-bold text-gray-900">@selectedWarehouse.TotalItems unique items</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-1">Total Stock</p>
+                            <p class="font-bold text-gray-900">@selectedWarehouse.TotalStock units</p>
+                        </div>
+                    </div>
+
+                    <!-- Inventory List -->
+                    <div>
+                        <h5 class="font-bold text-gray-900 mb-3">Inventory Items</h5>
+                        @if (warehouseInventory != null && warehouseInventory.Any())
+                        {
+                            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                <Table class="mb-0">
+                                    <TableHeader>
+                                        <TableRow class="bg-gray-50">
+                                            <TableHeaderCell>Product</TableHeaderCell>
+                                            <TableHeaderCell>Quantity</TableHeaderCell>
+                                            <TableHeaderCell>Last Updated</TableHeaderCell>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        @foreach (var item in warehouseInventory)
+                                        {
+                                            <TableRow>
+                                                <TableRowCell>@item.Product?.ProductName</TableRowCell>
+                                                <TableRowCell>
+                                                    <Badge Color="@(item.Quantity < 10 ? Color.Warning : Color.Success)">
+                                                        @item.Quantity units
+                                                    </Badge>
+                                                </TableRowCell>
+                                                <TableRowCell>@item.UpdatedAt.ToString("MMM dd, yyyy HH:mm")</TableRowCell>
+                                            </TableRow>
+                                        }
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-8 text-gray-500">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-4xl mb-2" />
+                                <p>No inventory items in this warehouse</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </ModalBody>
+    </ModalContent>
+</Modal>
+
+@code {
+    private class WarehouseViewModel
+    {
+        public int WarehouseId { get; set; }
+        public string? WarehouseName { get; set; }
+        public string? Address { get; set; }
+        public string Status { get; set; } = "active";
+        public int TotalItems { get; set; }
+        public int TotalStock { get; set; }
+    }
+
+    private List<WarehouseViewModel>? warehouses;
+    private Modal warehouseModal = null!;
+    private Modal detailsModal = null!;
+    private bool isEditMode = false;
+    private bool isSaving = false;
+    private string? errorMessage;
+    private WarehouseViewModel? selectedWarehouse;
+    private List<StoreManagementAPI.Models.Inventory>? warehouseInventory;
+
+    private WarehouseDto currentWarehouse = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        var data = await DbContext.Warehouses
+            .Where(w => w.Status != "deleted")
+            .Select(w => new WarehouseViewModel
+            {
+                WarehouseId = w.WarehouseId,
+                WarehouseName = w.WarehouseName,
+                Address = w.Address,
+                Status = w.Status,
+                TotalItems = w.Inventories.Count,
+                TotalStock = w.Inventories.Sum(i => i.Quantity)
+            })
+            .OrderBy(w => w.WarehouseName)
+            .ToListAsync();
+
+        warehouses = data;
+    }
+
+    private async Task ViewWarehouseDetails(WarehouseViewModel warehouse)
+    {
+        selectedWarehouse = warehouse;
+        warehouseInventory = await DbContext.Inventories
+            .Include(i => i.Product)
+            .Where(i => i.WarehouseId == warehouse.WarehouseId)
+            .OrderByDescending(i => i.Quantity)
+            .ToListAsync();
+        
+        detailsModal.Show();
+    }
+
+    private void OpenAddModal()
+    {
+        isEditMode = false;
+        currentWarehouse = new WarehouseDto { Status = "active" };
+        errorMessage = null;
+        warehouseModal.Show();
+    }
+
+    private void OpenEditModal(WarehouseViewModel warehouse)
+    {
+        isEditMode = true;
+        currentWarehouse = new WarehouseDto
+        {
+            WarehouseId = warehouse.WarehouseId,
+            WarehouseName = warehouse.WarehouseName,
+            Address = warehouse.Address,
+            Status = warehouse.Status
+        };
+        errorMessage = null;
+        warehouseModal.Show();
+    }
+
+    private void CloseModal()
+    {
+        warehouseModal.Hide();
+        errorMessage = null;
+    }
+
+    private async Task SaveWarehouse()
+    {
+        errorMessage = null;
+        
+        if (string.IsNullOrWhiteSpace(currentWarehouse.WarehouseName))
+        {
+            errorMessage = "Warehouse name is required";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentWarehouse.Address))
+        {
+            errorMessage = "Address is required";
+            return;
+        }
+
+        isSaving = true;
+        try
+        {
+            if (isEditMode)
+            {
+                await WarehouseService.UpdateWarehouse(currentWarehouse.WarehouseId, currentWarehouse);
+            }
+            else
+            {
+                await WarehouseService.CreateWarehouse(currentWarehouse);
+            }
+
+            await LoadData();
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteWarehouse(WarehouseViewModel warehouse)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete warehouse '{warehouse.WarehouseName}'?");
+        if (!confirmed) return;
+
+        try
+        {
+            await WarehouseService.DeleteWarehouse(warehouse.WarehouseId);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+        }
+    }
+}

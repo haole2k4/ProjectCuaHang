@@ -77,9 +77,18 @@
                                     <span class="text-gray-900 font-semibold">@(product.StockQuantity ?? 0)</span>
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4">
-                                    <Badge Color="@(product.Status == "active" ? Color.Success : Color.Secondary)" class="px-3 py-1.5 rounded-full font-medium">
-                                        @product.Status
-                                    </Badge>
+                                    @if (product.Status == "active")
+                                    {
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                                            Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
+                                            Inactive
+                                        </span>
+                                    }
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-right">
                                     <Buttons class="gap-2 justify-end">

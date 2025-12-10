@@ -83,6 +83,13 @@ builder.Services.AddScoped<IRepository<AuditLog>, Repository<AuditLog>>();
 builder.Services.AddScoped<IRepository<Product>, Repository<Product>>();
 builder.Services.AddScoped<IRepository<Inventory>, Repository<Inventory>>();
 builder.Services.AddScoped<IRepository<Category>, Repository<Category>>();
+builder.Services.AddScoped<IRepository<Supplier>, Repository<Supplier>>();
+builder.Services.AddScoped<IRepository<Warehouse>, Repository<Warehouse>>();
+builder.Services.AddScoped<IRepository<Promotion>, Repository<Promotion>>();
+builder.Services.AddScoped<IRepository<Order>, Repository<Order>>();
+builder.Services.AddScoped<IRepository<OrderItem>, Repository<OrderItem>>();
+builder.Services.AddScoped<IRepository<Payment>, Repository<Payment>>();
+
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
@@ -93,6 +100,9 @@ builder.Services.AddScoped<ICustomerOrderService, CustomerOrderService>();
 // Register Product and Category services for admin functionality
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ISupplierService, SupplierService>();
+builder.Services.AddScoped<IWarehouseService, WarehouseService>();
+builder.Services.AddScoped<IPromotionService, PromotionService>();
 
 // Register Statistics service for admin dashboard
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();

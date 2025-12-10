@@ -1,0 +1,443 @@
+@page "/admin/suppliers"
+@rendermode InteractiveServer
+
+@using StoreManagementAPI.Data
+@using StoreManagementAPI.Models
+@using StoreManagementAPI.Services
+@using Microsoft.EntityFrameworkCore
+@using Blazorise
+@using System.ComponentModel.DataAnnotations
+
+@inject StoreDbContext DbContext
+@inject ISupplierService SupplierService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Suppliers - Admin</PageTitle>
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+            Suppliers
+        </Heading>
+        <Paragraph class="text-gray-600 mb-0">Manage your supplier information</Paragraph>
+    </div>
+    <Button Color="Color.Primary" Clicked="OpenAddModal" class="!text-white !bg-blue-600 hover:!bg-blue-700 shadow-md">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Add Supplier
+    </Button>
+</div>
+
+<!-- Search and Filter -->
+<Card class="!bg-white shadow-md border border-gray-200 rounded-xl mb-6">
+    <CardBody class="p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <TextEdit @bind-Text="searchTerm" Placeholder="Search by name, phone, address..." class="w-full !border-gray-300" />
+            </div>
+            <div>
+                <Select TValue="string" @bind-SelectedValue="filterStatus" class="w-full !border-gray-300">
+                    <SelectItem Value="@string.Empty">All Status</SelectItem>
+                    <SelectItem Value="@("active")">Active</SelectItem>
+                    <SelectItem Value="@("inactive")">Inactive</SelectItem>
+                </Select>
+            </div>
+            <div class="flex gap-2">
+                <Button Color="Color.Primary" Clicked="ApplyFilters" class="flex-1 !bg-blue-600 hover:!bg-blue-700">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="mr-2" /> Search
+                </Button>
+                <Button Color="Color.Light" Clicked="ClearFilters" class="!border-2 !border-gray-300 hover:!bg-gray-100">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Times" />
+                </Button>
+            </div>
+        </div>
+    </CardBody>
+</Card>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Total Suppliers</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-gray-900 mb-0">@suppliers?.Count</Heading>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.TruckMoving" class="text-blue-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Active</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-green-600 mb-0">@suppliers?.Count(s => s.Status == "active")</Heading>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="text-green-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Inactive</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-orange-600 mb-0">@suppliers?.Count(s => s.Status == "inactive")</Heading>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.PauseCircle" class="text-orange-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Products</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-purple-600 mb-0">@suppliers?.Sum(s => s.Products?.Count ?? 0)</Heading>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-purple-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+</div>
+
+<!-- Suppliers Table -->
+<Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
+    <CardBody Padding="Padding.Is0">
+        <div class="overflow-x-auto">
+            <Table class="mb-0 w-full">
+                <TableHeader>
+                    <TableRow class="bg-white border-b-2 border-gray-200">
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Supplier</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Contact</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Address</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Products</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody class="bg-white divide-y divide-gray-200">
+                    @if (suppliers != null && suppliers.Any())
+                    {
+                        @foreach (var supplier in suppliers)
+                        {
+                            <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
+                                <TableRowCell class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
+                                            @supplier.Name.Substring(0, 1).ToUpper()
+                                        </div>
+                                        <span class="font-bold text-gray-900">@supplier.Name</span>
+                                    </div>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <div>
+                                        @if (!string.IsNullOrEmpty(supplier.Phone))
+                                        {
+                                            <div class="flex items-center gap-2 text-gray-900 font-medium mb-1">
+                                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Phone" class="text-gray-400 text-xs" />
+                                                @supplier.Phone
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(supplier.Email))
+                                        {
+                                            <div class="flex items-center gap-2 text-gray-600 text-sm">
+                                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Envelope" class="text-gray-400 text-xs" />
+                                                @supplier.Email
+                                            </div>
+                                        }
+                                    </div>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <span class="text-gray-900">@(supplier.Address ?? "N/A")</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <Badge Color="Color.Info" class="font-semibold">
+                                        @supplier.Products?.Count ?? 0 products
+                                    </Badge>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    @if (supplier.Status == "active")
+                                    {
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                                            Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
+                                            Inactive
+                                        </span>
+                                    }
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-right">
+                                    <Buttons class="gap-2 justify-end">
+                                        <Button Color="Color.Light" Size="Size.Small" Clicked="() => OpenEditModal(supplier)" class="!border-2 !border-gray-300 hover:!bg-gray-200 !text-gray-900 shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
+                                        </Button>
+                                        <Button Color="Color.Danger" Size="Size.Small" Clicked="() => DeleteSupplier(supplier)" class="!bg-red-600 hover:!bg-red-700 !text-white shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" />
+                                        </Button>
+                                    </Buttons>
+                                </TableRowCell>
+                            </TableRow>
+                        }
+                    }
+                    else
+                    {
+                        <TableRow class="bg-white">
+                            <TableRowCell ColumnSpan="6" class="text-center py-12">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.TruckMoving" class="text-gray-400 text-4xl mb-3" />
+                                <p class="text-gray-600 font-medium">No suppliers found</p>
+                            </TableRowCell>
+                        </TableRow>
+                    }
+                </TableBody>
+            </Table>
+        </div>
+    </CardBody>
+</Card>
+
+<!-- Add/Edit Supplier Modal -->
+<Modal @ref="supplierModal">
+    <ModalContent Size="ModalSize.Large">
+        <ModalHeader class="bg-white border-b border-gray-200">
+            <ModalTitle class="text-gray-900 font-bold">@(isEditMode ? "Edit Supplier" : "Add New Supplier")</ModalTitle>
+            <CloseButton Clicked="CloseModal" />
+        </ModalHeader>
+        <ModalBody class="bg-white">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Supplier Name *</label>
+                    <TextEdit @bind-Text="currentSupplier.Name" Placeholder="Enter supplier name" class="w-full !border-gray-300" />
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Phone</label>
+                        <TextEdit @bind-Text="currentSupplier.Phone" Placeholder="Enter phone number" class="w-full !border-gray-300" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Email</label>
+                        <TextEdit @bind-Text="currentSupplier.Email" Placeholder="Enter email address" class="w-full !border-gray-300" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Address</label>
+                    <MemoEdit @bind-Text="currentSupplier.Address" Rows="3" Placeholder="Enter supplier address" class="w-full !border-gray-300" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Status</label>
+                    <Select TValue="string" @bind-SelectedValue="currentSupplier.Status" class="w-full !border-gray-300">
+                        <SelectItem Value="@("active")">Active</SelectItem>
+                        <SelectItem Value="@("inactive")">Inactive</SelectItem>
+                    </Select>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <Alert Color="Color.Danger" Visible class="!bg-red-50 !border-red-200 !text-red-900">
+                        @errorMessage
+                    </Alert>
+                }
+            </div>
+        </ModalBody>
+        <ModalFooter class="bg-gray-50 border-t border-gray-200">
+            <Button Color="Color.Secondary" Clicked="CloseModal" class="!bg-white !border-2 !border-gray-300 !text-gray-900 hover:!bg-gray-100 shadow-sm">Cancel</Button>
+            <Button Color="Color.Primary" Clicked="SaveSupplier" Loading="isSaving" class="!bg-blue-600 hover:!bg-blue-700 !text-white shadow-md">
+                @(isEditMode ? "Update" : "Create")
+            </Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+@code {
+    private List<Supplier>? suppliers;
+    private List<Supplier>? allSuppliers;
+    private Modal supplierModal = null!;
+    private bool isEditMode = false;
+    private bool isSaving = false;
+    private string? errorMessage;
+    private string searchTerm = string.Empty;
+    private string filterStatus = string.Empty;
+
+    private Supplier currentSupplier = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        allSuppliers = await DbContext.Suppliers
+            .Include(s => s.Products)
+            .Where(s => s.Status != "deleted")
+            .OrderBy(s => s.Name)
+            .ToListAsync();
+        
+        suppliers = allSuppliers;
+    }
+
+    private async Task ApplyFilters()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm) && string.IsNullOrWhiteSpace(filterStatus))
+        {
+            suppliers = allSuppliers;
+            return;
+        }
+
+        var filtered = allSuppliers!.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var search = searchTerm.ToLower();
+            filtered = filtered.Where(s => 
+                s.Name.ToLower().Contains(search) ||
+                (s.Phone != null && s.Phone.Contains(search)) ||
+                (s.Email != null && s.Email.ToLower().Contains(search)) ||
+                (s.Address != null && s.Address.ToLower().Contains(search))
+            );
+        }
+
+        if (!string.IsNullOrWhiteSpace(filterStatus))
+        {
+            filtered = filtered.Where(s => s.Status == filterStatus);
+        }
+
+        suppliers = filtered.ToList();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ClearFilters()
+    {
+        searchTerm = string.Empty;
+        filterStatus = string.Empty;
+        suppliers = allSuppliers;
+    }
+
+    private void OpenAddModal()
+    {
+        isEditMode = false;
+        currentSupplier = new Supplier { Status = "active" };
+        errorMessage = null;
+        supplierModal.Show();
+    }
+
+    private void OpenEditModal(Supplier supplier)
+    {
+        isEditMode = true;
+        currentSupplier = new Supplier
+        {
+            SupplierId = supplier.SupplierId,
+            Name = supplier.Name,
+            Phone = supplier.Phone,
+            Email = supplier.Email,
+            Address = supplier.Address,
+            Status = supplier.Status
+        };
+        errorMessage = null;
+        supplierModal.Show();
+    }
+
+    private void CloseModal()
+    {
+        supplierModal.Hide();
+        errorMessage = null;
+    }
+
+    private async Task SaveSupplier()
+    {
+        errorMessage = null;
+        
+        if (string.IsNullOrWhiteSpace(currentSupplier.Name))
+        {
+            errorMessage = "Supplier name is required";
+            return;
+        }
+
+        // Validate phone if provided
+        if (!string.IsNullOrWhiteSpace(currentSupplier.Phone))
+        {
+            var phoneExists = await SupplierService.CheckPhoneExists(currentSupplier.Phone);
+            if (phoneExists && (!isEditMode || (isEditMode && suppliers!.First(s => s.SupplierId == currentSupplier.SupplierId).Phone != currentSupplier.Phone)))
+            {
+                errorMessage = "Phone number already exists";
+                return;
+            }
+        }
+
+        // Validate email if provided
+        if (!string.IsNullOrWhiteSpace(currentSupplier.Email))
+        {
+            var emailExists = await SupplierService.CheckEmailExists(currentSupplier.Email);
+            if (emailExists && (!isEditMode || (isEditMode && suppliers!.First(s => s.SupplierId == currentSupplier.SupplierId).Email != currentSupplier.Email)))
+            {
+                errorMessage = "Email already exists";
+                return;
+            }
+        }
+
+        isSaving = true;
+        try
+        {
+            if (isEditMode)
+            {
+                var existing = await DbContext.Suppliers.FindAsync(currentSupplier.SupplierId);
+                if (existing != null)
+                {
+                    existing.Name = currentSupplier.Name;
+                    existing.Phone = currentSupplier.Phone;
+                    existing.Email = currentSupplier.Email;
+                    existing.Address = currentSupplier.Address;
+                    existing.Status = currentSupplier.Status;
+                }
+            }
+            else
+            {
+                DbContext.Suppliers.Add(currentSupplier);
+            }
+
+            await DbContext.SaveChangesAsync();
+            await LoadData();
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeleteSupplier(Supplier supplier)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete supplier '{supplier.Name}'?");
+        if (!confirmed) return;
+
+        try
+        {
+            supplier.Status = "deleted";
+            await DbContext.SaveChangesAsync();
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+        }
+    }
+}

@@ -56,8 +56,18 @@
                     <span>Customers</span>
                 </NavLink>
                 
-                <NavLink href="/admin/inventory" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                <NavLink href="/admin/suppliers" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.TruckMoving" />
+                    <span>Suppliers</span>
+                </NavLink>
+                
+                <NavLink href="/admin/warehouses" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Warehouse" />
+                    <span>Warehouses</span>
+                </NavLink>
+                
+                <NavLink href="/admin/inventory" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ClipboardList" />
                     <span>Inventory</span>
                 </NavLink>
                 
@@ -114,7 +124,7 @@
                         <button class="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg transition text-sm border border-gray-200 shadow-sm">
                             This month <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronDown" class="text-xs" />
                         </button>
-                        <div class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block z-50 border border-gray-100">
+                        <div class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block z-50 border border-gray-100">
                             <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">Today</a>
                             <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">This week</a>
                             <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">This month</a>
@@ -144,12 +154,12 @@
                                     <span class="text-gray-900 font-medium text-sm">@(context.User.Identity?.Name ?? "admin")</span>
                                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronDown" class="text-xs text-gray-500" />
                                 </button>
-                                <div class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block z-50 border border-gray-100">
-                                    <a href="/admin/profile" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 text-sm transition">
-                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" /> Profile
+                                <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block z-50 border border-gray-100">
+                                    <a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 text-sm transition">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChartLine" /> Admin Dashboard
                                     </a>
-                                    <a href="/admin/settings" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 text-sm transition">
-                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Cog" /> Settings
+                                    <a href="/store/orders" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 text-sm transition">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" /> My Orders
                                     </a>
                                     <hr class="my-1 border-gray-100" />
                                     <a href="/auth/logout" class="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 text-sm transition">
@@ -175,6 +185,12 @@
     </div>
 </div>
 
+<div id="blazor-error-ui" data-nosnippet class="fixed bottom-0 left-0 right-0 bg-red-600 text-white p-4 text-center hidden">
+    An unhandled error has occurred.
+    <a href="." class="reload underline ml-2">Reload</a>
+    <span class="dismiss cursor-pointer ml-4">?</span>
+</div>
+
 <style>
     .admin-layout .nav-link.active {
         background-color: rgb(239 246 255) !important;
@@ -195,3 +211,7 @@
         }
     }
 </style>
+
+@code {
+    private int cartItemCount = 0;
+}

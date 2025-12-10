@@ -3,113 +3,421 @@
 
 @using StoreManagementAPI.Data
 @using StoreManagementAPI.Models
+@using StoreManagementAPI.Services
+@using StoreManagementAPI.DTOs
 @using Microsoft.EntityFrameworkCore
 @using Blazorise
 
 @inject StoreDbContext DbContext
+@inject IPromotionService PromotionService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Promotions - Admin</PageTitle>
 
 <div class="flex justify-between items-center mb-6">
     <div>
-        <Heading Size="HeadingSize.Is3" class="text-gray-800 mb-1">Promotions</Heading>
-        <Paragraph TextColor="TextColor.Muted" class="mb-0">Manage discount codes and promotions</Paragraph>
+        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+            Promotions
+        </Heading>
+        <Paragraph class="text-gray-600 mb-0">Manage discount codes and promotional campaigns</Paragraph>
     </div>
-    <Button Color="Color.Primary">
+    <Button Color="Color.Primary" Clicked="OpenAddModal" class="!text-white !bg-blue-600 hover:!bg-blue-700 shadow-md">
         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Create Promotion
     </Button>
 </div>
 
-<Card class="shadow-sm border-0">
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Total Promotions</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-gray-900 mb-0">@promotions?.Count</Heading>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Percent" class="text-purple-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Active</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-green-600 mb-0">@promotions?.Count(p => p.Status == "active" && p.EndDate >= DateTime.Now)</Heading>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="text-green-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Expired</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-red-600 mb-0">@promotions?.Count(p => p.EndDate < DateTime.Now)</Heading>
+                </div>
+                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CalendarTimes" class="text-red-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Total Usage</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-blue-600 mb-0">@promotions?.Sum(p => p.UsedCount)</Heading>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChartLine" class="text-blue-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+</div>
+
+<!-- Promotions Table -->
+<Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
     <CardBody Padding="Padding.Is0">
-        <Table Hoverable class="mb-0">
-            <TableHeader>
-                <TableRow class="bg-gray-50">
-                    <TableHeaderCell class="px-6 py-4">Code</TableHeaderCell>
-                    <TableHeaderCell class="px-6 py-4">Type</TableHeaderCell>
-                    <TableHeaderCell class="px-6 py-4">Discount</TableHeaderCell>
-                    <TableHeaderCell class="px-6 py-4">Usage</TableHeaderCell>
-                    <TableHeaderCell class="px-6 py-4">Valid Until</TableHeaderCell>
-                    <TableHeaderCell class="px-6 py-4">Status</TableHeaderCell>
-                    <TableHeaderCell class="px-6 py-4 text-right">Actions</TableHeaderCell>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                @if (promotions != null && promotions.Any())
-                {
-                    @foreach (var promo in promotions)
+        <div class="overflow-x-auto">
+            <Table class="mb-0 w-full">
+                <TableHeader>
+                    <TableRow class="bg-white border-b-2 border-gray-200">
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Code</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Type</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Discount</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Min Order</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Usage</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Valid Period</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody class="bg-white divide-y divide-gray-200">
+                    @if (promotions != null && promotions.Any())
                     {
-                        <TableRow>
-                            <TableRowCell class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tag" class="text-purple-500" />
-                                    <span class="font-mono font-semibold">@promo.PromoCode</span>
-                                </div>
-                            </TableRowCell>
-                            <TableRowCell class="px-6 py-4">
-                                <Badge Color="Color.Info">@promo.ApplyType</Badge>
-                            </TableRowCell>
-                            <TableRowCell class="px-6 py-4">
-                                @if (promo.DiscountType == "percent")
-                                {
-                                    <span class="text-green-600 font-semibold">@promo.DiscountValue%</span>
-                                }
-                                else
-                                {
-                                    <span class="text-green-600 font-semibold">$@promo.DiscountValue</span>
-                                }
-                            </TableRowCell>
-                            <TableRowCell class="px-6 py-4">
-                                @promo.UsedCount / @(promo.UsageLimit == 0 ? "?" : promo.UsageLimit.ToString())
-                            </TableRowCell>
-                            <TableRowCell class="px-6 py-4">
-                                @if (promo.EndDate < DateTime.Now)
-                                {
-                                    <span class="text-red-500">Expired</span>
-                                }
-                                else
-                                {
-                                    <span>@promo.EndDate.ToString("MMM dd, yyyy")</span>
-                                }
-                            </TableRowCell>
-                            <TableRowCell class="px-6 py-4">
-                                <Badge Color="@(promo.Status == "active" ? Color.Success : Color.Secondary)">
-                                    @promo.Status
-                                </Badge>
-                            </TableRowCell>
-                            <TableRowCell class="px-6 py-4 text-right">
-                                <Buttons>
-                                    <Button Color="Color.Light" Size="Size.Small">
-                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
-                                    </Button>
-                                    <Button Color="Color.Danger" Size="Size.Small" Outline>
-                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" />
-                                    </Button>
-                                </Buttons>
+                        @foreach (var promo in promotions)
+                        {
+                            <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
+                                <TableRowCell class="px-6 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tag" class="text-purple-500" />
+                                        <span class="font-mono font-bold text-gray-900">@promo.PromoCode</span>
+                                    </div>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <Badge Color="@GetApplyTypeColor(promo.ApplyType)" class="font-semibold">
+                                        @GetApplyTypeText(promo.ApplyType)
+                                    </Badge>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    @if (promo.DiscountType == "percent")
+                                    {
+                                        <span class="text-green-600 font-bold">@promo.DiscountValue%</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-green-600 font-bold">$@promo.DiscountValue</span>
+                                    }
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <span class="text-gray-900 font-medium">$@promo.MinOrderAmount</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <div class="flex items-center gap-2">
+                                        <Progress Value="@GetUsageProgress(promo)" Max="100" class="flex-1 h-2" Color="Color.Primary" />
+                                        <span class="text-sm font-semibold text-gray-900">@promo.UsedCount/@(promo.UsageLimit == 0 ? "?" : promo.UsageLimit.ToString())</span>
+                                    </div>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <div class="text-sm">
+                                        <div class="text-gray-900 font-medium">@promo.StartDate.ToString("MMM dd, yyyy")</div>
+                                        <div class="text-gray-600">to @promo.EndDate.ToString("MMM dd, yyyy")</div>
+                                    </div>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    @if (promo.EndDate < DateTime.Now)
+                                    {
+                                        <Badge Color="Color.Danger" class="px-3 py-1.5 rounded-full font-medium">Expired</Badge>
+                                    }
+                                    else
+                                    {
+                                        <Badge Color="@(promo.Status == "active" ? Color.Success : Color.Secondary)" class="px-3 py-1.5 rounded-full font-medium">
+                                            @promo.Status
+                                        </Badge>
+                                    }
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-right">
+                                    <Buttons class="gap-2 justify-end">
+                                        <Button Color="Color.Light" Size="Size.Small" Clicked="() => OpenEditModal(promo)" class="!border-2 !border-gray-300 hover:!bg-gray-200 !text-gray-900 shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
+                                        </Button>
+                                        <Button Color="Color.Danger" Size="Size.Small" Clicked="() => DeletePromotion(promo)" class="!bg-red-600 hover:!bg-red-700 !text-white shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" />
+                                        </Button>
+                                    </Buttons>
+                                </TableRowCell>
+                            </TableRow>
+                        }
+                    }
+                    else
+                    {
+                        <TableRow class="bg-white">
+                            <TableRowCell ColumnSpan="8" class="text-center py-12">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Percent" class="text-gray-400 text-4xl mb-3" />
+                                <p class="text-gray-600 font-medium">No promotions found</p>
                             </TableRowCell>
                         </TableRow>
                     }
-                }
-                else
-                {
-                    <TableRow>
-                        <TableRowCell ColumnSpan="7" class="text-center py-8 text-gray-500">
-                            No promotions found
-                        </TableRowCell>
-                    </TableRow>
-                }
-            </TableBody>
-        </Table>
+                </TableBody>
+            </Table>
+        </div>
     </CardBody>
 </Card>
 
+<!-- Add/Edit Promotion Modal -->
+<Modal @ref="promotionModal">
+    <ModalContent Size="ModalSize.ExtraLarge">
+        <ModalHeader class="bg-white border-b border-gray-200">
+            <ModalTitle class="text-gray-900 font-bold">@(isEditMode ? "Edit Promotion" : "Create New Promotion")</ModalTitle>
+            <CloseButton Clicked="CloseModal" />
+        </ModalHeader>
+        <ModalBody class="bg-white">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Promo Code *</label>
+                        <TextEdit @bind-Text="currentPromotion.PromoCode" Placeholder="e.g., SUMMER2024" class="w-full !border-gray-300" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Apply Type *</label>
+                        <Select TValue="string" @bind-SelectedValue="currentPromotion.ApplyType" class="w-full !border-gray-300">
+                            <SelectItem Value="@("order")">Entire Order</SelectItem>
+                            <SelectItem Value="@("product")">Specific Products</SelectItem>
+                            <SelectItem Value="@("combo")">Product Combo</SelectItem>
+                        </Select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Discount Type *</label>
+                        <Select TValue="string" @bind-SelectedValue="currentPromotion.DiscountType" class="w-full !border-gray-300">
+                            <SelectItem Value="@("percent")">Percentage</SelectItem>
+                            <SelectItem Value="@("fixed")">Fixed Amount</SelectItem>
+                        </Select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Discount Value *</label>
+                        <NumericEdit TValue="decimal" @bind-Value="currentPromotion.DiscountValue" Placeholder="0.00" class="w-full !border-gray-300" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Min Order Amount</label>
+                        <NumericEdit TValue="decimal" @bind-Value="currentPromotion.MinOrderAmount" Placeholder="0.00" class="w-full !border-gray-300" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Start Date *</label>
+                        <DateEdit TValue="DateTime" @bind-Date="currentPromotion.StartDate" class="w-full !border-gray-300" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">End Date *</label>
+                        <DateEdit TValue="DateTime" @bind-Date="currentPromotion.EndDate" class="w-full !border-gray-300" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Usage Limit (0 = unlimited)</label>
+                        <NumericEdit TValue="int" @bind-Value="currentPromotion.UsageLimit" Placeholder="0" class="w-full !border-gray-300" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Description</label>
+                    <MemoEdit @bind-Text="currentPromotion.Description" Rows="2" Placeholder="Enter promotion description" class="w-full !border-gray-300" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Status</label>
+                    <Select TValue="string" @bind-SelectedValue="currentPromotion.Status" class="w-full !border-gray-300">
+                        <SelectItem Value="@("active")">Active</SelectItem>
+                        <SelectItem Value="@("inactive")">Inactive</SelectItem>
+                    </Select>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <Alert Color="Color.Danger" Visible class="!bg-red-50 !border-red-200 !text-red-900">
+                        @errorMessage
+                    </Alert>
+                }
+            </div>
+        </ModalBody>
+        <ModalFooter class="bg-gray-50 border-t border-gray-200">
+            <Button Color="Color.Secondary" Clicked="CloseModal" class="!bg-white !border-2 !border-gray-300 !text-gray-900 hover:!bg-gray-100 shadow-sm">Cancel</Button>
+            <Button Color="Color.Primary" Clicked="SavePromotion" Loading="isSaving" class="!bg-blue-600 hover:!bg-blue-700 !text-white shadow-md">
+                @(isEditMode ? "Update" : "Create")
+            </Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
 @code {
     private List<Promotion>? promotions;
+    private Modal promotionModal = null!;
+    private bool isEditMode = false;
+    private bool isSaving = false;
+    private string? errorMessage;
+
+    private CreatePromotionDto currentPromotion = new();
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
     {
         promotions = await DbContext.Promotions
             .OrderByDescending(p => p.StartDate)
             .ToListAsync();
     }
+
+    private void OpenAddModal()
+    {
+        isEditMode = false;
+        currentPromotion = new CreatePromotionDto
+        {
+            StartDate = DateTime.Now,
+            EndDate = DateTime.Now.AddDays(30),
+            Status = "active",
+            DiscountType = "percent",
+            ApplyType = "order",
+            UsageLimit = 0,
+            MinOrderAmount = 0
+        };
+        errorMessage = null;
+        promotionModal.Show();
+    }
+
+    private void OpenEditModal(Promotion promotion)
+    {
+        isEditMode = true;
+        currentPromotion = new CreatePromotionDto
+        {
+            PromoId = promotion.PromoId,
+            PromoCode = promotion.PromoCode,
+            DiscountType = promotion.DiscountType,
+            DiscountValue = promotion.DiscountValue,
+            ApplyType = promotion.ApplyType,
+            MinOrderAmount = promotion.MinOrderAmount,
+            StartDate = promotion.StartDate,
+            EndDate = promotion.EndDate,
+            UsageLimit = promotion.UsageLimit,
+            Description = promotion.Description,
+            Status = promotion.Status
+        };
+        errorMessage = null;
+        promotionModal.Show();
+    }
+
+    private void CloseModal()
+    {
+        promotionModal.Hide();
+        errorMessage = null;
+    }
+
+    private async Task SavePromotion()
+    {
+        errorMessage = null;
+        
+        if (string.IsNullOrWhiteSpace(currentPromotion.PromoCode))
+        {
+            errorMessage = "Promo code is required";
+            return;
+        }
+
+        if (currentPromotion.DiscountValue <= 0)
+        {
+            errorMessage = "Discount value must be greater than 0";
+            return;
+        }
+
+        if (currentPromotion.StartDate >= currentPromotion.EndDate)
+        {
+            errorMessage = "End date must be after start date";
+            return;
+        }
+
+        isSaving = true;
+        try
+        {
+            if (isEditMode)
+            {
+                await PromotionService.UpdatePromotionAsync(currentPromotion.PromoId, currentPromotion);
+            }
+            else
+            {
+                await PromotionService.CreatePromotionAsync(currentPromotion);
+            }
+
+            await LoadData();
+            CloseModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DeletePromotion(Promotion promotion)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete promotion '{promotion.PromoCode}'?");
+        if (!confirmed) return;
+
+        try
+        {
+            await PromotionService.DeletePromotionAsync(promotion.PromoId);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+        }
+    }
+
+    private int GetUsageProgress(Promotion promo)
+    {
+        if (promo.UsageLimit == 0) return 0;
+        return (int)Math.Round((promo.UsedCount / (decimal)promo.UsageLimit) * 100);
+    }
+
+    private Color GetApplyTypeColor(string applyType) => applyType switch
+    {
+        "order" => Color.Primary,
+        "product" => Color.Success,
+        "combo" => Color.Warning,
+        _ => Color.Secondary
+    };
+
+    private string GetApplyTypeText(string applyType) => applyType switch
+    {
+        "order" => "Order",
+        "product" => "Product",
+        "combo" => "Combo",
+        _ => applyType
+    };
 }

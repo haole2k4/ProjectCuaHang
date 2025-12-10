@@ -7,80 +7,161 @@
 @using Blazorise
 
 @inject StoreDbContext DbContext
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Customers - Admin</PageTitle>
 
 <div class="flex justify-between items-center mb-6">
     <div>
-        <Heading Size="HeadingSize.Is3" class="text-gray-800 mb-1">Customers</Heading>
-        <Paragraph TextColor="TextColor.Muted" class="mb-0">Manage your customer base</Paragraph>
+        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">Customers</Heading>
+        <Paragraph class="text-gray-600 mb-0">Manage your customer base</Paragraph>
     </div>
-    <Button Color="Color.Primary">
+    <Button Color="Color.Primary" class="!text-white !bg-blue-600 hover:!bg-blue-700 shadow-md">
         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Add Customer
     </Button>
 </div>
 
-<Card class="shadow-sm border-0">
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Total Customers</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-gray-900 mb-0">@customers?.Count</Heading>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Users" class="text-blue-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Active</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-green-600 mb-0">@customers?.Count(c => c.Status == "active")</Heading>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.UserCheck" class="text-green-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">Total Orders</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-purple-600 mb-0">@customers?.Sum(c => c.Orders?.Count ?? 0)</Heading>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" class="text-purple-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+
+    <Card class="shadow-md border-0 !bg-white">
+        <CardBody class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <Paragraph class="text-gray-600 text-sm mb-1">New This Month</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="text-orange-600 mb-0">@customers?.Count(c => c.CreatedAt >= DateTime.Now.AddMonths(-1))</Heading>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.UserPlus" class="text-orange-600 text-xl" />
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+</div>
+
+<!-- Customers Table -->
+<Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
     <CardBody Padding="Padding.Is0">
-        <Table Hoverable class="mb-0">
-            <TableHeader>
-                <TableRow class="bg-gray-50">
-                    <TableHeaderCell class="px-6 py-4">Customer</TableHeaderCell>
-                    <TableHeaderCell class="px-6 py-4">Email</TableHeaderCell>
-                    <TableHeaderCell class="px-6 py-4">Phone</TableHeaderCell>
-                    <TableHeaderCell class="px-6 py-4">Orders</TableHeaderCell>
-                    <TableHeaderCell class="px-6 py-4">Status</TableHeaderCell>
-                    <TableHeaderCell class="px-6 py-4 text-right">Actions</TableHeaderCell>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                @if (customers != null && customers.Any())
-                {
-                    @foreach (var customer in customers)
+        <div class="overflow-x-auto">
+            <Table class="mb-0 w-full">
+                <TableHeader>
+                    <TableRow class="bg-white border-b-2 border-gray-200">
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Customer</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Email</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Phone</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Orders</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody class="bg-white divide-y divide-gray-200">
+                    @if (customers != null && customers.Any())
                     {
-                        <TableRow>
-                            <TableRowCell class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                                        @customer.Name?.Substring(0, 1).ToUpper()
+                        @foreach (var customer in customers)
+                        {
+                            <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
+                                <TableRowCell class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
+                                            @(customer.Name?.Substring(0, 1).ToUpper() ?? "C")
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-gray-900">@customer.Name</div>
+                                            <div class="text-gray-600 text-sm">Since @customer.CreatedAt.ToString("MMM yyyy")</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div class="font-medium">@customer.Name</div>
-                                        <div class="text-gray-500 text-sm">Since @customer.CreatedAt.ToString("MMM yyyy")</div>
-                                    </div>
-                                </div>
-                            </TableRowCell>
-                            <TableRowCell class="px-6 py-4">@customer.Email</TableRowCell>
-                            <TableRowCell class="px-6 py-4">@customer.Phone</TableRowCell>
-                            <TableRowCell class="px-6 py-4">@customer.Orders.Count</TableRowCell>
-                            <TableRowCell class="px-6 py-4">
-                                <Badge Color="@(customer.Status == "active" ? Color.Success : Color.Secondary)">
-                                    @customer.Status
-                                </Badge>
-                            </TableRowCell>
-                            <TableRowCell class="px-6 py-4 text-right">
-                                <Buttons>
-                                    <Button Color="Color.Light" Size="Size.Small">
-                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Eye" />
-                                    </Button>
-                                    <Button Color="Color.Light" Size="Size.Small">
-                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
-                                    </Button>
-                                </Buttons>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <span class="text-gray-900">@customer.Email</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <span class="text-gray-900">@customer.Phone</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
+                                        @customer.Orders.Count orders
+                                    </span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4">
+                                    @if (customer.Status == "active")
+                                    {
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                                            Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
+                                            Inactive
+                                        </span>
+                                    }
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-right">
+                                    <Buttons class="gap-2 justify-end">
+                                        <Button Color="Color.Info" Size="Size.Small" class="!bg-blue-50 !text-blue-600 hover:!bg-blue-100 !border-blue-200 shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Eye" />
+                                        </Button>
+                                        <Button Color="Color.Light" Size="Size.Small" class="!border-2 !border-gray-300 hover:!bg-gray-200 !text-gray-900 shadow-sm">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
+                                        </Button>
+                                    </Buttons>
+                                </TableRowCell>
+                            </TableRow>
+                        }
+                    }
+                    else
+                    {
+                        <TableRow class="bg-white">
+                            <TableRowCell ColumnSpan="6" class="text-center py-12">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Users" class="text-gray-400 text-4xl mb-3" />
+                                <p class="text-gray-600 font-medium">No customers found</p>
                             </TableRowCell>
                         </TableRow>
                     }
-                }
-                else
-                {
-                    <TableRow>
-                        <TableRowCell ColumnSpan="6" class="text-center py-8 text-gray-500">
-                            No customers found
-                        </TableRowCell>
-                    </TableRow>
-                }
-            </TableBody>
-        </Table>
+                </TableBody>
+            </Table>
+        </div>
     </CardBody>
 </Card>
 

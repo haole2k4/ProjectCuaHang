@@ -19,6 +19,7 @@ namespace StoreManagementAPI.DTOs
 
     public class CreatePromotionDto
     {
+        public int PromoId { get; set; }  // Thêm ?? support Edit mode
         public string PromoCode { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string DiscountType { get; set; } = "percentage";
@@ -26,7 +27,8 @@ namespace StoreManagementAPI.DTOs
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public decimal MinOrderAmount { get; set; }
-        public int? UsageLimit { get; set; }
+        public int UsageLimit { get; set; }  // Changed from int? to int
+        public string Status { get; set; } = "active";  // Thêm Status field
         public string ApplyType { get; set; } = "order"; // order, product, category
         public List<int> ProductIds { get; set; } = new();
     }
