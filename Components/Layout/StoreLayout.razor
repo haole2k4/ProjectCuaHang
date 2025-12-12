@@ -52,27 +52,35 @@
                                 </button>
                                 <!-- Dropdown Menu -->
                                 <div class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block z-50">
-                                    @if (context.User.IsInRole("admin"))
-                                    {
-                                        <a href="/admin/dashboard" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition">
-                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChartLine" /> Admin Dashboard
-                                        </a>
-                                        <hr class="my-1 border-gray-200" />
-                                    }
+                                    <a href="/store/profile" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.UserCircle" /> My Profile
+                                    </a>
                                     <a href="/store/orders" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition">
                                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" /> My Orders
                                     </a>
+                                    @if (context.User.IsInRole("admin"))
+                                    {
+                                        <hr class="my-1 border-gray-200" />
+                                        <a href="/admin/dashboard" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChartLine" /> Admin Dashboard
+                                        </a>
+                                    }
                                     <hr class="my-1 border-gray-200" />
-                                    <a href="/auth/logout" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition">
+                                    <a href="/Account/Logout" class="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition">
                                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignOutAlt" /> Logout
                                     </a>
                                 </div>
                             </div>
                         </Authorized>
                         <NotAuthorized>
-                            <a href="/login" class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">
-                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignInAlt" /> Login
-                            </a>
+                            <div class="flex items-center gap-2">
+                                <a href="/Account/Login" class="flex items-center gap-1 text-gray-300 hover:text-white transition">
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignInAlt" /> Login
+                                </a>
+                                <a href="/Account/Register" class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.UserPlus" /> Register
+                                </a>
+                            </div>
                         </NotAuthorized>
                     </AuthorizeView>
                 </div>
@@ -132,18 +140,18 @@
 
     protected override void OnInitialized()
     {
-        CartService.OnChange += UpdateCartCount;
-        UpdateCartCount();
+        CartService.OnChange += async () => await UpdateCartCount();
+        _ = UpdateCartCount();
     }
 
-    private void UpdateCartCount()
+    private async Task UpdateCartCount()
     {
-        cartItemCount = CartService.GetItemCount();
-        InvokeAsync(StateHasChanged);
+        cartItemCount = await CartService.GetItemCountAsync();
+        await InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
     {
-        CartService.OnChange -= UpdateCartCount;
+        CartService.OnChange -= async () => await UpdateCartCount();
     }
 }

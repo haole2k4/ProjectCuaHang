@@ -24,6 +24,8 @@ namespace StoreManagementAPI.Data
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<PromotionProduct> PromotionProducts { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -90,6 +92,7 @@ namespace StoreManagementAPI.Data
             {
                 entity.ToTable("customers");
                 entity.HasKey(e => e.CustomerId);
+                entity.HasIndex(e => e.ApplicationUserId).IsUnique();
             });
 
             // Configure Inventory entity
@@ -146,6 +149,22 @@ namespace StoreManagementAPI.Data
             {
                 entity.ToTable("promotion_products");
                 entity.HasKey(e => e.Id);
+            });
+
+            // Configure Cart entity
+            modelBuilder.Entity<Cart>(entity =>
+            {
+                entity.ToTable("carts");
+                entity.HasKey(e => e.CartId);
+                entity.HasIndex(e => e.SessionId);
+                entity.HasIndex(e => e.CustomerId);
+            });
+
+            // Configure CartItem entity
+            modelBuilder.Entity<CartItem>(entity =>
+            {
+                entity.ToTable("cart_items");
+                entity.HasKey(e => e.CartItemId);
             });
         }
     }

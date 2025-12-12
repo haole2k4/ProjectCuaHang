@@ -1,11 +1,11 @@
 @page "/store"
 @layout StoreLayout
+@rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
 @using StoreManagementAPI.Data
 @using StoreManagementAPI.Models
 @using BlazorApp1.Services
-@using Blazorise
 
 @inject StoreDbContext DbContext
 @inject ICartService CartService
@@ -13,78 +13,96 @@
 
 <PageTitle>Store - Products</PageTitle>
 
-<!-- Hero Section -->
-<div class="hero-section text-center mb-8">
-    <Heading Size="HeadingSize.Is1" class="text-3xl font-bold mb-2">
-        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" /> Welcome to E-Store
-    </Heading>
-    <Paragraph class="opacity-90 mb-6">Discover amazing products at great prices</Paragraph>
-    <div class="max-w-md mx-auto">
-        <Addons>
-            <Addon AddonType="AddonType.Body">
-                <TextEdit Placeholder="Search products..." @bind-Text="searchTerm" />
-            </Addon>
-            <Addon AddonType="AddonType.End">
-                <Button Color="Color.Light" Clicked="SearchProducts">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" />
-                </Button>
-            </Addon>
-        </Addons>
+<!-- Hero Section with Search -->
+<div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12 px-4 rounded-2xl shadow-xl mb-8">
+    <div class="max-w-4xl mx-auto text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-3">Welcome to E-Store</h1>
+        <p class="text-lg md:text-xl text-blue-100 mb-6">Discover amazing products at great prices</p>
+
+        <!-- Search Bar -->
+        <div class="max-w-2xl mx-auto">
+            <div class="relative">
+                <input type="text"
+                       @bind="searchTerm"
+                       @bind:event="oninput"
+                       @onkeydown="HandleSearchKeyDown"
+                       placeholder="Search for products..."
+                       class="w-full px-6 py-4 pr-32 rounded-full text-gray-900 text-lg focus:outline-none focus:ring-4 focus:ring-white/30 shadow-lg" />
+                <button @onclick="SearchProducts"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-semibold transition duration-200 flex items-center gap-2">
+                    <i class="fas fa-search"></i>
+                    <span class="hidden sm:inline">Search</span>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-    <!-- Categories Sidebar -->
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <!-- Sidebar: Categories & Filters -->
     <div class="lg:col-span-1">
-        <Card class="card-shadow sticky top-20">
-            <CardHeader Background="Background.Primary" TextColor="TextColor.White">
-                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="mr-2" /> Categories
-            </CardHeader>
-            <CardBody Padding="Padding.Is0">
-                <ListGroup Flush>
-                    <ListGroupItem Clicked="() => FilterByCategory(null)" 
-                                   Class="@GetCategoryClass(null)">
-                        All Products
-                    </ListGroupItem>
+        <div class="bg-white rounded-xl shadow-lg p-6 sticky top-24">
+            <!-- Categories -->
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <i class="fas fa-tags text-blue-600"></i>
+                    Categories
+                </h3>
+                <div class="space-y-2">
+                    <button @onclick="() => FilterByCategory(null)"
+                            class="@GetCategoryButtonClass(null) w-full text-left px-4 py-3 rounded-lg transition duration-200 flex items-center justify-between group">
+                        <span class="font-medium">All Products</span>
+                        <span class="bg-gray-200 group-hover:bg-blue-100 px-2.5 py-1 rounded-full text-sm">
+                            @(categories?.Sum(c => c.Products.Count(p => p.Status == "active")) ?? 0)
+                        </span>
+                    </button>
+
                     @if (categories != null)
                     {
                         @foreach (var category in categories)
                         {
-                            <ListGroupItem Clicked="() => FilterByCategory(category.CategoryId)"
-                                           Class="@GetCategoryClass(category.CategoryId)">
-                                <div class="flex justify-between items-center w-full">
-                                    <span>@category.CategoryName</span>
-                                    <Badge Color="Color.Secondary" Pill>@category.Products.Count(p => p.Status == "active")</Badge>
-                                </div>
-                            </ListGroupItem>
+                            <button @onclick="() => FilterByCategory(category.CategoryId)"
+                                    class="@GetCategoryButtonClass(category.CategoryId) w-full text-left px-4 py-3 rounded-lg transition duration-200 flex items-center justify-between group">
+                                <span class="font-medium">@category.CategoryName</span>
+                                <span class="bg-gray-200 group-hover:bg-blue-100 px-2.5 py-1 rounded-full text-sm">
+                                    @category.Products.Count(p => p.Status == "active")
+                                </span>
+                            </button>
                         }
                     }
-                </ListGroup>
-            </CardBody>
-        </Card>
+                </div>
+            </div>
+
+            <!-- Price Sort -->
+            <div>
+                <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <i class="fas fa-sort-amount-down text-blue-600"></i>
+                    Sort By
+                </h3>
+                <div class="space-y-2">
+                    <button @onclick='() => SortProducts("name")'
+                            class="@GetSortButtonClass("name") w-full text-left px-4 py-2.5 rounded-lg transition duration-200">
+                        <i class="fas fa-font mr-2"></i>Name
+                    </button>
+                    <button @onclick='() => SortProducts("price-asc")'
+                            class="@GetSortButtonClass("price-asc") w-full text-left px-4 py-2.5 rounded-lg transition duration-200">
+                        <i class="fas fa-arrow-down mr-2"></i>Price: Low to High
+                    </button>
+                    <button @onclick='() => SortProducts("price-desc")'
+                            class="@GetSortButtonClass("price-desc") w-full text-left px-4 py-2.5 rounded-lg transition duration-200">
+                        <i class="fas fa-arrow-up mr-2"></i>Price: High to Low
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Products Grid -->
+    <!-- Main Content: Products -->
     <div class="lg:col-span-3">
-        @if (isLoading)
-        {
-            <div class="loading-spinner">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        }
-        else if (products == null || !products.Any())
-        {
-            <div class="empty-state bg-white rounded-lg shadow p-12">
-                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-6xl text-gray-400 mb-4" />
-                <Heading Size="HeadingSize.Is4" class="mb-2">No products found</Heading>
-                <Paragraph TextColor="TextColor.Muted">Try adjusting your search or filter criteria</Paragraph>
-            </div>
-        }
-        else
-        {
-            <!-- Header with sorting -->
-            <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-                <Heading Size="HeadingSize.Is5" class="mb-0">
+        <!-- Results Header -->
+        <div class="flex flex-wrap justify-between items-center mb-6 bg-white rounded-xl shadow-sm p-4">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900">
                     @if (selectedCategoryId.HasValue)
                     {
                         <span>@selectedCategoryName</span>
@@ -93,69 +111,153 @@
                     {
                         <span>All Products</span>
                     }
-                    <small class="text-gray-500 font-normal ml-2">(@products.Count items)</small>
-                </Heading>
-                <Buttons>
-                    <Button Color="@(sortBy == "name" ? Color.Primary : Color.Light)" Size="Size.Small" Clicked='() => SortProducts("name")'>
-                        Name
-                    </Button>
-                    <Button Color="@(sortBy == "price-asc" ? Color.Primary : Color.Light)" Size="Size.Small" Clicked='() => SortProducts("price-asc")'>
-                        Price ?
-                    </Button>
-                    <Button Color="@(sortBy == "price-desc" ? Color.Primary : Color.Light)" Size="Size.Small" Clicked='() => SortProducts("price-desc")'>
-                        Price ?
-                    </Button>
-                </Buttons>
+                </h2>
+                <p class="text-gray-600 text-sm mt-1">@(products?.Count ?? 0) products found</p>
             </div>
 
+            @if (!string.IsNullOrWhiteSpace(searchTerm) || selectedCategoryId.HasValue)
+            {
+                <button @onclick="ClearFilters"
+                        class="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2 transition">
+                    <i class="fas fa-times"></i>
+                    Clear Filters
+                </button>
+            }
+        </div>
+
+        @if (isLoading)
+        {
+            <!-- Loading State -->
+            <div class="flex flex-col items-center justify-center py-20">
+                <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mb-4"></div>
+                <p class="text-gray-600 font-medium">Loading products...</p>
+            </div>
+        }
+        else if (products == null || !products.Any())
+        {
+            <!-- Empty State -->
+            <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+                <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-box-open text-4xl text-gray-400"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">No products found</h3>
+                <p class="text-gray-600 mb-6">We couldn't find any products matching your criteria</p>
+                <button @onclick="ClearFilters"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition duration-200">
+                    Browse All Products
+                </button>
+            </div>
+        }
+        else
+        {
             <!-- Products Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 @foreach (var product in products)
                 {
-                    <Card class="product-card card-shadow">
-                        @if (!string.IsNullOrEmpty(product.ImageUrl))
-                        {
-                            <CardImage Source="@product.ImageUrl" Alt="@product.ProductName" class="product-card-image" />
-                        }
-                        else
-                        {
-                            <div class="product-card-placeholder">
-                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" />
-                            </div>
-                        }
-                        <CardBody class="flex flex-col">
-                            <CardTitle Size="5" class="font-semibold">@product.ProductName</CardTitle>
-                            <CardText TextColor="TextColor.Muted" class="text-sm flex-grow">
-                                @(product.Description?.Length > 80 ? product.Description.Substring(0, 80) + "..." : product.Description ?? "No description")
-                            </CardText>
-                            <div class="mt-4">
-                                <div class="flex justify-between items-center mb-3">
-                                    <span class="price text-xl">$@product.Price.ToString("N2")</span>
-                                    <Badge Color="Color.Secondary">@product.Category?.CategoryName</Badge>
+                    <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition duration-300 overflow-hidden group">
+                        <!-- Product Image -->
+                        <div class="relative aspect-square bg-gray-100 overflow-hidden">
+                            @if (!string.IsNullOrEmpty(product.ImageUrl))
+                            {
+                                <img src="@product.ImageUrl"
+                                     alt="@product.ProductName"
+                                     class="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                            }
+                            else
+                            {
+                                <div class="w-full h-full flex items-center justify-center">
+                                    <i class="fas fa-box-open text-6xl text-gray-300"></i>
                                 </div>
-                                <Button Color="Color.Primary" Block Clicked="() => AddToCart(product)">
-                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CartPlus" class="mr-2" /> Add to Cart
-                                </Button>
+                            }
+
+                            <!-- Category Badge -->
+                            @if (product.Category != null)
+                            {
+                                <div class="absolute top-3 right-3">
+                                    <span class="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-gray-700 shadow-md">
+                                        @product.Category.CategoryName
+                                    </span>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Product Info -->
+                        <div class="p-5">
+                            <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition">
+                                @product.ProductName
+                            </h3>
+
+                            <p class="text-gray-600 text-sm mb-4 line-clamp-2">
+                                @(product.Description ?? "No description available")
+                            </p>
+
+                            <!-- Price and Action -->
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                                <div>
+                                    <span class="text-2xl font-bold text-gray-900">${@product.Price.ToString("N2")}</span>
+                                    @if (product.Unit != null)
+                                    {
+                                        <span class="text-sm text-gray-500">/@product.Unit</span>
+                                    }
+                                </div>
+                                <button @onclick="() => AddToCart(product)"
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-semibold transition duration-200 flex items-center gap-2 shadow-md hover:shadow-lg">
+                                    <i class="fas fa-cart-plus"></i>
+                                    <span class="hidden sm:inline">Add</span>
+                                </button>
                             </div>
-                        </CardBody>
-                    </Card>
+                        </div>
+                    </div>
                 }
             </div>
         }
     </div>
 </div>
 
+<!-- Toast Notification -->
 @if (showToast)
 {
-    <div class="toast-container">
-        <Alert Color="Color.Success" Visible="true" class="shadow-lg">
-            <AlertMessage>
-                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="mr-2" /> @toastMessage
-            </AlertMessage>
-            <CloseButton Clicked="() => showToast = false" />
-        </Alert>
+    <div class="fixed bottom-6 right-6 z-50 animate-slide-up">
+        <div class="bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md">
+            <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <i class="fas fa-check text-lg"></i>
+                </div>
+            </div>
+            <div class="flex-1">
+                <p class="font-semibold">@toastMessage</p>
+            </div>
+            <button @onclick="() => showToast = false"
+                    class="flex-shrink-0 text-white/80 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
     </div>
 }
+
+<style>
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    @@keyframes slide-up {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .animate-slide-up {
+        animation: slide-up 0.3s ease-out;
+    }
+</style>
 
 @code {
     private List<Product>? products;
@@ -174,12 +276,20 @@
         await LoadProducts();
     }
 
-    private string GetCategoryClass(int? categoryId)
+    private string GetCategoryButtonClass(int? categoryId)
     {
         var isSelected = selectedCategoryId == categoryId;
-        return isSelected 
-            ? "cursor-pointer bg-blue-50 text-blue-600 font-semibold" 
-            : "cursor-pointer hover:bg-gray-50";
+        return isSelected
+            ? "bg-blue-600 text-white hover:bg-blue-700"
+            : "text-gray-700 hover:bg-gray-100";
+    }
+
+    private string GetSortButtonClass(string sort)
+    {
+        var isSelected = sortBy == sort;
+        return isSelected
+            ? "bg-blue-100 text-blue-700 font-semibold"
+            : "text-gray-700 hover:bg-gray-50";
     }
 
     private async Task LoadCategories()
@@ -205,13 +315,15 @@
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            query = query.Where(p => p.ProductName.Contains(searchTerm) || 
-                                    (p.Description != null && p.Description.Contains(searchTerm)));
+            var term = searchTerm.ToLower();
+            query = query.Where(p => p.ProductName.ToLower().Contains(term) ||
+                                    (p.Description != null && p.Description.ToLower().Contains(term)));
         }
 
         products = await query.ToListAsync();
         ApplySort();
         isLoading = false;
+        StateHasChanged();
     }
 
     private void ApplySort()
@@ -229,8 +341,8 @@
     private async Task FilterByCategory(int? categoryId)
     {
         selectedCategoryId = categoryId;
-        selectedCategoryName = categoryId.HasValue 
-            ? categories?.FirstOrDefault(c => c.CategoryId == categoryId)?.CategoryName 
+        selectedCategoryName = categoryId.HasValue
+            ? categories?.FirstOrDefault(c => c.CategoryId == categoryId)?.CategoryName
             : null;
         await LoadProducts();
     }
@@ -240,22 +352,37 @@
         await LoadProducts();
     }
 
+    private async Task HandleSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchProducts();
+        }
+    }
+
+    private async Task ClearFilters()
+    {
+        searchTerm = "";
+        selectedCategoryId = null;
+        selectedCategoryName = null;
+        await LoadProducts();
+    }
+
     private void SortProducts(string sort)
     {
         sortBy = sort;
         ApplySort();
+        StateHasChanged();
     }
 
-    private void AddToCart(Product product)
+    private async Task AddToCart(Product product)
     {
-        CartService.AddToCart(product);
+        await CartService.AddToCartAsync(product);
         toastMessage = $"{product.ProductName} added to cart!";
         showToast = true;
 
-        Task.Delay(3000).ContinueWith(_ =>
-        {
-            showToast = false;
-            InvokeAsync(StateHasChanged);
-        });
+        await Task.Delay(3000);
+        showToast = false;
+        await InvokeAsync(StateHasChanged);
     }
 }

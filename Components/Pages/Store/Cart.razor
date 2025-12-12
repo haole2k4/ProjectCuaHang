@@ -1,5 +1,6 @@
 @page "/store/cart"
 @layout StoreLayout
+@rendermode InteractiveServer
 
 @using BlazorApp1.Services
 @using Blazorise
@@ -76,7 +77,7 @@ else
                                         <Button Color="Color.Light" Size="Size.Small" Clicked="() => UpdateQuantity(item.ProductId, item.Quantity - 1)">
                                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Minus" />
                                         </Button>
-                                        <NumericEdit TValue="int" Value="@item.Quantity" 
+                                        <NumericEdit TValue="int" Value="@item.Quantity"
                                                      ValueChanged="(val) => UpdateQuantity(item.ProductId, val)"
                                                      class="w-16 text-center" Min="1" />
                                         <Button Color="Color.Light" Size="Size.Small" Clicked="() => UpdateQuantity(item.ProductId, item.Quantity + 1)">
@@ -109,7 +110,7 @@ else
                     <div class="space-y-3">
                         <div class="flex justify-between">
                             <span>Subtotal (@cartItems.Sum(x => x.Quantity) items)</span>
-                            <span>$@CartService.GetTotal().ToString("N2")</span>
+                            <span>$@cartItems.Sum(x => x.Subtotal).ToString("N2")</span>
                         </div>
                         <div class="flex justify-between">
                             <span>Shipping</span>
@@ -122,7 +123,7 @@ else
                         <Divider />
                         <div class="flex justify-between font-bold text-lg">
                             <span>Total</span>
-                            <span class="price">$@CartService.GetTotal().ToString("N2")</span>
+                            <span class="price">$@cartItems.Sum(x => x.Subtotal).ToString("N2")</span>
                         </div>
                     </div>
 
@@ -159,34 +160,34 @@ else
 }
 
 @code {
-    private List<CartItem>? cartItems;
+    private List<CartItemDto>? cartItems;
     private string promoCode = "";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        CartService.OnChange += RefreshCart;
-        RefreshCart();
+        CartService.OnChange += async () => await RefreshCart();
+        await RefreshCart();
     }
 
-    private void RefreshCart()
+    private async Task RefreshCart()
     {
-        cartItems = CartService.GetCartItems();
-        InvokeAsync(StateHasChanged);
+        cartItems = await CartService.GetCartItemsAsync();
+        await InvokeAsync(StateHasChanged);
     }
 
-    private void UpdateQuantity(int productId, int quantity)
+    private async Task UpdateQuantity(int productId, int quantity)
     {
-        CartService.UpdateQuantity(productId, quantity);
+        await CartService.UpdateQuantityAsync(productId, quantity);
     }
 
-    private void RemoveItem(int productId)
+    private async Task RemoveItem(int productId)
     {
-        CartService.RemoveFromCart(productId);
+        await CartService.RemoveFromCartAsync(productId);
     }
 
-    private void ClearCart()
+    private async Task ClearCart()
     {
-        CartService.ClearCart();
+        await CartService.ClearCartAsync();
     }
 
     private void ApplyPromo()
@@ -201,6 +202,6 @@ else
 
     public void Dispose()
     {
-        CartService.OnChange -= RefreshCart;
+        CartService.OnChange -= async () => await RefreshCart();
     }
 }

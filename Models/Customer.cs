@@ -33,6 +33,11 @@ namespace StoreManagementAPI.Models
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        // Link to ASP.NET Core Identity
+        [Column("application_user_id")]
+        [StringLength(450)]
+        public string? ApplicationUserId { get; set; }
+
         // Navigation property
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
     }

@@ -34,14 +34,8 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
-// Configure Authentication - Use Cookie as default scheme for custom login
-builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    })
+// Add Cookie Authentication for Admin login (legacy system)
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
         options.LoginPath = "/login";
@@ -49,7 +43,7 @@ builder.Services.AddAuthentication(options =>
         options.AccessDeniedPath = "/access-denied";
         options.ExpireTimeSpan = TimeSpan.FromHours(24);
         options.SlidingExpiration = true;
-        options.Cookie.Name = "EStore.Auth";
+        options.Cookie.Name = "EStore.Admin.Auth";
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
@@ -63,13 +57,37 @@ var storeConnectionString = builder.Configuration.GetConnectionString("StoreConn
 builder.Services.AddDbContext<StoreDbContext>(options =>
     options.UseSqlite(storeConnectionString));
 
+// Add DbContextFactory for CartService with correct lifetime
+builder.Services.AddDbContextFactory<StoreDbContext>((serviceProvider, options) =>
+{
+    options.UseSqlite(storeConnectionString);
+}, ServiceLifetime.Scoped);
+
+// Add Session support for cart functionality
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromDays(7);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.Name = "EStore.Session";
+});
+
+// Add IHttpContextAccessor for CartService
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-// Configure Identity for ApplicationUser (optional - for future use)
-builder.Services.AddIdentityCore<ApplicationUser>(options =>
+// Configure Identity for ApplicationUser with proper authentication schemes
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
         options.SignIn.RequireConfirmedAccount = false;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 6;
     })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
@@ -112,12 +130,12 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-// Ensure StoreDbContext database is created and seed data
+// Apply migrations and seed data
 using (var scope = app.Services.CreateScope())
 {
     var storeContext = scope.ServiceProvider.GetRequiredService<StoreDbContext>();
-    storeContext.Database.EnsureCreated();
-    
+    storeContext.Database.Migrate();
+
     // Seed default admin user if not exists
     if (!storeContext.Users.Any(u => u.Username == "admin"))
     {
@@ -173,6 +191,8 @@ else
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
+
+app.UseSession(); // Add Session middleware before Authentication
 
 app.UseAuthentication();
 app.UseAuthorization();

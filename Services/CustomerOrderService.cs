@@ -6,7 +6,7 @@ namespace BlazorApp1.Services
 {
     public interface ICustomerOrderService
     {
-        Task<Order> CreateOrderAsync(int? customerId, List<CartItem> cartItems, string paymentMethod);
+        Task<Order> CreateOrderAsync(int? customerId, dynamic cartItems, string paymentMethod);
         Task<List<Order>> GetCustomerOrdersAsync(int customerId);
         Task<Order?> GetOrderByIdAsync(int orderId);
         Task<Order?> GetOrderWithDetailsAsync(int orderId);
@@ -21,14 +21,25 @@ namespace BlazorApp1.Services
             _context = context;
         }
 
-        public async Task<Order> CreateOrderAsync(int? customerId, List<CartItem> cartItems, string paymentMethod)
+        public async Task<Order> CreateOrderAsync(int? customerId, dynamic cartItems, string paymentMethod)
         {
+            // Calculate total from cart items
+            decimal totalAmount = 0;
+            foreach (var item in cartItems)
+            {
+                var product = await _context.Products.FindAsync(item.ProductId);
+                if (product != null)
+                {
+                    totalAmount += product.Price * item.Quantity;
+                }
+            }
+
             var order = new Order
             {
                 CustomerId = customerId,
                 OrderDate = DateTime.Now,
                 Status = "pending",
-                TotalAmount = cartItems.Sum(x => x.Subtotal),
+                TotalAmount = totalAmount,
                 DiscountAmount = 0
             };
 
@@ -38,15 +49,19 @@ namespace BlazorApp1.Services
             // Add order items
             foreach (var item in cartItems)
             {
-                var orderItem = new OrderItem
+                var product = await _context.Products.FindAsync(item.ProductId);
+                if (product != null)
                 {
-                    OrderId = order.OrderId,
-                    ProductId = item.ProductId,
-                    Quantity = item.Quantity,
-                    Price = item.Price,
-                    Subtotal = item.Subtotal
-                };
-                _context.OrderItems.Add(orderItem);
+                    var orderItem = new OrderItem
+                    {
+                        OrderId = order.OrderId,
+                        ProductId = item.ProductId,
+                        Quantity = item.Quantity,
+                        Price = product.Price,
+                        Subtotal = product.Price * item.Quantity
+                    };
+                    _context.OrderItems.Add(orderItem);
+                }
             }
 
             // Add payment record

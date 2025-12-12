@@ -1,36 +1,37 @@
 @page "/logout"
+@page "/Account/Logout"
 
-@using Microsoft.AspNetCore.Authentication
-@using Microsoft.AspNetCore.Authentication.Cookies
+@using Microsoft.AspNetCore.Identity
+@using BlazorApp1.Data
 
 @inject NavigationManager NavigationManager
+@inject SignInManager<ApplicationUser> SignInManager
 
 <PageTitle>Logout</PageTitle>
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 text-center">
-            <div class="card shadow">
-                <div class="card-body">
-                    <h3>You have been logged out</h3>
-                    <p class="text-muted">Thank you for using our application.</p>
-                    <a href="/login" class="btn btn-primary">Login Again</a>
-                    <a href="/" class="btn btn-secondary">Go to Home</a>
-                </div>
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+    <div class="max-w-md w-full">
+        <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div class="mb-6">
+                <i class="fas fa-sign-out-alt text-5xl text-blue-600 mb-4"></i>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Logged Out</h3>
+                <p class="text-gray-600">Thank you for using our application.</p>
+            </div>
+            <div class="space-y-3">
+                <a href="/Account/Login" class="block w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-200">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Login Again
+                </a>
+                <a href="/store" class="block w-full px-6 py-3 border-2 border-gray-300 hover:border-gray-400 text-gray-700 font-semibold rounded-lg transition duration-200">
+                    <i class="fas fa-home mr-2"></i>Go to Store
+                </a>
             </div>
         </div>
     </div>
 </div>
 
 @code {
-    [CascadingParameter]
-    private HttpContext? HttpContext { get; set; }
-
     protected override async Task OnInitializedAsync()
     {
-        if (HttpContext != null)
-        {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        }
+        await SignInManager.SignOutAsync();
     }
 }

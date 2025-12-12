@@ -1,14 +1,19 @@
 @page "/store/orders"
 @layout StoreLayout
+@rendermode InteractiveServer
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 @using Microsoft.EntityFrameworkCore
 @using StoreManagementAPI.Data
 @using StoreManagementAPI.Models
 @using BlazorApp1.Services
 @using Blazorise
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 
 @inject StoreDbContext DbContext
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>My Orders</PageTitle>
 
@@ -82,7 +87,7 @@ else
                                 }
                                 <div>
                                     <small class="block font-medium">@item.Product?.ProductName</small>
-                                    <small class="text-gray-500">Qty: @item.Quantity × $@item.Price.ToString("N2")</small>
+                                    <small class="text-gray-500">Qty: @item.Quantity ï¿½ $@item.Price.ToString("N2")</small>
                                 </div>
                             </div>
                         }
@@ -120,21 +125,52 @@ else
 @code {
     private List<Order>? orders;
     private bool isLoading = true;
+    private int? customerId;
 
     protected override async Task OnInitializedAsync()
     {
+        // Get current user's customer ID
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId != null)
+            {
+                var customer = await DbContext.Customers
+                    .FirstOrDefaultAsync(c => c.ApplicationUserId == userId);
+                if (customer != null)
+                {
+                    customerId = customer.CustomerId;
+                }
+            }
+        }
+
         await LoadOrders();
     }
 
     private async Task LoadOrders()
     {
         isLoading = true;
-        orders = await DbContext.Orders
-            .Include(o => o.OrderItems)
-            .ThenInclude(oi => oi.Product)
-            .Include(o => o.Payments)
-            .OrderByDescending(o => o.OrderDate)
-            .ToListAsync();
+
+        if (customerId.HasValue)
+        {
+            // Load only customer's orders
+            orders = await DbContext.Orders
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                .Include(o => o.Payments)
+                .Where(o => o.CustomerId == customerId.Value)
+                .OrderByDescending(o => o.OrderDate)
+                .ToListAsync();
+        }
+        else
+        {
+            // No customer record - show empty
+            orders = new List<Order>();
+        }
+
         isLoading = false;
     }
 
@@ -153,6 +189,6 @@ else
         "completed" => "?",
         "cancelled" or "canceled" => "?",
         "processing" => "??",
-        _ => "•"
+        _ => "ï¿½"
     };
 }
