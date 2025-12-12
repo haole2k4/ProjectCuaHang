@@ -1,0 +1,319 @@
+@page "/store/profile"
+@layout StoreLayout
+@rendermode InteractiveServer
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using StoreManagementAPI.Data
+@using StoreManagementAPI.Models
+@using System.Security.Claims
+@using Blazorise
+@using System.ComponentModel.DataAnnotations
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject StoreDbContext DbContext
+@inject NavigationManager NavigationManager
+
+<PageTitle>My Profile</PageTitle>
+
+<div class="max-w-4xl mx-auto">
+    <Heading Size="HeadingSize.Is2" class="mb-6">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.UserCircle" class="mr-2" /> My Profile
+    </Heading>
+
+    @if (isLoading)
+    {
+        <div class="loading-spinner">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+    }
+    else if (customer == null)
+    {
+        <Alert Color="Color.Warning" Visible="true">
+            <AlertMessage>Customer profile not found. Please contact support.</AlertMessage>
+        </Alert>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Profile Navigation -->
+            <div class="lg:col-span-1">
+                <Card class="card-shadow">
+                    <CardBody>
+                        <div class="text-center mb-4">
+                            <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" IconSize="IconSize.x3" TextColor="TextColor.Primary" />
+                            </div>
+                            <Heading Size="HeadingSize.Is5" class="mb-1">@customer.Name</Heading>
+                            <Paragraph TextColor="TextColor.Muted" class="text-sm">@customer.Email</Paragraph>
+                        </div>
+                        <Divider />
+                        <ListGroup Flush>
+                            <ListGroupItem Clicked="() => activeTab = ProfileTab.Info"
+                                           Class="@GetTabClass(ProfileTab.Info)">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.InfoCircle" class="mr-2" /> Personal Info
+                            </ListGroupItem>
+                            <ListGroupItem Clicked="() => activeTab = ProfileTab.Orders"
+                                           Class="@GetTabClass(ProfileTab.Orders)">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> Order History
+                            </ListGroupItem>
+                            <ListGroupItem To="/Account/Manage/ChangePassword" Type="ButtonType.Link">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Key" class="mr-2" /> Change Password
+                            </ListGroupItem>
+                            <ListGroupItem To="/store" Type="ButtonType.Link">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" /> Back to Store
+                            </ListGroupItem>
+                        </ListGroup>
+                    </CardBody>
+                </Card>
+            </div>
+
+            <!-- Profile Content -->
+            <div class="lg:col-span-2">
+                @if (activeTab == ProfileTab.Info)
+                {
+                    <Card class="card-shadow">
+                        <CardHeader>
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" class="mr-2" /> Personal Information
+                        </CardHeader>
+                        <CardBody>
+                            @if (successMessage != null)
+                            {
+                                <Alert Color="Color.Success" Visible="true" class="mb-4">
+                                    <AlertMessage>@successMessage</AlertMessage>
+                                    <CloseButton Clicked="() => successMessage = null" />
+                                </Alert>
+                            }
+                            @if (errorMessage != null)
+                            {
+                                <Alert Color="Color.Danger" Visible="true" class="mb-4">
+                                    <AlertMessage>@errorMessage</AlertMessage>
+                                    <CloseButton Clicked="() => errorMessage = null" />
+                                </Alert>
+                            }
+
+                            <Validations @ref="validationsRef" Mode="ValidationMode.Auto" Model="@profileModel">
+                                <Validation>
+                                    <Field>
+                                        <FieldLabel>Full Name *</FieldLabel>
+                                        <TextEdit @bind-Text="@profileModel.Name" Placeholder="Enter your name">
+                                            <Feedback>
+                                                <ValidationError />
+                                            </Feedback>
+                                        </TextEdit>
+                                    </Field>
+                                </Validation>
+                                <Validation>
+                                    <Field class="mt-3">
+                                        <FieldLabel>Email *</FieldLabel>
+                                        <TextEdit @bind-Text="@profileModel.Email" Placeholder="Enter your email" Role="TextRole.Email">
+                                            <Feedback>
+                                                <ValidationError />
+                                            </Feedback>
+                                        </TextEdit>
+                                    </Field>
+                                </Validation>
+                                <Validation>
+                                    <Field class="mt-3">
+                                        <FieldLabel>Phone</FieldLabel>
+                                        <TextEdit @bind-Text="@profileModel.Phone" Placeholder="Enter your phone number">
+                                            <Feedback>
+                                                <ValidationError />
+                                            </Feedback>
+                                        </TextEdit>
+                                    </Field>
+                                </Validation>
+                                <Validation>
+                                    <Field class="mt-3">
+                                        <FieldLabel>Address</FieldLabel>
+                                        <MemoEdit @bind-Text="@profileModel.Address" Rows="3" Placeholder="Enter your address">
+                                            <Feedback>
+                                                <ValidationError />
+                                            </Feedback>
+                                        </MemoEdit>
+                                    </Field>
+                                </Validation>
+                            </Validations>
+                        </CardBody>
+                        <CardFooter>
+                            <Button Color="Color.Primary" Clicked="SaveProfile" Loading="@isSaving">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Save" class="mr-2" /> Save Changes
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                }
+                else if (activeTab == ProfileTab.Orders)
+                {
+                    <Card class="card-shadow">
+                        <CardHeader>
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> Order History
+                        </CardHeader>
+                        <CardBody>
+                            @if (orders == null || !orders.Any())
+                            {
+                                <div class="text-center py-8">
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="text-4xl text-gray-400 mb-3" />
+                                    <Paragraph TextColor="TextColor.Muted">No orders yet</Paragraph>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="space-y-3">
+                                    @foreach (var order in orders)
+                                    {
+                                        <div class="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer" @onclick="() => ViewOrder(order.OrderId)">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <Heading Size="HeadingSize.Is6" class="mb-1">Order #@order.OrderId</Heading>
+                                                    <small class="text-gray-500">@order.OrderDate.ToString("MMM dd, yyyy")</small>
+                                                </div>
+                                                <Badge Color="@GetStatusColor(order.Status)" Pill>@order.Status</Badge>
+                                            </div>
+                                            <div class="flex justify-between items-center">
+                                                <small class="text-gray-600">@order.OrderItems.Count item(s)</small>
+                                                <span class="font-semibold text-green-600">$@order.TotalAmount.ToString("N2")</span>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </CardBody>
+                        <CardFooter>
+                            <Button Color="Color.Primary" Outline To="/store/orders" Type="ButtonType.Link">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.List" class="mr-2" /> View All Orders
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private Customer? customer;
+    private List<Order>? orders;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private ProfileTab activeTab = ProfileTab.Info;
+    private Validations? validationsRef;
+    private ProfileModel profileModel = new();
+    private string? successMessage;
+    private string? errorMessage;
+
+    private enum ProfileTab
+    {
+        Info,
+        Orders
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCustomerData();
+    }
+
+    private async Task LoadCustomerData()
+    {
+        isLoading = true;
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId != null)
+            {
+                customer = await DbContext.Customers
+                    .FirstOrDefaultAsync(c => c.ApplicationUserId == userId);
+
+                if (customer != null)
+                {
+                    // Populate form model
+                    profileModel.Name = customer.Name;
+                    profileModel.Email = customer.Email ?? "";
+                    profileModel.Phone = customer.Phone ?? "";
+                    profileModel.Address = customer.Address ?? "";
+
+                    // Load recent orders
+                    orders = await DbContext.Orders
+                        .Include(o => o.OrderItems)
+                        .Where(o => o.CustomerId == customer.CustomerId)
+                        .OrderByDescending(o => o.OrderDate)
+                        .Take(5)
+                        .ToListAsync();
+                }
+            }
+        }
+
+        isLoading = false;
+    }
+
+    private string GetTabClass(ProfileTab tab)
+    {
+        return activeTab == tab
+            ? "cursor-pointer bg-blue-50 text-blue-600 font-semibold"
+            : "cursor-pointer hover:bg-gray-50";
+    }
+
+    private async Task SaveProfile()
+    {
+        if (validationsRef != null && !await validationsRef.ValidateAll())
+            return;
+
+        isSaving = true;
+        successMessage = null;
+        errorMessage = null;
+
+        try
+        {
+            if (customer != null)
+            {
+                customer.Name = profileModel.Name;
+                customer.Email = profileModel.Email;
+                customer.Phone = profileModel.Phone;
+                customer.Address = profileModel.Address;
+
+                await DbContext.SaveChangesAsync();
+                successMessage = "Profile updated successfully!";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to update profile. Please try again.";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void ViewOrder(int orderId)
+    {
+        NavigationManager.NavigateTo($"/store/orders/{orderId}");
+    }
+
+    private Color GetStatusColor(string status) => status.ToLower() switch
+    {
+        "pending" => Color.Warning,
+        "completed" => Color.Success,
+        "cancelled" or "canceled" => Color.Danger,
+        "processing" => Color.Info,
+        _ => Color.Secondary
+    };
+
+    private class ProfileModel
+    {
+        [Required(ErrorMessage = "Name is required")]
+        public string Name { get; set; } = "";
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email address")]
+        public string Email { get; set; } = "";
+
+        public string? Phone { get; set; }
+
+        public string? Address { get; set; }
+    }
+}
