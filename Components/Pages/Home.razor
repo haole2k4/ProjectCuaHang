@@ -1,110 +1,224 @@
 ﻿@page "/"
 @layout StoreLayout
 
-@using BlazorApp1.Services
+@using StoreManagementAPI.Services
 @using Blazorise
+@using StoreManagementAPI.DTOs
 
+@inject IProductService ProductService
 @inject NavigationManager NavigationManager
 
-<PageTitle>E-Store - Home</PageTitle>
+<PageTitle>E-Store - Trang Chủ</PageTitle>
 
 <!-- Hero Section -->
-<div class="hero-section text-center mb-10">
-    <Heading Size="HeadingSize.Is1" class="text-4xl md:text-5xl font-bold mb-4">
-        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-3" /> Welcome to E-Store
-    </Heading>
-    <Paragraph Lead class="text-xl opacity-90 mb-8">
-        Discover amazing products at unbeatable prices
-    </Paragraph>
-    <div class="flex flex-wrap justify-center gap-4">
-        <Button Color="Color.Light" Size="Size.Large" To="/store" Type="ButtonType.Link">
-            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ThLarge" class="mr-2" /> Browse Products
-        </Button>
-        <Button Color="Color.Light" Size="Size.Large" Outline To="/store/categories" Type="ButtonType.Link">
-            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="mr-2" /> View Categories
-        </Button>
+<div class="hero-banner">
+    <div class="hero-overlay">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Star" /> Chất Lượng Hàng Đầu
+            </div>
+            <h1 class="hero-title">
+                Chào Mừng Đến E-Store
+            </h1>
+            <p class="hero-subtitle">Khám phá hàng nghìn sản phẩm chất lượng với giá tốt nhất</p>
+            <div class="hero-actions">
+                <Button Color="Color.Primary" Size="Size.Large" To="/store" Type="ButtonType.Link">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" class="mr-2" /> Mua Sắm Ngay
+                </Button>
+                <Button Color="Color.Light" Size="Size.Large" Outline To="/store/categories" Type="ButtonType.Link">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="mr-2" /> Danh Mục
+                </Button>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Featured Products Section -->
+<div class="section-featured">
+    <div class="section-header">
+        <h2 class="section-title">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Fire" TextColor="TextColor.Danger" /> Sản Phẩm Nổi Bật
+        </h2>
+        <p class="section-subtitle">Những sản phẩm được yêu thích nhất</p>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+            </div>
+            <p class="mt-3 text-muted">Đang tải sản phẩm...</p>
+        </div>
+    }
+    else if (featuredProducts == null || !featuredProducts.Any())
+    {
+        <Alert Color="Color.Info" Visible>
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.InfoCircle" class="mr-2" />
+            Chưa có sản phẩm nào. Vui lòng thêm sản phẩm từ trang quản trị.
+        </Alert>
+    }
+    else
+    {
+        <div class="products-grid">
+            @foreach (var product in featuredProducts)
+            {
+                <div class="product-card-modern">
+                    <div class="product-image-wrapper" @onclick="() => ViewProduct(product.ProductId)">
+                        @if (!string.IsNullOrEmpty(product.ImageUrl))
+                        {
+                            <img src="@product.ImageUrl" alt="@product.ProductName" class="product-image" />
+                        }
+                        else
+                        {
+                            <div class="product-image-placeholder">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Image" />
+                            </div>
+                        }
+                        @if (product.StockQuantity > 0)
+                        {
+                            <span class="badge-stock badge-in-stock">Còn hàng</span>
+                        }
+                        else
+                        {
+                            <span class="badge-stock badge-out-of-stock">Hết hàng</span>
+                        }
+                    </div>
+                    
+                    <div class="product-info">
+                        <div class="product-category">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tag" class="text-xs" />
+                            @(product.CategoryName ?? "Chưa phân loại")
+                        </div>
+                        <h3 class="product-name" @onclick="() => ViewProduct(product.ProductId)">
+                            @product.ProductName
+                        </h3>
+                        @if (!string.IsNullOrEmpty(product.Description))
+                        {
+                            <p class="product-description">@product.Description</p>
+                        }
+                        <div class="product-footer">
+                            <div class="product-price-box">
+                                <span class="product-price">$@product.Price.ToString("N2")</span>
+                                @if (product.StockQuantity.HasValue)
+                                {
+                                    <span class="product-stock">SL: @product.StockQuantity</span>
+                                }
+                            </div>
+                            <Button Color="Color.Primary" Size="Size.Small" Clicked="() => ViewProduct(product.ProductId)">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Eye" class="mr-1" /> Xem
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="text-center mt-5">
+            <Button Color="Color.Primary" Size="Size.Large" Outline To="/store" Type="ButtonType.Link">
+                Xem Tất Cả Sản Phẩm <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowRight" class="ml-2" />
+            </Button>
+        </div>
+    }
+</div>
+
 <!-- Features Section -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-    <Card class="card-shadow hover:card-shadow-lg transition-shadow">
-        <CardBody class="text-center py-10">
-            <div class="text-primary text-5xl mb-4">
+<div class="features-section">
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon feature-icon-primary">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Truck" />
             </div>
-            <Heading Size="HeadingSize.Is5" class="mb-2">Free Shipping</Heading>
-            <Paragraph TextColor="TextColor.Muted">Free shipping on all orders over $50</Paragraph>
-        </CardBody>
-    </Card>
-    
-    <Card class="card-shadow hover:card-shadow-lg transition-shadow">
-        <CardBody class="text-center py-10">
-            <div class="text-primary text-5xl mb-4">
+            <h3 class="feature-title">Miễn Phí Vận Chuyển</h3>
+            <p class="feature-text">Giao hàng miễn phí cho đơn hàng từ 500.000₫</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon feature-icon-success">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShieldAlt" />
             </div>
-            <Heading Size="HeadingSize.Is5" class="mb-2">Secure Payment</Heading>
-            <Paragraph TextColor="TextColor.Muted">100% secure payment processing</Paragraph>
-        </CardBody>
-    </Card>
-    
-    <Card class="card-shadow hover:card-shadow-lg transition-shadow">
-        <CardBody class="text-center py-10">
-            <div class="text-primary text-5xl mb-4">
+            <h3 class="feature-title">Thanh Toán An Toàn</h3>
+            <p class="feature-text">Bảo mật 100% thông tin thanh toán</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon feature-icon-warning">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SyncAlt" />
             </div>
-            <Heading Size="HeadingSize.Is5" class="mb-2">Easy Returns</Heading>
-            <Paragraph TextColor="TextColor.Muted">30-day money-back guarantee</Paragraph>
-        </CardBody>
-    </Card>
+            <h3 class="feature-title">Đổi Trả Dễ Dàng</h3>
+            <p class="feature-text">Chính sách đổi trả trong 30 ngày</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon feature-icon-info">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Headset" />
+            </div>
+            <h3 class="feature-title">Hỗ Trợ 24/7</h3>
+            <p class="feature-text">Đội ngũ hỗ trợ luôn sẵn sàng</p>
+        </div>
+    </div>
 </div>
 
 <!-- Call to Action -->
-<Card Background="Background.Primary" TextColor="TextColor.White" class="mb-10">
-    <CardBody class="text-center py-12">
-        <Heading Size="HeadingSize.Is3" TextColor="TextColor.White" class="mb-4">Ready to start shopping?</Heading>
-        <Paragraph class="mb-6 opacity-90">Browse our wide selection of products and find exactly what you need.</Paragraph>
-        <Button Color="Color.Light" Size="Size.Large" To="/store" Type="ButtonType.Link">
-            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" class="mr-2" /> Start Shopping Now
-        </Button>
-    </CardBody>
-</Card>
-
-<!-- Quick Links -->
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <Card class="card-shadow">
-        <CardBody>
-            <Heading Size="HeadingSize.Is5" class="mb-3">
-                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" TextColor="TextColor.Primary" class="mr-2" /> Account
-            </Heading>
-            <Paragraph TextColor="TextColor.Muted" class="mb-4">Manage your account and view your orders</Paragraph>
+<div class="cta-section">
+    <div class="cta-content">
+        <h2 class="cta-title">Sẵn Sàng Mua Sắm?</h2>
+        <p class="cta-subtitle">Khám phá bộ sưu tập đa dạng và tìm sản phẩm hoàn hảo cho bạn</p>
+        <div class="cta-actions">
             <AuthorizeView>
                 <Authorized>
-                    <Button Color="Color.Primary" Outline To="/store/orders" Type="ButtonType.Link">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> My Orders
+                    <Button Color="Color.Light" Size="Size.Large" To="/store/orders" Type="ButtonType.Link">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> Đơn Hàng Của Tôi
                     </Button>
                 </Authorized>
                 <NotAuthorized>
-                    <Button Color="Color.Primary" Outline To="/login" Type="ButtonType.Link">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignInAlt" class="mr-2" /> Login
+                    <Button Color="Color.Light" Size="Size.Large" To="/Account/Login" Type="ButtonType.Link">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignInAlt" class="mr-2" /> Đăng Nhập
+                    </Button>
+                    <Button Color="Color.Secondary" Size="Size.Large" To="/Account/Register" Type="ButtonType.Link">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.UserPlus" class="mr-2" /> Đăng Ký
                     </Button>
                 </NotAuthorized>
             </AuthorizeView>
-        </CardBody>
-    </Card>
-    
-    <Card class="card-shadow">
-        <CardBody>
-            <Heading Size="HeadingSize.Is5" class="mb-3">
-                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Headset" TextColor="TextColor.Primary" class="mr-2" /> Need Help?
-            </Heading>
-            <Paragraph TextColor="TextColor.Muted" class="mb-4">Our customer support team is here to help</Paragraph>
-            <Paragraph class="mb-1">
-                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Envelope" class="mr-2" /> support@estore.com
-            </Paragraph>
-            <Paragraph>
-                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Phone" class="mr-2" /> +1 234 567 890
-            </Paragraph>
-        </CardBody>
-    </Card>
+        </div>
+    </div>
 </div>
+
+@code {
+    private List<ProductDto>? featuredProducts;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+            var allProducts = await ProductService.GetAllProductsAsync();
+            
+            // Lấy 8 sản phẩm đầu tiên có trạng thái active
+            featuredProducts = allProducts
+                .Where(p => p.Status == "active")
+                .Take(8)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading products: {ex.Message}");
+            featuredProducts = new List<ProductDto>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ViewProduct(int productId)
+    {
+        var product = featuredProducts?.FirstOrDefault(p => p.ProductId == productId);
+        if (product != null)
+        {
+            var encodedName = Uri.EscapeDataString(product.ProductName);
+            NavigationManager.NavigateTo($"/products/{encodedName}");
+        }
+    }
+}
