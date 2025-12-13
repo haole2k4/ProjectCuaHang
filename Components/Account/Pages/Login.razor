@@ -15,6 +15,7 @@
 @inject IdentityRedirectManager RedirectManager
 @inject StoreDbContext StoreDbContext
 @inject ICartService CartService
+@inject ToastService ToastService
 
 <PageTitle>Log in</PageTitle>
 
@@ -27,6 +28,11 @@
             </div>
 
             <StatusMessage Message="@errorMessage" />
+
+            @* Test Toast Button - Remove after testing *@
+            <button type="button" @onclick="TestToast" class="mb-4 px-4 py-2 bg-purple-600 text-white rounded">
+                Test Toast
+            </button>
 
             <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login" class="mt-8 space-y-6">
                 <DataAnnotationsValidator />
@@ -117,7 +123,7 @@
     {
         if (!string.IsNullOrEmpty(Input.Passkey?.Error))
         {
-            errorMessage = $"Error: {Input.Passkey.Error}";
+            ToastService.ShowError($"{Input.Passkey.Error}", "Error");
             return;
         }
 
@@ -143,6 +149,7 @@
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
+            ToastService.ShowSuccess("You have successfully logged in!", "Login Successful");
 
             // Merge guest cart to customer cart after login
             try
@@ -173,12 +180,19 @@
         else if (result.IsLockedOut)
         {
             Logger.LogWarning("User account locked out.");
-            RedirectManager.RedirectTo("Account/Lockout");
+            ToastService.ShowWarning("Your account has been locked. Please contact support.", "Account Locked");
         }
         else
         {
-            errorMessage = "Error: Invalid login attempt.";
+            ToastService.ShowError("Invalid email or password. Please try again.", "Login Failed");
         }
+    }
+
+    private void TestToast()
+    {
+        ToastService.ShowError("This is a test error message", "Test Error");
+        ToastService.ShowSuccess("This is a test success message", "Test Success");
+        ToastService.ShowWarning("This is a test warning message", "Test Warning");
     }
 
     private sealed class InputModel

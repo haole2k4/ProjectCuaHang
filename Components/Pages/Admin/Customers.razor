@@ -5,9 +5,13 @@
 @using StoreManagementAPI.Models
 @using Microsoft.EntityFrameworkCore
 @using Blazorise
+@using Microsoft.AspNetCore.Identity
+@using BlazorApp1.Data
 
 @inject StoreDbContext DbContext
 @inject IJSRuntime JSRuntime
+@inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
 
 <PageTitle>Customers - Admin</PageTitle>
 
@@ -16,7 +20,7 @@
         <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">Customers</Heading>
         <Paragraph class="text-gray-600 mb-0">Manage your customer base</Paragraph>
     </div>
-    <Button Color="Color.Primary" class="!text-white !bg-blue-600 hover:!bg-blue-700 shadow-md">
+    <Button Color="Color.Primary" Clicked="OpenAddModal" class="!text-white !bg-blue-600 hover:!bg-blue-700 shadow-md">
         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Add Customer
     </Button>
 </div>
@@ -87,12 +91,13 @@
             <Table class="mb-0 w-full">
                 <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Customer</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Email</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Phone</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Orders</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Customer</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Email</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Phone</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Role</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Orders</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="bg-white divide-y divide-gray-200">
@@ -101,49 +106,66 @@
                         @foreach (var customer in customers)
                         {
                             <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
-                                <TableRowCell class="px-6 py-4">
-                                    <div class="flex items-center gap-3">
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <div class="flex items-center justify-center gap-3">
                                         <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
                                             @(customer.Name?.Substring(0, 1).ToUpper() ?? "C")
                                         </div>
-                                        <div>
+                                        <div class="text-left">
                                             <div class="font-bold text-gray-900">@customer.Name</div>
                                             <div class="text-gray-600 text-sm">Since @customer.CreatedAt.ToString("MMM yyyy")</div>
                                         </div>
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <span class="text-gray-900">@customer.Email</span>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <span class="text-gray-900">@customer.Phone</span>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold @(GetCustomerRole(customer.ApplicationUserId) == "Admin" ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-800")">
+                                        @GetCustomerRole(customer.ApplicationUserId)
+                                    </span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
                                         @customer.Orders.Count orders
                                     </span>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     @if (customer.Status == "active")
                                     {
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
-                                            Active
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Check" class="mr-1" /> Active
                                         </span>
                                     }
                                     else
                                     {
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
-                                            Inactive
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Lock" class="mr-1" /> Locked
                                         </span>
                                     }
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4 text-right">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <Buttons class="gap-2 justify-end">
-                                        <Button Color="Color.Info" Size="Size.Small" class="!bg-blue-50 !text-blue-600 hover:!bg-blue-100 !border-blue-200 shadow-sm">
-                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Eye" />
-                                        </Button>
-                                        <Button Color="Color.Light" Size="Size.Small" class="!border-2 !border-gray-300 hover:!bg-gray-200 !text-gray-900 shadow-sm">
+                                        <Button Color="Color.Primary" Size="Size.Small" Clicked="() => OpenEditModal(customer)" class="!bg-blue-600 !text-white hover:!bg-blue-700 shadow-sm" Title="Edit">
                                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
+                                        </Button>
+                                        @if (customer.Status == "active")
+                                        {
+                                            <Button Color="Color.Warning" Size="Size.Small" Clicked="() => ToggleLockCustomer(customer)" class="!bg-orange-600 !text-white hover:!bg-orange-700 shadow-sm" Title="Lock Account">
+                                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Lock" />
+                                            </Button>
+                                        }
+                                        else
+                                        {
+                                            <Button Color="Color.Success" Size="Size.Small" Clicked="() => ToggleLockCustomer(customer)" class="!bg-green-600 !text-white hover:!bg-green-700 shadow-sm" Title="Unlock Account">
+                                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.LockOpen" />
+                                            </Button>
+                                        }
+                                        <Button Color="Color.Danger" Size="Size.Small" Clicked="() => DeleteCustomer(customer)" class="!bg-red-600 !text-white hover:!bg-red-700 shadow-sm" Title="Delete">
+                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" />
                                         </Button>
                                     </Buttons>
                                 </TableRowCell>
@@ -153,7 +175,7 @@
                     else
                     {
                         <TableRow class="bg-white">
-                            <TableRowCell ColumnSpan="6" class="text-center py-12">
+                            <TableRowCell ColumnSpan="7" class="text-center py-12">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Users" class="text-gray-400 text-4xl mb-3" />
                                 <p class="text-gray-600 font-medium">No customers found</p>
                             </TableRowCell>
@@ -167,9 +189,111 @@
     </CardBody>
 </Card>
 
+<!-- Custom Confirm Dialog -->
+<Modal @ref="confirmModal">
+    <ModalContent Centered Size="ModalSize.Default">
+        <ModalHeader class="border-b">
+            <ModalTitle class="text-gray-900 font-semibold text-lg">@confirmTitle</ModalTitle>
+            <CloseButton Clicked="() => ConfirmResult(false)" />
+        </ModalHeader>
+        <ModalBody class="py-6 px-6">
+            <p class="text-gray-600 text-sm leading-relaxed">@confirmMessage</p>
+        </ModalBody>
+        <ModalFooter class="border-t bg-gray-50 px-6 py-3">
+            <div class="flex justify-end gap-3">
+                <Button Color="Color.Danger" Clicked="() => ConfirmResult(false)" class="!bg-red-600 !text-white hover:!bg-red-700 px-6 font-medium">
+                    No
+                </Button>
+                <Button Color="Color.Success" Clicked="() => ConfirmResult(true)" class="!bg-green-600 !text-white hover:!bg-green-700 px-6 font-medium">
+                    Yes
+                </Button>
+            </div>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+<!-- Customer Modal -->
+<Modal @ref="customerModal">
+    <ModalContent Size="ModalSize.Large">
+        <ModalHeader>
+            <ModalTitle>@(isEditMode ? "Edit Customer" : "Add Customer")</ModalTitle>
+            <CloseButton />
+        </ModalHeader>
+        <ModalBody>
+            @if (errorMessage != null)
+            {
+                <Alert Color="Color.Danger" Visible="true">
+                    <AlertMessage>@errorMessage</AlertMessage>
+                </Alert>
+            }
+            <div class="grid grid-cols-2 gap-4">
+                <Field>
+                    <FieldLabel>Full Name *</FieldLabel>
+                    <TextEdit @bind-Text="@customerForm.Name" Placeholder="Enter customer name" />
+                </Field>
+                <Field>
+                    <FieldLabel>Email *</FieldLabel>
+                    <TextEdit @bind-Text="@customerForm.Email" Role="TextRole.Email" Placeholder="Enter email" ReadOnly="@isEditMode" />
+                </Field>
+            </div>
+            @if (!isEditMode)
+            {
+                <Field class="mt-3">
+                    <FieldLabel>Password *</FieldLabel>
+                    <TextEdit @bind-Text="@customerForm.Password" Role="TextRole.Password" Placeholder="Enter password (min 6 characters)" />
+                </Field>
+            }
+            <div class="grid grid-cols-2 gap-4 mt-3">
+                <Field>
+                    <FieldLabel>Phone</FieldLabel>
+                    <TextEdit @bind-Text="@customerForm.Phone" Placeholder="Enter phone number" />
+                </Field>
+                <Field>
+                    <FieldLabel>Role *</FieldLabel>
+                    <Select TValue="string" SelectedValue="@customerForm.Role" SelectedValueChanged="@((value) => customerForm.Role = value)">
+                        <SelectItem Value="@("Customer")">Customer</SelectItem>
+                        <SelectItem Value="@("Admin")">Admin</SelectItem>
+                    </Select>
+                </Field>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-3">
+                <Field>
+                    <FieldLabel>Address</FieldLabel>
+                    <TextEdit @bind-Text="@customerForm.Address" Placeholder="Enter address" />
+                </Field>
+                <Field>
+                    <FieldLabel>Status</FieldLabel>
+                    <Select TValue="string" SelectedValue="@customerForm.Status" SelectedValueChanged="@((value) => customerForm.Status = value)">
+                        <SelectItem Value="@("active")">Active</SelectItem>
+                        <SelectItem Value="@("inactive")">Locked</SelectItem>
+                    </Select>
+                </Field>
+            </div>
+        </ModalBody>
+        <ModalFooter class="bg-gray-50">
+            <Button Color="Color.Light" Clicked="CloseModal" class="!border-2 !border-black !text-black hover:!bg-gray-100 font-semibold">Cancel</Button>
+            <Button Color="Color.Primary" Clicked="SaveCustomer" Loading="@isSaving" class="!bg-blue-600 hover:!bg-blue-700 !text-white font-semibold">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Save" class="mr-2" /> Save
+            </Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
 @code {
     private List<Customer>? allCustomers;
     private List<Customer>? customers;
+    private Dictionary<string, string> customerRoles = new();
+    private Modal customerModal = null!;
+    private Modal confirmModal = null!;
+    private bool isEditMode = false;
+    private bool isSaving = false;
+    private string? errorMessage;
+    private CustomerFormModel customerForm = new();
+    
+    // Confirm dialog
+    private TaskCompletionSource<bool>? confirmTcs;
+    private string confirmTitle = "";
+    private string confirmMessage = "";
 
     // Pagination
     private int currentPage = 1;
@@ -178,7 +302,20 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await EnsureRolesExist();
         await LoadData();
+    }
+
+    private async Task EnsureRolesExist()
+    {
+        if (!await RoleManager.RoleExistsAsync("Admin"))
+        {
+            await RoleManager.CreateAsync(new IdentityRole("Admin"));
+        }
+        if (!await RoleManager.RoleExistsAsync("Customer"))
+        {
+            await RoleManager.CreateAsync(new IdentityRole("Customer"));
+        }
     }
 
     private async Task LoadData()
@@ -187,6 +324,24 @@
             .Include(c => c.Orders)
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync();
+        
+        // Load roles for all customers
+        customerRoles.Clear();
+        if (allCustomers != null)
+        {
+            foreach (var customer in allCustomers)
+            {
+                if (!string.IsNullOrEmpty(customer.ApplicationUserId))
+                {
+                    var user = await UserManager.FindByIdAsync(customer.ApplicationUserId);
+                    if (user != null)
+                    {
+                        var roles = await UserManager.GetRolesAsync(user);
+                        customerRoles[customer.ApplicationUserId] = roles.FirstOrDefault() ?? "Customer";
+                    }
+                }
+            }
+        }
         
         totalItems = allCustomers?.Count ?? 0;
         UpdatePagedData();
@@ -207,5 +362,234 @@
     {
         currentPage = page;
         UpdatePagedData();
+    }
+
+    private string GetCustomerRole(string? userId)
+    {
+        if (string.IsNullOrEmpty(userId)) return "Customer";
+        return customerRoles.TryGetValue(userId, out var role) ? role : "Customer";
+    }
+
+    private void OpenAddModal()
+    {
+        isEditMode = false;
+        customerForm = new CustomerFormModel { Role = "Customer", Status = "active" };
+        errorMessage = null;
+        customerModal.Show();
+    }
+
+    private void OpenEditModal(Customer customer)
+    {
+        isEditMode = true;
+        customerForm = new CustomerFormModel
+        {
+            CustomerId = customer.CustomerId,
+            Name = customer.Name,
+            Email = customer.Email ?? "",
+            Phone = customer.Phone ?? "",
+            Address = customer.Address ?? "",
+            Status = customer.Status,
+            ApplicationUserId = customer.ApplicationUserId,
+            Role = GetCustomerRole(customer.ApplicationUserId)
+        };
+        errorMessage = null;
+        customerModal.Show();
+    }
+
+    private async Task SaveCustomer()
+    {
+        if (string.IsNullOrWhiteSpace(customerForm.Name) || string.IsNullOrWhiteSpace(customerForm.Email))
+        {
+            errorMessage = "Name and Email are required.";
+            return;
+        }
+
+        if (!isEditMode && string.IsNullOrWhiteSpace(customerForm.Password))
+        {
+            errorMessage = "Password is required for new customers.";
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            if (isEditMode)
+            {
+                var customer = await DbContext.Customers.FindAsync(customerForm.CustomerId);
+                if (customer != null)
+                {
+                    customer.Name = customerForm.Name;
+                    customer.Email = customerForm.Email;
+                    customer.Phone = customerForm.Phone;
+                    customer.Address = customerForm.Address;
+                    customer.Status = customerForm.Status;
+
+                    // Update role if user exists
+                    if (!string.IsNullOrEmpty(customer.ApplicationUserId))
+                    {
+                        var user = await UserManager.FindByIdAsync(customer.ApplicationUserId);
+                        if (user != null)
+                        {
+                            var currentRoles = await UserManager.GetRolesAsync(user);
+                            if (currentRoles.Any())
+                            {
+                                await UserManager.RemoveFromRolesAsync(user, currentRoles);
+                            }
+                            var addRoleResult = await UserManager.AddToRoleAsync(user, customerForm.Role);
+                            if (!addRoleResult.Succeeded)
+                            {
+                                errorMessage = "Failed to update role: " + string.Join(", ", addRoleResult.Errors.Select(e => e.Description));
+                                isSaving = false;
+                                return;
+                            }
+                            // Update cache
+                            customerRoles[customer.ApplicationUserId] = customerForm.Role;
+                        }
+                    }
+
+                    await DbContext.SaveChangesAsync();
+                }
+            }
+            else
+            {
+                // Create Identity user first
+                var user = new ApplicationUser
+                {
+                    UserName = customerForm.Email,
+                    Email = customerForm.Email,
+                    EmailConfirmed = true
+                };
+
+                var result = await UserManager.CreateAsync(user, customerForm.Password);
+                if (result.Succeeded)
+                {
+                    await UserManager.AddToRoleAsync(user, customerForm.Role);
+
+                    // Create customer record
+                    var customer = new Customer
+                    {
+                        Name = customerForm.Name,
+                        Email = customerForm.Email,
+                        Phone = customerForm.Phone,
+                        Address = customerForm.Address,
+                        Status = customerForm.Status,
+                        ApplicationUserId = user.Id,
+                        CreatedAt = DateTime.Now
+                    };
+
+                    DbContext.Customers.Add(customer);
+                    await DbContext.SaveChangesAsync();
+                }
+                else
+                {
+                    errorMessage = string.Join(", ", result.Errors.Select(e => e.Description));
+                    isSaving = false;
+                    return;
+                }
+            }
+
+            await LoadData();
+            customerModal.Hide();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving customer: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task ToggleLockCustomer(Customer customer)
+    {
+        var newStatus = customer.Status == "active" ? "inactive" : "active";
+        var action = newStatus == "inactive" ? "lock" : "unlock";
+        
+        var confirmed = await ShowConfirmDialog(
+            $"Are you sure you want to {action} this account?",
+            $"This will {action} the account for {customer.Name}. The user will {(newStatus == "inactive" ? "not be able to log in" : "be able to log in again")}. Do you want to proceed?"
+        );
+        if (!confirmed) return;
+
+        customer.Status = newStatus;
+        
+        // Also lock/unlock the Identity user
+        if (!string.IsNullOrEmpty(customer.ApplicationUserId))
+        {
+            var user = await UserManager.FindByIdAsync(customer.ApplicationUserId);
+            if (user != null)
+            {
+                if (newStatus == "inactive")
+                {
+                    await UserManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+                }
+                else
+                {
+                    await UserManager.SetLockoutEndDateAsync(user, null);
+                }
+            }
+        }
+
+        await DbContext.SaveChangesAsync();
+        await LoadData();
+    }
+
+    private async Task DeleteCustomer(Customer customer)
+    {
+        var confirmed = await ShowConfirmDialog(
+            "Are you sure you want to delete this?",
+            $"This will delete the customer record for {customer.Name}. Once deleted can not be rolled back. Do you want to proceed?"
+        );
+        if (!confirmed) return;
+
+        // Delete Identity user if exists
+        if (!string.IsNullOrEmpty(customer.ApplicationUserId))
+        {
+            var user = await UserManager.FindByIdAsync(customer.ApplicationUserId);
+            if (user != null)
+            {
+                await UserManager.DeleteAsync(user);
+            }
+        }
+
+        DbContext.Customers.Remove(customer);
+        await DbContext.SaveChangesAsync();
+        await LoadData();
+    }
+
+    private void CloseModal()
+    {
+        customerModal.Hide();
+    }
+
+    private async Task<bool> ShowConfirmDialog(string title, string message)
+    {
+        confirmTitle = title;
+        confirmMessage = message;
+        confirmTcs = new TaskCompletionSource<bool>();
+        await confirmModal.Show();
+        return await confirmTcs.Task;
+    }
+
+    private async Task ConfirmResult(bool result)
+    {
+        confirmTcs?.SetResult(result);
+        await confirmModal.Hide();
+    }
+
+    private class CustomerFormModel
+    {
+        public int CustomerId { get; set; }
+        public string Name { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public string Address { get; set; } = "";
+        public string Role { get; set; } = "Customer";
+        public string Status { get; set; } = "active";
+        public string? ApplicationUserId { get; set; }
     }
 }

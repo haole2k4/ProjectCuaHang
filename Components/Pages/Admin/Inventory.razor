@@ -135,11 +135,11 @@ else
                 <Table class="mb-0 w-full">
                     <TableHeader>
                         <TableRow class="bg-white border-b-2 border-gray-200">
-                            <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Product</TableHeaderCell>
-                            <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Warehouse</TableHeaderCell>
-                            <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Current Stock</TableHeaderCell>
-                            <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Price</TableHeaderCell>
-                            <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                            <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Product</TableHeaderCell>
+                            <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Warehouse</TableHeaderCell>
+                            <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Current Stock</TableHeaderCell>
+                            <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Price</TableHeaderCell>
+                            <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody class="bg-white divide-y divide-gray-200">
@@ -148,7 +148,7 @@ else
                             @foreach (var item in lowStockItems)
                             {
                                 <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
-                                    <TableRowCell class="px-6 py-4">
+                                    <TableRowCell class="px-6 py-4 text-center">
                                         <div class="flex items-center gap-3">
                                             <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-gray-400" />
@@ -156,10 +156,10 @@ else
                                             <span class="font-bold text-gray-900">@item.ProductName</span>
                                         </div>
                                     </TableRowCell>
-                                    <TableRowCell class="px-6 py-4">
+                                    <TableRowCell class="px-6 py-4 text-center">
                                         <span class="text-gray-900 font-medium">@item.WarehouseName</span>
                                     </TableRowCell>
-                                    <TableRowCell class="px-6 py-4">
+                                    <TableRowCell class="px-6 py-4 text-center">
                                         @if (item.CurrentStock == 0)
                                         {
                                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
@@ -173,7 +173,7 @@ else
                                             </span>
                                         }
                                     </TableRowCell>
-                                    <TableRowCell class="px-6 py-4">
+                                    <TableRowCell class="px-6 py-4 text-center">
                                         <span class="font-bold text-gray-900">$@item.Price.ToString("N2")</span>
                                     </TableRowCell>
                                     <TableRowCell class="px-6 py-4 text-right">

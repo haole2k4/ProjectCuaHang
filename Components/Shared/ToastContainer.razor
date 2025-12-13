@@ -1,0 +1,164 @@
+@using BlazorApp1.Services
+@inject ToastService ToastService
+@implements IDisposable
+
+<div style="position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 12px; max-width: 420px; min-width: 350px; pointer-events: none;">
+    @foreach (var toast in toasts)
+    {
+        <div class="@GetToastClass(toast) rounded-2xl shadow-2xl px-5 py-4 animate-slide-in border" style="animation: slideIn 0.3s ease-out; pointer-events: auto;">
+            <div class="flex items-center gap-3">
+                <div class="flex-shrink-0">
+                    @if (toast.Type == ToastType.Success)
+                    {
+                        <div class="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                    }
+                    else if (toast.Type == ToastType.Error)
+                    {
+                        <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </div>
+                    }
+                    else if (toast.Type == ToastType.Warning)
+                    {
+                        <div class="w-10 h-10 rounded-full bg-yellow-600 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    }
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-base font-bold @GetTextClass(toast)">@toast.Title</p>
+                    @if (!string.IsNullOrEmpty(toast.Message))
+                    {
+                        <p class="text-sm @GetTextClass(toast) opacity-80 mt-0.5">@toast.Message</p>
+                    }
+                </div>
+                <button @onclick="() => RemoveToast(toast)" class="flex-shrink-0 @GetTextClass(toast) opacity-50 hover:opacity-100 transition-opacity ml-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    @@keyframes slideIn {
+        from {
+            transform: translateX(120%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @@keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(120%);
+            opacity: 0;
+        }
+    }
+    
+    .animate-slide-in {
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    .animate-slide-out {
+        animation: slideOut 0.2s ease-in;
+    }
+</style>
+
+@code {
+    private List<ToastMessage> toasts = new();
+    private Dictionary<ToastMessage, System.Threading.Timer> timers = new();
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnShow += HandleShowToast;
+    }
+
+    private void HandleShowToast(ToastMessage toast)
+    {
+        toasts.Add(toast);
+        StateHasChanged();
+
+        // Auto remove after 4 seconds
+        var timer = new System.Threading.Timer(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                RemoveToast(toast);
+            });
+        }, null, 4000, Timeout.Infinite);
+
+        timers[toast] = timer;
+    }
+
+    private void RemoveToast(ToastMessage toast)
+    {
+        if (timers.TryGetValue(toast, out var timer))
+        {
+            timer.Dispose();
+            timers.Remove(toast);
+        }
+
+        toasts.Remove(toast);
+        StateHasChanged();
+    }
+
+    private string GetToastClass(ToastMessage toast)
+    {
+        return toast.Type switch
+        {
+            ToastType.Success => "bg-green-100 border-green-200",
+            ToastType.Error => "bg-red-100 border-red-200",
+            ToastType.Warning => "bg-yellow-100 border-yellow-200",
+            ToastType.Info => "bg-blue-100 border-blue-200",
+            _ => "bg-gray-100 border-gray-200"
+        };
+    }
+
+    private string GetTextClass(ToastMessage toast)
+    {
+        return toast.Type switch
+        {
+            ToastType.Success => "text-green-900",
+            ToastType.Error => "text-red-900",
+            ToastType.Warning => "text-yellow-900",
+            ToastType.Info => "text-blue-900",
+            _ => "text-gray-900"
+        };
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnShow -= HandleShowToast;
+        foreach (var timer in timers.Values)
+        {
+            timer.Dispose();
+        }
+        timers.Clear();
+    }
+}

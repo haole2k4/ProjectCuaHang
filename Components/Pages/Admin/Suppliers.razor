@@ -118,12 +118,12 @@
             <Table class="mb-0 w-full">
                 <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Supplier</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Contact</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Address</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Products</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Supplier</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Contact</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Address</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Products</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="bg-white divide-y divide-gray-200">
@@ -132,7 +132,7 @@
                         @foreach (var supplier in suppliers)
                         {
                             <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <div class="flex items-center gap-3">
                                         <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
                                             @supplier.Name.Substring(0, 1).ToUpper()
@@ -140,7 +140,7 @@
                                         <span class="font-bold text-gray-900">@supplier.Name</span>
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <div>
                                         @if (!string.IsNullOrEmpty(supplier.Phone))
                                         {
@@ -158,15 +158,15 @@
                                         }
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <span class="text-gray-900">@(supplier.Address ?? "N/A")</span>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <Badge Color="Color.Info" class="font-semibold">
                                         @supplier.Products?.Count ?? 0 products
                                     </Badge>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     @if (supplier.Status == "active")
                                     {
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">

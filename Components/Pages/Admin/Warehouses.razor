@@ -92,12 +92,12 @@
             <Table class="mb-0 w-full">
                 <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Warehouse</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Address</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Items</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Stock Quantity</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Warehouse</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Address</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Items</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Stock Quantity</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="bg-white divide-y divide-gray-200">
@@ -106,7 +106,7 @@
                         @foreach (var warehouse in warehouses)
                         {
                             <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <div class="flex items-center gap-3">
                                         <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md">
                                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Warehouse" />
@@ -114,21 +114,21 @@
                                         <span class="font-bold text-gray-900">@warehouse.WarehouseName</span>
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <div class="flex items-center gap-2">
                                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.MapMarkerAlt" class="text-gray-400 text-sm" />
                                         <span class="text-gray-900">@(warehouse.Address ?? "N/A")</span>
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <Badge Color="Color.Info" class="font-semibold">
                                         @warehouse.TotalItems unique items
                                     </Badge>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <span class="font-bold text-gray-900">@warehouse.TotalStock units</span>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     @if (warehouse.Status == "active")
                                     {
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">

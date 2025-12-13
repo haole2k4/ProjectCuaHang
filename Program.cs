@@ -125,6 +125,9 @@ builder.Services.AddScoped<IPromotionService, PromotionService>();
 // Register Statistics service for admin dashboard
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 
+// Register Toast notification service
+builder.Services.AddScoped<ToastService>();
+
 // Register HttpContextAccessor for audit logging
 builder.Services.AddHttpContextAccessor();
 

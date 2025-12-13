@@ -17,6 +17,7 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject StoreDbContext StoreDbContext
+@inject RoleManager<IdentityRole> RoleManager
 
 <PageTitle>Register</PageTitle>
 
@@ -109,6 +110,21 @@
         Logger.LogInformation("User created a new account with password.");
 
         var userId = await UserManager.GetUserIdAsync(user);
+
+        // Ensure Customer role exists and assign it
+        try
+        {
+            if (!await RoleManager.RoleExistsAsync("Customer"))
+            {
+                await RoleManager.CreateAsync(new IdentityRole("Customer"));
+            }
+            await UserManager.AddToRoleAsync(user, "Customer");
+            Logger.LogInformation("User {UserId} assigned to Customer role", userId);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to assign Customer role to user {UserId}", userId);
+        }
 
         // Create Customer record linked to this Identity user
         try

@@ -34,13 +34,13 @@
             <Table class="mb-0 w-full">
                 <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Image</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Product</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Category</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Price</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Stock</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Image</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Product</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Category</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Price</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Stock</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="bg-white divide-y divide-gray-200">
@@ -49,7 +49,7 @@
                         @foreach (var product in products)
                         {
                             <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm">
                                         @if (!string.IsNullOrEmpty(product.ImageUrl))
                                         {
@@ -61,22 +61,22 @@
                                         }
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <div>
                                         <div class="font-bold text-gray-900">@product.ProductName</div>
                                         <div class="text-gray-600 text-sm">@product.Barcode | @product.Unit</div>
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <span class="text-gray-900 font-medium">@(product.CategoryName ?? "N/A")</span>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <span class="font-bold text-gray-900">$@product.Price.ToString("N2")</span>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <span class="text-gray-900 font-semibold">@(product.StockQuantity ?? 0)</span>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     @if (product.Status == "active")
                                     {
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">

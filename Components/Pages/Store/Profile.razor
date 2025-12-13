@@ -10,10 +10,13 @@
 @using System.Security.Claims
 @using Blazorise
 @using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+@using BlazorApp1.Data
 
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject StoreDbContext DbContext
 @inject NavigationManager NavigationManager
+@inject UserManager<ApplicationUser> UserManager
 
 <PageTitle>My Profile</PageTitle>
 
@@ -58,7 +61,8 @@
                                            Class="@GetTabClass(ProfileTab.Orders)">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> Order History
                             </ListGroupItem>
-                            <ListGroupItem To="/Account/Manage/ChangePassword" Type="ButtonType.Link">
+                            <ListGroupItem Clicked="() => activeTab = ProfileTab.Password"
+                                           Class="@GetTabClass(ProfileTab.Password)">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Key" class="mr-2" /> Change Password
                             </ListGroupItem>
                             <ListGroupItem To="/store" Type="ButtonType.Link">
@@ -93,7 +97,7 @@
                                 </Alert>
                             }
 
-                            <Validations @ref="validationsRef" Mode="ValidationMode.Auto" Model="@profileModel">
+                            <Validations @ref="validationsRef" Mode="ValidationMode.Manual" Model="@profileModel">
                                 <Validation>
                                     <Field>
                                         <FieldLabel>Full Name *</FieldLabel>
@@ -136,8 +140,8 @@
                                 </Validation>
                             </Validations>
                         </CardBody>
-                        <CardFooter>
-                            <Button Color="Color.Primary" Clicked="SaveProfile" Loading="@isSaving">
+                        <CardFooter class="bg-gray-50 px-6 py-4">
+                            <Button Color="Color.Primary" Clicked="SaveProfile" Loading="@isSaving" class="!bg-blue-600 hover:!bg-blue-700 !text-white font-semibold">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Save" class="mr-2" /> Save Changes
                             </Button>
                         </CardFooter>
@@ -180,8 +184,71 @@
                             }
                         </CardBody>
                         <CardFooter>
-                            <Button Color="Color.Primary" Outline To="/store/orders" Type="ButtonType.Link">
+                            <Button Color="Color.Primary" To="/store/orders" Type="ButtonType.Link">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.List" class="mr-2" /> View All Orders
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                }
+                else if (activeTab == ProfileTab.Password)
+                {
+                    <Card class="card-shadow">
+                        <CardHeader>
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Key" class="mr-2" /> Change Password
+                        </CardHeader>
+                        <CardBody>
+                            @if (successMessage != null)
+                            {
+                                <Alert Color="Color.Success" Visible="true" class="mb-4">
+                                    <AlertMessage>@successMessage</AlertMessage>
+                                    <CloseButton Clicked="() => successMessage = null" />
+                                </Alert>
+                            }
+                            @if (errorMessage != null)
+                            {
+                                <Alert Color="Color.Danger" Visible="true" class="mb-4">
+                                    <AlertMessage>@errorMessage</AlertMessage>
+                                    <CloseButton Clicked="() => errorMessage = null" />
+                                </Alert>
+                            }
+
+                            <Validations @ref="passwordValidationsRef" Mode="ValidationMode.Manual" Model="@passwordModel">
+                                <Validation>
+                                    <Field>
+                                        <FieldLabel>Current Password *</FieldLabel>
+                                        <TextEdit @bind-Text="@passwordModel.CurrentPassword" Role="TextRole.Password" Placeholder="Enter current password">
+                                            <Feedback>
+                                                <ValidationError />
+                                            </Feedback>
+                                        </TextEdit>
+                                    </Field>
+                                </Validation>
+                                <Validation>
+                                    <Field class="mt-3">
+                                        <FieldLabel>New Password *</FieldLabel>
+                                        <TextEdit @bind-Text="@passwordModel.NewPassword" Role="TextRole.Password" Placeholder="Enter new password">
+                                            <Feedback>
+                                                <ValidationError />
+                                            </Feedback>
+                                        </TextEdit>
+                                        <FieldHelp>Password must be at least 6 characters long.</FieldHelp>
+                                    </Field>
+                                </Validation>
+                                <Validation>
+                                    <Field class="mt-3">
+                                        <FieldLabel>Confirm New Password *</FieldLabel>
+                                        <TextEdit @bind-Text="@passwordModel.ConfirmPassword" Role="TextRole.Password" Placeholder="Confirm new password">
+                                            <Feedback>
+                                                <ValidationError />
+                                            </Feedback>
+                                        </TextEdit>
+                                    </Field>
+                                </Validation>
+                            </Validations>
+                        </CardBody>
+                        <CardFooter class="bg-gray-50 px-6 py-4">
+                            <Button Color="Color.Primary" Clicked="ChangePassword" Loading="@isChangingPassword" class="!bg-blue-600 hover:!bg-blue-700 !text-white font-semibold">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Key" class="mr-2" /> Change Password
                             </Button>
                         </CardFooter>
                     </Card>
@@ -196,16 +263,21 @@
     private List<Order>? orders;
     private bool isLoading = true;
     private bool isSaving = false;
+    private bool isChangingPassword = false;
     private ProfileTab activeTab = ProfileTab.Info;
     private Validations? validationsRef;
+    private Validations? passwordValidationsRef;
     private ProfileModel profileModel = new();
+    private PasswordChangeModel passwordModel = new();
     private string? successMessage;
     private string? errorMessage;
+    private string? userId;
 
     private enum ProfileTab
     {
         Info,
-        Orders
+        Orders,
+        Password
     }
 
     protected override async Task OnInitializedAsync()
@@ -222,7 +294,7 @@
 
         if (user.Identity?.IsAuthenticated == true)
         {
-            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId != null)
             {
                 customer = await DbContext.Customers
@@ -303,6 +375,56 @@
         _ => Color.Secondary
     };
 
+    private async Task ChangePassword()
+    {
+        if (passwordValidationsRef != null && !await passwordValidationsRef.ValidateAll())
+            return;
+
+        if (passwordModel.NewPassword != passwordModel.ConfirmPassword)
+        {
+            errorMessage = "New password and confirmation password do not match.";
+            return;
+        }
+
+        isChangingPassword = true;
+        successMessage = null;
+        errorMessage = null;
+
+        try
+        {
+            if (userId != null)
+            {
+                var user = await UserManager.FindByIdAsync(userId);
+                if (user != null)
+                {
+                    var result = await UserManager.ChangePasswordAsync(user, passwordModel.CurrentPassword, passwordModel.NewPassword);
+                    if (result.Succeeded)
+                    {
+                        successMessage = "Password changed successfully!";
+                        passwordModel = new PasswordChangeModel();
+                        await InvokeAsync(StateHasChanged);
+                    }
+                    else
+                    {
+                        errorMessage = string.Join(", ", result.Errors.Select(e => e.Description));
+                    }
+                }
+                else
+                {
+                    errorMessage = "User not found.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to change password. Please check your current password and try again.";
+        }
+        finally
+        {
+            isChangingPassword = false;
+        }
+    }
+
     private class ProfileModel
     {
         [Required(ErrorMessage = "Name is required")]
@@ -315,5 +437,19 @@
         public string? Phone { get; set; }
 
         public string? Address { get; set; }
+    }
+
+    private class PasswordChangeModel
+    {
+        [Required(ErrorMessage = "Current password is required")]
+        public string CurrentPassword { get; set; } = "";
+
+        [Required(ErrorMessage = "New password is required")]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters long")]
+        public string NewPassword { get; set; } = "";
+
+        [Required(ErrorMessage = "Please confirm your new password")]
+        [Compare(nameof(NewPassword), ErrorMessage = "Passwords do not match")]
+        public string ConfirmPassword { get; set; } = "";
     }
 }

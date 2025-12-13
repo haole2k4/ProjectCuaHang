@@ -92,14 +92,14 @@
             <Table class="mb-0 w-full">
                 <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Code</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Type</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Discount</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Min Order</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Usage</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Valid Period</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wider text-right">Actions</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Code</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Type</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Discount</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Min Order</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Usage</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Valid Period</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="bg-white divide-y divide-gray-200">
@@ -108,18 +108,18 @@
                         @foreach (var promo in promotions)
                         {
                             <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <div class="flex items-center gap-2">
                                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tag" class="text-purple-500" />
                                         <span class="font-mono font-bold text-gray-900">@promo.PromoCode</span>
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <Badge Color="@GetApplyTypeColor(promo.ApplyType)" class="font-semibold">
                                         @GetApplyTypeText(promo.ApplyType)
                                     </Badge>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     @if (promo.DiscountType == "percent")
                                     {
                                         <span class="text-green-600 font-bold">@promo.DiscountValue%</span>
@@ -129,22 +129,22 @@
                                         <span class="text-green-600 font-bold">$@promo.DiscountValue</span>
                                     }
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <span class="text-gray-900 font-medium">$@promo.MinOrderAmount</span>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <div class="flex items-center gap-2">
                                         <Progress Value="@GetUsageProgress(promo)" Max="100" class="flex-1 h-2" Color="Color.Primary" />
                                         <span class="text-sm font-semibold text-gray-900">@promo.UsedCount/@(promo.UsageLimit == 0 ? "?" : promo.UsageLimit.ToString())</span>
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <div class="text-sm">
                                         <div class="text-gray-900 font-medium">@promo.StartDate.ToString("MMM dd, yyyy")</div>
                                         <div class="text-gray-600">to @promo.EndDate.ToString("MMM dd, yyyy")</div>
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     @if (promo.EndDate < DateTime.Now)
                                     {
                                         <Badge Color="Color.Danger" class="px-3 py-1.5 rounded-full font-medium">Expired</Badge>

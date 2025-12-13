@@ -400,11 +400,11 @@
                 <Table Hoverable class="mb-0">
                     <TableHeader>
                         <TableRow class="bg-white border-b-2 border-gray-200">
-                            <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wide">Date</TableHeaderCell>
-                            <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wide">Status</TableHeaderCell>
-                            <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wide">Merchant</TableHeaderCell>
-                            <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wide">Card</TableHeaderCell>
-                            <TableHeaderCell class="px-6 py-4 text-gray-900 font-bold text-sm uppercase tracking-wide text-right">Amount</TableHeaderCell>
+                            <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wide">Date</TableHeaderCell>
+                            <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wide">Status</TableHeaderCell>
+                            <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wide">Merchant</TableHeaderCell>
+                            <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wide">Card</TableHeaderCell>
+                            <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wide">Amount</TableHeaderCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody class="bg-white divide-y divide-gray-200">
@@ -413,13 +413,13 @@
                             @foreach (var order in recentOrders.Take(10))
                             {
                                 <TableRow class="bg-white hover:bg-gray-100 transition-colors">
-                                    <TableRowCell class="px-6 py-4">
+                                    <TableRowCell class="px-6 py-4 text-center">
                                         <div>
                                             <span class="text-gray-900 font-bold text-sm">@order.OrderDate.ToString("MMM dd, yyyy")</span>
                                             <span class="text-gray-600 text-xs block mt-0.5 font-medium">@order.OrderDate.ToString("h:mm tt")</span>
                                         </div>
                                     </TableRowCell>
-                                    <TableRowCell class="px-6 py-4">
+                                    <TableRowCell class="px-6 py-4 text-center">
                                         <Badge Color="@GetStatusColor(order.Status)" class="px-3 py-1.5 rounded-full">
                                             <span class="flex items-center gap-1.5">
                                                 <span class="w-2 h-2 rounded-full @GetStatusDotClass(order.Status)"></span>
@@ -427,7 +427,7 @@
                                             </span>
                                         </Badge>
                                     </TableRowCell>
-                                    <TableRowCell class="px-6 py-4">
+                                    <TableRowCell class="px-6 py-4 text-center">
                                         <div class="flex items-center gap-3">
                                             <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
                                                 @(order.Customer?.Name?.Substring(0, 1).ToUpper() ?? "G")
@@ -435,7 +435,7 @@
                                             <span class="text-gray-900 font-bold text-sm">@(order.Customer?.Name ?? "Guest")</span>
                                         </div>
                                     </TableRowCell>
-                                    <TableRowCell class="px-6 py-4">
+                                    <TableRowCell class="px-6 py-4 text-center">
                                         <div>
                                             <span class="text-gray-900 font-bold text-sm">Order @order.OrderId</span>
                                             <span class="text-gray-600 text-xs block mt-0.5 font-medium">** @order.OrderId.ToString().Substring(Math.Max(0, order.OrderId.ToString().Length - 4))</span>
