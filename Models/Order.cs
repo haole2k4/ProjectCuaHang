@@ -32,6 +32,14 @@ namespace StoreManagementAPI.Models
         [Column("discount_amount", TypeName = "decimal(10,2)")]
         public decimal DiscountAmount { get; set; } = 0;
 
+        [Column("shipping_address")]
+        [StringLength(500)]
+        public string? ShippingAddress { get; set; }
+
+        [Column("notes")]
+        [StringLength(1000)]
+        public string? Notes { get; set; }
+
         // Navigation properties
         [ForeignKey("CustomerId")]
         public virtual Customer? Customer { get; set; }

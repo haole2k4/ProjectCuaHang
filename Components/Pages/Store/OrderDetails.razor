@@ -23,7 +23,7 @@ else if (order == null)
         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationCircle" class="text-6xl text-gray-400 mb-4" />
         <Heading Size="HeadingSize.Is4" class="mb-2">Order not found</Heading>
         <Paragraph TextColor="TextColor.Muted" class="mb-6">The order you're looking for doesn't exist.</Paragraph>
-        <Button Color="Color.Primary" To="/store/orders" Type="ButtonType.Link">
+        <Button Color="Color.Primary" To="/store/orders" Type="ButtonType.Link" class="!bg-blue-600 !text-white hover:!bg-blue-700 hover:!text-white">
             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowLeft" class="mr-2" /> Back to Orders
         </Button>
     </div>
@@ -32,19 +32,19 @@ else
 {
     <div class="flex flex-wrap justify-between items-start mb-6 gap-4">
         <div>
-            <Heading Size="HeadingSize.Is2">
+            <Heading Size="HeadingSize.Is3" class="text-2xl font-bold mb-3">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> Order #@order.OrderId
             </Heading>
-            <Paragraph TextColor="TextColor.Muted" class="mb-0">
+            <Paragraph class="mb-0 text-sm text-black">
                 Placed on @order.OrderDate.ToString("MMMM dd, yyyy 'at' hh:mm tt")
             </Paragraph>
         </div>
         <Buttons>
-            <Button Color="Color.Primary" To="@($"/store/orders/{order.OrderId}/bill")" Type="ButtonType.Link">
-                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Receipt" class="mr-2" /> View Bill
+            <Button Color="Color.Primary" Size="Size.Small" To="@($"/store/orders/{order.OrderId}/bill")" Type="ButtonType.Link" class="font-medium !bg-blue-600 !text-white hover:!bg-blue-700 hover:!text-white">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Receipt" class="mr-1" /> View Bill
             </Button>
-            <Button Color="Color.Secondary" Outline To="/store/orders" Type="ButtonType.Link">
-                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowLeft" class="mr-2" /> Back to Orders
+            <Button Color="Color.Primary" Size="Size.Small" To="/store/orders" Type="ButtonType.Link" class="font-medium !bg-blue-600 !text-white hover:!bg-blue-700 hover:!text-white">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowLeft" class="mr-1" /> Back to Orders
             </Button>
         </Buttons>
     </div>
@@ -54,10 +54,10 @@ else
             <!-- Order Status -->
             <Card class="card-shadow">
                 <CardBody class="flex items-center gap-4">
-                    <Badge Color="@GetStatusColor(order.Status)" class="px-4 py-2 text-sm">
-                        @GetStatusIcon(order.Status) @order.Status.ToUpper()
-                    </Badge>
-                    <span>
+                    <span class="@GetStatusBadgeClass(order.Status) px-3 py-1.5 rounded-full text-sm font-semibold text-white inline-block">
+                        @order.Status.ToUpper()
+                    </span>
+                    <span class="text-sm">
                         @switch (order.Status.ToLower())
                         {
                             case "pending":
@@ -83,7 +83,7 @@ else
 
             <!-- Order Items -->
             <Card class="card-shadow">
-                <CardHeader>
+                <CardHeader class="text-base font-semibold">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="mr-2" /> Order Items
                 </CardHeader>
                 <CardBody Padding="Padding.Is0">
@@ -104,23 +104,23 @@ else
                                         <div class="flex items-center gap-3">
                                             @if (!string.IsNullOrEmpty(item.Product?.ImageUrl))
                                             {
-                                                <img src="@item.Product.ImageUrl" class="w-14 h-14 rounded object-cover" alt="@item.Product?.ProductName" />
+                                                <img src="@item.Product.ImageUrl" class="w-16 h-16 rounded-lg object-cover shadow" alt="@item.Product?.ProductName" />
                                             }
                                             else
                                             {
-                                                <div class="w-14 h-14 rounded bg-gray-200 flex items-center justify-center">
+                                                <div class="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
                                                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" TextColor="TextColor.Muted" />
                                                 </div>
                                             }
                                             <div>
-                                                <Heading Size="HeadingSize.Is6" class="mb-0">@item.Product?.ProductName</Heading>
-                                                <small class="text-gray-500">@item.Product?.Unit</small>
+                                                <p class="font-semibold text-sm mb-0">@item.Product?.ProductName</p>
+                                                <small class="text-gray-500 text-xs">@item.Product?.Unit</small>
                                             </div>
                                         </div>
                                     </TableRowCell>
-                                    <TableRowCell TextAlignment="TextAlignment.Center">@item.Quantity</TableRowCell>
-                                    <TableRowCell TextAlignment="TextAlignment.End">$@item.Price.ToString("N2")</TableRowCell>
-                                    <TableRowCell TextAlignment="TextAlignment.End" class="font-semibold">$@item.Subtotal.ToString("N2")</TableRowCell>
+                                    <TableRowCell TextAlignment="TextAlignment.Center" class="text-sm">@item.Quantity</TableRowCell>
+                                    <TableRowCell TextAlignment="TextAlignment.End" class="text-sm">$@item.Price.ToString("N2")</TableRowCell>
+                                    <TableRowCell TextAlignment="TextAlignment.End" class="font-semibold text-sm">$@item.Subtotal.ToString("N2")</TableRowCell>
                                 </TableRow>
                             }
                         </TableBody>
@@ -132,7 +132,7 @@ else
             @if (order.Payments.Any())
             {
                 <Card class="card-shadow">
-                    <CardHeader>
+                    <CardHeader class="text-base font-semibold">
                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CreditCard" class="mr-2" /> Payment Information
                     </CardHeader>
                     <CardBody>
@@ -140,8 +140,8 @@ else
                         {
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
-                                    <small class="text-gray-500 block">Payment Method</small>
-                                    <Paragraph class="mb-0">
+                                    <small class="text-gray-500 text-xs font-semibold uppercase block">Payment Method</small>
+                                    <Paragraph class="mb-0 text-sm">
                                         @switch (payment.PaymentMethod.ToLower())
                                         {
                                             case "cash":
@@ -163,12 +163,12 @@ else
                                     </Paragraph>
                                 </div>
                                 <div>
-                                    <small class="text-gray-500 block">Payment Date</small>
-                                    <Paragraph class="mb-0">@payment.PaymentDate.ToString("MMM dd, yyyy hh:mm tt")</Paragraph>
+                                    <small class="text-gray-500 text-xs font-semibold uppercase block">Payment Date</small>
+                                    <Paragraph class="mb-0 text-sm">@payment.PaymentDate.ToString("MMM dd, yyyy hh:mm tt")</Paragraph>
                                 </div>
                                 <div>
-                                    <small class="text-gray-500 block">Amount Paid</small>
-                                    <Paragraph TextColor="TextColor.Success" class="font-bold mb-0">$@payment.Amount.ToString("N2")</Paragraph>
+                                    <small class="text-gray-500 text-xs font-semibold uppercase block">Amount Paid</small>
+                                    <Paragraph TextColor="TextColor.Success" class="font-bold mb-0 text-sm">$@payment.Amount.ToString("N2")</Paragraph>
                                 </div>
                             </div>
                         }
@@ -179,29 +179,29 @@ else
 
         <div class="lg:col-span-1 space-y-4">
             <!-- Order Summary -->
-            <Card class="card-shadow sticky top-20">
+            <Card class="card-shadow" style="position: sticky; top: 80px; z-index: 10;">
                 <CardHeader Background="Background.Primary" TextColor="TextColor.White">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Calculator" class="mr-2" /> Order Summary
                 </CardHeader>
                 <CardBody>
                     <div class="space-y-3">
-                        <div class="flex justify-between">
+                        <div class="flex justify-between text-sm font-bold text-black">
                             <span>Subtotal</span>
                             <span>$@((order.TotalAmount + order.DiscountAmount).ToString("N2"))</span>
                         </div>
                         @if (order.DiscountAmount > 0)
                         {
-                            <div class="flex justify-between text-green-600">
+                            <div class="flex justify-between text-green-600 text-sm font-bold">
                                 <span>Discount</span>
                                 <span>-$@order.DiscountAmount.ToString("N2")</span>
                             </div>
                         }
-                        <div class="flex justify-between">
+                        <div class="flex justify-between text-sm font-bold text-black">
                             <span>Shipping</span>
                             <span class="text-green-600">Free</span>
                         </div>
                         <Divider />
-                        <div class="flex justify-between font-bold text-xl">
+                        <div class="flex justify-between font-bold text-lg text-black">
                             <span>Total</span>
                             <span class="price">$@order.TotalAmount.ToString("N2")</span>
                         </div>
@@ -213,26 +213,26 @@ else
             @if (order.Customer != null)
             {
                 <Card class="card-shadow">
-                    <CardHeader>
+                    <CardHeader class="text-base font-semibold">
                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" class="mr-2" /> Customer
                     </CardHeader>
                     <CardBody>
-                        <Paragraph class="font-semibold mb-1">@order.Customer.Name</Paragraph>
+                        <Paragraph class="font-bold mb-2 text-black">@order.Customer.Name</Paragraph>
                         @if (!string.IsNullOrEmpty(order.Customer.Email))
                         {
-                            <Paragraph TextColor="TextColor.Muted" class="mb-1 text-sm">
+                            <Paragraph class="mb-2 text-sm text-black">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Envelope" class="mr-1" /> @order.Customer.Email
                             </Paragraph>
                         }
                         @if (!string.IsNullOrEmpty(order.Customer.Phone))
                         {
-                            <Paragraph TextColor="TextColor.Muted" class="mb-1 text-sm">
+                            <Paragraph class="mb-2 text-sm text-black">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Phone" class="mr-1" /> @order.Customer.Phone
                             </Paragraph>
                         }
                         @if (!string.IsNullOrEmpty(order.Customer.Address))
                         {
-                            <Paragraph TextColor="TextColor.Muted" class="mb-0 text-sm">
+                            <Paragraph class="mb-0 text-sm text-black">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.MapMarkerAlt" class="mr-1" /> @order.Customer.Address
                             </Paragraph>
                         }
@@ -262,21 +262,13 @@ else
         isLoading = false;
     }
 
-    private Color GetStatusColor(string status) => status.ToLower() switch
+    private string GetStatusBadgeClass(string status) => status.ToLower() switch
     {
-        "pending" => Color.Warning,
-        "completed" => Color.Success,
-        "cancelled" or "canceled" => Color.Danger,
-        "processing" => Color.Info,
-        _ => Color.Secondary
-    };
-
-    private string GetStatusIcon(string status) => status.ToLower() switch
-    {
-        "pending" => "?",
-        "completed" => "?",
-        "cancelled" or "canceled" => "?",
-        "processing" => "??",
-        _ => "�"
+        "pending" => "bg-red-600",
+        "completed" => "bg-green-600",
+        "cancelled" or "canceled" => "bg-gray-600",
+        "processing" => "bg-blue-600",
+        "shipped" => "bg-cyan-600",
+        _ => "bg-gray-500"
     };
 }
