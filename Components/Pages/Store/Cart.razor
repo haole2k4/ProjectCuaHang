@@ -210,10 +210,27 @@ else
     // Recalculate discount based on current subtotal if a promo is active
     if (!string.IsNullOrEmpty(CartService.AppliedPromoCode))
     {
-        var newDiscount = subtotal * (CartService.DiscountPercent / 100);
+        // We need to know if it was percent or fixed to recalculate correctly.
+        // However, CartService only stores the result values now.
+        // Ideally CartService should store DiscountType and Value.
+        // For now, let's assume if Percent > 0 it's percent, otherwise fixed.
+        
+        decimal newDiscount = 0;
+        if (CartService.DiscountPercent > 0)
+        {
+             newDiscount = subtotal * (CartService.DiscountPercent / 100);
+        }
+        else
+        {
+             // Fixed amount, it stays the same unless it exceeds subtotal?
+             // Usually fixed amount is constant.
+             newDiscount = CartService.DiscountAmount;
+             if (newDiscount > subtotal) newDiscount = subtotal;
+        }
+
         if (newDiscount != CartService.DiscountAmount)
         {
-            CartService.ApplyDiscount(CartService.AppliedPromoCode, CartService.DiscountPercent, newDiscount);
+            CartService.ApplyDiscount(CartService.AppliedPromoCode, CartService.AppliedPromoId ?? 0, CartService.DiscountPercent, newDiscount);
         }
     }
     await InvokeAsync(StateHasChanged);
@@ -252,15 +269,30 @@ else
 
       if (promotion != null)
       {
-        var discountPercent = promotion.DiscountValue;
-        var discountAmount = subtotal * (discountPercent / 100);
+        decimal discountAmount = 0;
+        decimal discountPercent = 0;
+
+        if (promotion.DiscountType == "percent")
+        {
+            discountPercent = promotion.DiscountValue;
+            discountAmount = subtotal * (discountPercent / 100);
+        }
+        else // fixed
+        {
+            discountAmount = promotion.DiscountValue;
+            if (discountAmount > subtotal) discountAmount = subtotal;
+        }
         
-        CartService.ApplyDiscount(code, discountPercent, discountAmount);
+        CartService.ApplyDiscount(code, promotion.PromoId, discountPercent, discountAmount);
         
-        // Increment usage count
-        await PromotionService.IncrementUsageCountAsync(promotion.PromoId);
+        // Removed immediate increment of usage count
+        // await PromotionService.IncrementUsageCountAsync(promotion.PromoId);
         
-        await promoNotification.Show("Success", $"Promo code applied! You saved ${discountAmount:N2} ({discountPercent}% off)", PromoNotification.NotificationType.Success);
+        string saveMessage = promotion.DiscountType == "percent" 
+            ? $"${discountAmount:N2} ({discountPercent}% off)" 
+            : $"${discountAmount:N2}";
+
+        await promoNotification.Show("Success", $"Promo code applied! You saved {saveMessage}", PromoNotification.NotificationType.Success);
         promoCode = "";
       }
       else

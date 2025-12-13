@@ -105,7 +105,7 @@
                                     <span class="product-stock">SL: @product.StockQuantity</span>
                                 }
                             </div>
-                            <Button Color="Color.Primary" Size="Size.Small" Clicked="() => ViewProduct(product.ProductId)">
+                            <Button Color="Color.Primary" Size="Size.Small" Clicked="() => ViewProduct(product.ProductId)" Class="!bg-blue-600 !text-white hover:!bg-blue-700">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Eye" class="mr-1" /> Xem
                             </Button>
                         </div>
@@ -115,7 +115,7 @@
         </div>
 
         <div class="text-center mt-5">
-            <Button Color="Color.Primary" Size="Size.Large" Outline To="/store" Type="ButtonType.Link">
+            <Button Color="Color.Primary" Size="Size.Large" Outline To="/store" Type="ButtonType.Link" Class="hover:!text-blue-600">
                 Xem Tất Cả Sản Phẩm <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowRight" class="ml-2" />
             </Button>
         </div>
@@ -183,6 +183,7 @@
         </div>
     </div>
 </div>
+
 
 @code {
     private List<ProductDto>? featuredProducts;

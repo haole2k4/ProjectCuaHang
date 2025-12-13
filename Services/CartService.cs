@@ -31,9 +31,10 @@ namespace BlazorApp1.Services
 
         // Promo code properties
         string AppliedPromoCode { get; }
+        int? AppliedPromoId { get; }
         decimal DiscountPercent { get; }
         decimal DiscountAmount { get; }
-        void ApplyDiscount(string promoCode, decimal percent, decimal amount);
+        void ApplyDiscount(string promoCode, int promoId, decimal percent, decimal amount);
         void RemoveDiscount();
     }
 
@@ -46,6 +47,7 @@ namespace BlazorApp1.Services
         public event Action? OnChange;
 
         public string AppliedPromoCode { get; private set; } = "";
+        public int? AppliedPromoId { get; private set; }
         public decimal DiscountPercent { get; private set; }
         public decimal DiscountAmount { get; private set; }
 
@@ -59,9 +61,10 @@ namespace BlazorApp1.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public void ApplyDiscount(string promoCode, decimal percent, decimal amount)
+        public void ApplyDiscount(string promoCode, int promoId, decimal percent, decimal amount)
         {
             AppliedPromoCode = promoCode;
+            AppliedPromoId = promoId;
             DiscountPercent = percent;
             DiscountAmount = amount;
             NotifyStateChanged();
@@ -70,6 +73,7 @@ namespace BlazorApp1.Services
         public void RemoveDiscount()
         {
             AppliedPromoCode = "";
+            AppliedPromoId = null;
             DiscountPercent = 0;
             DiscountAmount = 0;
             NotifyStateChanged();

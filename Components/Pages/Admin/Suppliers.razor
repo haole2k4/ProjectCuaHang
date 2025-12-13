@@ -162,8 +162,9 @@
                                     <span class="text-gray-900">@(supplier.Address ?? "N/A")</span>
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">
-                                    <Badge Color="Color.Info" class="font-semibold">
-                                        @supplier.Products?.Count ?? 0 products
+                                    <Badge Color="Color.Info" class="px-3 py-1.5">
+                                        <span class="text-base font-bold">@(supplier.Products?.Count ?? 0) </span>  
+                                        <span class="text-sm font-normal"> products</span>
                                     </Badge>
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">

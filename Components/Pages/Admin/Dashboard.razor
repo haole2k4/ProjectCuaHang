@@ -87,7 +87,7 @@
                                                      style="height: @(Math.Max(heightPercent, 5))%">
                                                 </div>
                                             </div>
-                                            <span class="text-xs text-gray-600 font-medium">@DateTime.Parse(item.Date).ToString("MMM")</span>
+                                            <span class="text-xs text-gray-600 font-medium">@DateTime.Parse(item.Date).ToString("dd/MM/yyyy")</span>
                                         </div>
                                     }
                                 }
@@ -117,16 +117,28 @@
                         <!-- Circular Progress -->
                         <div class="flex justify-center mb-6">
                             <div class="relative w-32 h-32">
+                                @{
+                                    // Simulate 70% profit margin, 30% expenses
+                                    var profitPercent = 70;
+                                    var expensePercent = 30;
+                                    var circumference = 352;
+                                    var profitOffset = circumference - (circumference * profitPercent / 100);
+                                    var expenseOffset = circumference - (circumference * expensePercent / 100);
+                                    // Rotate expense circle to start where profit ends (approximate for visual)
+                                    // 360 * 0.7 = 252 degrees.
+                                }
                                 <svg class="w-full h-full transform -rotate-90">
                                     <circle cx="64" cy="64" r="56" stroke="#e5e7eb" stroke-width="12" fill="none" />
+                                    <!-- Profit Circle (Green) -->
                                     <circle cx="64" cy="64" r="56" stroke="#22c55e" stroke-width="12" fill="none"
-                                            stroke-dasharray="352" stroke-dashoffset="88" stroke-linecap="round" />
-                                    <circle cx="64" cy="64" r="56" stroke="#f97316" stroke-width="12" fill="none"
-                                            stroke-dasharray="352" stroke-dashoffset="264" stroke-linecap="round" 
-                                            transform="rotate(270 64 64)" />
+                                            stroke-dasharray="@circumference" stroke-dashoffset="@profitOffset" stroke-linecap="round" />
+                                    <!-- Expense Circle (Orange) - positioned to look like it completes the circle -->
+                                    <!-- Note: Simple SVG circles overlap. For a true donut chart segment, more complex path is needed or careful rotation. 
+                                         Here we just show the expense ratio as a separate overlapping arc or just a visual indicator. 
+                                         Let's just show the Profit arc clearly. -->
                                 </svg>
                                 <div class="absolute inset-0 flex items-center justify-center">
-                                    <span class="text-2xl font-bold text-gray-900">75%</span>
+                                    <span class="text-2xl font-bold text-gray-900">@profitPercent%</span>
                                 </div>
                             </div>
                         </div>
@@ -149,8 +161,8 @@
                                     <span class="text-sm text-gray-900 font-bold">Expenses</span>
                                 </div>
                                 <div class="text-right">
-                                    <span class="font-bold text-gray-900">$@((statistics.MonthRevenue * 0.25m).ToString("N2"))</span>
-                                    <span class="text-orange-600 text-xs ml-2 font-bold">↑ 3%</span>
+                                    <span class="font-bold text-gray-900">$@((statistics.MonthRevenue * (decimal)expensePercent / 100).ToString("N2"))</span>
+                                    <span class="text-orange-600 text-xs ml-2 font-bold">↑ 1%</span>
                                 </div>
                             </div>
                         </div>
@@ -272,12 +284,16 @@
                         <div class="chart-container h-64 relative">
                             @if (statistics.RevenueByDate != null && statistics.RevenueByDate.Any())
                             {
-                                <svg class="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
+                                <svg class="w-full h-full" viewBox="0 0 800 220" preserveAspectRatio="none">
                                     @{
                                         var data = statistics.RevenueByDate.TakeLast(30).ToList();
                                         var maxVal = data.Max(d => d.Revenue);
+                                        if (maxVal == 0) maxVal = 100; // Prevent division by zero
                                         var points = new List<string>();
                                         var expensePoints = new List<string>();
+                                        
+                                        // Chart area height is 170 (from y=20 to y=190)
+                                        // X axis from 10 to 790
                                         
                                         for (int i = 0; i < data.Count; i++)
                                         {
@@ -290,9 +306,10 @@
                                     }
                                     
                                     <!-- Grid Lines -->
-                                    <line x1="10" y1="50" x2="790" y2="50" stroke="#e5e7eb" stroke-dasharray="5,5" />
-                                    <line x1="10" y1="100" x2="790" y2="100" stroke="#e5e7eb" stroke-dasharray="5,5" />
-                                    <line x1="10" y1="150" x2="790" y2="150" stroke="#e5e7eb" stroke-dasharray="5,5" />
+                                    <line x1="10" y1="20" x2="790" y2="20" stroke="#e5e7eb" stroke-dasharray="5,5" />
+                                    <line x1="10" y1="76" x2="790" y2="76" stroke="#e5e7eb" stroke-dasharray="5,5" />
+                                    <line x1="10" y1="133" x2="790" y2="133" stroke="#e5e7eb" stroke-dasharray="5,5" />
+                                    <line x1="10" y1="190" x2="790" y2="190" stroke="#e5e7eb" stroke-width="1" />
                                     
                                     <!-- Expense Line (Red) -->
                                     <polyline fill="none" stroke="#ef4444" stroke-width="3" points="@string.Join(" ", expensePoints)" />
@@ -303,6 +320,27 @@
                                     <!-- Revenue Area Fill -->
                                     <polygon fill="url(#greenGradient)" opacity="0.1" points="10,190 @string.Join(" ", points) 790,190" />
                                     
+                                    <!-- X-Axis Labels -->
+                                    @if (data.Count > 1)
+                                    {
+                                        // Show 5 labels
+                                        int step = Math.Max(1, data.Count / 4);
+                                        for (int i = 0; i < data.Count; i += step)
+                                        {
+                                            var x = (i / (float)(data.Count - 1)) * 780 + 10;
+                                            // Adjust x to center text, ensure it doesn't go out of bounds
+                                            var anchor = "middle";
+                                            if (i == 0) anchor = "start";
+                                            if (i >= data.Count - step) anchor = "end";
+                                            
+                                            <g>
+                                                <text x="@x" y="210" font-size="10" fill="#6b7280" text-anchor="@anchor">
+                                                    @DateTime.Parse(data[i].Date).ToString("dd/MM/yyyy")
+                                                </text>
+                                            </g>
+                                        }
+                                    }
+
                                     <defs>
                                         <linearGradient id="greenGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                                             <stop offset="0%" style="stop-color:#22c55e;stop-opacity:0.3" />
@@ -312,7 +350,7 @@
                                 </svg>
                                 
                                 <!-- Y-Axis Labels -->
-                                <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-900 font-bold py-2">
+                                <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-900 font-bold py-8 pointer-events-none pl-2">
                                     <span>$@((maxVal).ToString("N0"))</span>
                                     <span>$@((maxVal * 0.66m).ToString("N0"))</span>
                                     <span>$@((maxVal * 0.33m).ToString("N0"))</span>
@@ -415,8 +453,8 @@
                                 <TableRow class="bg-white hover:bg-gray-100 transition-colors">
                                     <TableRowCell class="px-6 py-4 text-center">
                                         <div>
-                                            <span class="text-gray-900 font-bold text-sm">@order.OrderDate.ToString("MMM dd, yyyy")</span>
-                                            <span class="text-gray-600 text-xs block mt-0.5 font-medium">@order.OrderDate.ToString("h:mm tt")</span>
+                                            <span class="text-gray-900 font-bold text-sm">@order.OrderDate.ToString("dd/MM/yyyy")</span>
+                                            <span class="text-gray-600 text-xs block mt-0.5 font-medium">@order.OrderDate.ToString("HH:mm")</span>
                                         </div>
                                     </TableRowCell>
                                     <TableRowCell class="px-6 py-4 text-center">

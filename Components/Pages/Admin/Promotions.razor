@@ -92,14 +92,14 @@
             <Table class="mb-0 w-full">
                 <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Code</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Type</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Discount</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Min Order</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Usage</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Valid Period</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
+                        <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Code</TableHeaderCell>
+                        <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Type</TableHeaderCell>
+                        <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Discount</TableHeaderCell>
+                        <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Min Order</TableHeaderCell>
+                        <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Usage</TableHeaderCell>
+                        <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Valid Period</TableHeaderCell>
+                        <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="bg-white divide-y divide-gray-200">
@@ -108,18 +108,18 @@
                         @foreach (var promo in promotions)
                         {
                             <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
-                                <TableRowCell class="px-6 py-4 text-center">
-                                    <div class="flex items-center gap-2">
+                                <TableRowCell class="px-4 py-3 text-center">
+                                    <div class="flex items-center gap-2 justify-center">
                                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tag" class="text-purple-500" />
                                         <span class="font-mono font-bold text-gray-900">@promo.PromoCode</span>
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4 text-center">
-                                    <Badge Color="@GetApplyTypeColor(promo.ApplyType)" class="font-semibold">
+                                <TableRowCell class="px-4 py-3 text-center">
+                                    <Badge Color="@GetApplyTypeColor(promo.ApplyType)" class="font-semibold text-sm px-3 py-1">
                                         @GetApplyTypeText(promo.ApplyType)
                                     </Badge>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4 text-center">
+                                <TableRowCell class="px-4 py-3 text-center">
                                     @if (promo.DiscountType == "percent")
                                     {
                                         <span class="text-green-600 font-bold">@promo.DiscountValue%</span>
@@ -129,34 +129,44 @@
                                         <span class="text-green-600 font-bold">$@promo.DiscountValue</span>
                                     }
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4 text-center">
+                                <TableRowCell class="px-4 py-3 text-center">
                                     <span class="text-gray-900 font-medium">$@promo.MinOrderAmount</span>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4 text-center">
-                                    <div class="flex items-center gap-2">
-                                        <Progress Value="@GetUsageProgress(promo)" Max="100" class="flex-1 h-2" Color="Color.Primary" />
-                                        <span class="text-sm font-semibold text-gray-900">@promo.UsedCount/@(promo.UsageLimit == 0 ? "?" : promo.UsageLimit.ToString())</span>
+                                <TableRowCell class="px-4 py-3 text-center">
+                                    <div class="flex items-center gap-3 justify-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                            <div class="h-full rounded-full transition-all duration-500 @GetUsageColorClass(promo)" style="width: @GetUsageProgress(promo)%"></div>
+                                        </div>
+                                        <span class="text-sm font-semibold text-gray-900 w-16 text-left">@promo.UsedCount/@(promo.UsageLimit == 0 ? "?" : promo.UsageLimit.ToString())</span>
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4 text-center">
+                                <TableRowCell class="px-4 py-3 text-center">
                                     <div class="text-sm">
-                                        <div class="text-gray-900 font-medium">@promo.StartDate.ToString("MMM dd, yyyy")</div>
-                                        <div class="text-gray-600">to @promo.EndDate.ToString("MMM dd, yyyy")</div>
+                                        <div class="text-gray-900 font-medium">@promo.StartDate.ToString("dd/MM/yyyy")</div>
+                                        <div class="text-gray-600">To @promo.EndDate.ToString("dd/MM/yyyy")</div>
                                     </div>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4 text-center">
+                                <TableRowCell class="px-4 py-3 text-center">
                                     @if (promo.EndDate < DateTime.Now)
                                     {
-                                        <Badge Color="Color.Danger" class="px-3 py-1.5 rounded-full font-medium">Expired</Badge>
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
+                                            Expired
+                                        </span>
+                                    }
+                                    else if (promo.Status == "active")
+                                    {
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                                            Active
+                                        </span>
                                     }
                                     else
                                     {
-                                        <Badge Color="@(promo.Status == "active" ? Color.Success : Color.Secondary)" class="px-3 py-1.5 rounded-full font-medium">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
                                             @promo.Status
-                                        </Badge>
+                                        </span>
                                     }
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4 text-right">
+                                <TableRowCell class="px-4 py-3 text-right">
                                     <Buttons class="gap-2 justify-end">
                                         <Button Color="Color.Light" Size="Size.Small" Clicked="() => OpenEditModal(promo)" class="!border-2 !border-gray-300 hover:!bg-gray-200 !text-gray-900 shadow-sm">
                                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
@@ -198,7 +208,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Promo Code *</label>
-                        <TextEdit @bind-Text="currentPromotion.PromoCode" Placeholder="e.g., SUMMER2024" class="w-full !border-gray-300" />
+                        <TextEdit @bind-Text="currentPromotion.PromoCode" Placeholder="e.g., SUMMER2024" class="w-full !border-gray-300 uppercase" />
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Apply Type *</label>
@@ -429,8 +439,18 @@
 
     private int GetUsageProgress(Promotion promo)
     {
-        if (promo.UsageLimit == 0) return 0;
+        if (promo.UsageLimit == 0) return 0; // Or maybe 100 if we want to show full bar for unlimited? No, 0 is safer or maybe just hide bar.
+        if (promo.UsedCount >= promo.UsageLimit) return 100;
         return (int)Math.Round((promo.UsedCount / (decimal)promo.UsageLimit) * 100);
+    }
+
+    private string GetUsageColorClass(Promotion promo)
+    {
+        if (promo.UsageLimit > 0 && promo.UsedCount >= promo.UsageLimit)
+        {
+            return "bg-red-600";
+        }
+        return "bg-green-500";
     }
 
     private Color GetApplyTypeColor(string applyType) => applyType switch

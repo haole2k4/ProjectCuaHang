@@ -9,9 +9,11 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using StoreManagementAPI.Data
 @using Microsoft.EntityFrameworkCore
+@using StoreManagementAPI.Services
 
 @inject ICartService CartService
 @inject ICustomerOrderService OrderService
+@inject IPromotionService PromotionService
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject StoreDbContext DbContext
@@ -340,6 +342,12 @@ else
             var order = await OrderService.CreateOrderAsync(customerId, orderItems, checkoutModel.PaymentMethod, CartService.DiscountAmount);
             orderId = order.OrderId;
             
+            // Increment promo usage if one was applied
+            if (CartService.AppliedPromoId.HasValue)
+            {
+                await PromotionService.IncrementUsageCountAsync(CartService.AppliedPromoId.Value);
+            }
+
             // Clear cart and discount
             await CartService.ClearCartAsync();
             CartService.RemoveDiscount();
