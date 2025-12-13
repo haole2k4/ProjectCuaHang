@@ -331,7 +331,7 @@ else
         try
         {
             // Convert CartItemDto to the format CustomerOrderService expects
-            var orderItems = cartItems!.Select(ci => new
+            var orderItems = cartItems!.Select(ci => new CartItemForOrder
             {
                 ProductId = ci.ProductId,
                 Quantity = ci.Quantity
@@ -341,7 +341,7 @@ else
             // We need to pass the discount amount to the order service
             var order = await OrderService.CreateOrderAsync(customerId, orderItems, checkoutModel.PaymentMethod, CartService.DiscountAmount);
             orderId = order.OrderId;
-            
+
             // Increment promo usage if one was applied
             if (CartService.AppliedPromoId.HasValue)
             {
@@ -351,7 +351,7 @@ else
             // Clear cart and discount
             await CartService.ClearCartAsync();
             CartService.RemoveDiscount();
-            
+
             orderPlaced = true;
         }
         catch (Exception ex)

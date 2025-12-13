@@ -4,9 +4,16 @@ using StoreManagementAPI.Models;
 
 namespace BlazorApp1.Services
 {
+    // DTO for order creation
+    public class CartItemForOrder
+    {
+        public int ProductId { get; set; }
+        public int Quantity { get; set; }
+    }
+
     public interface ICustomerOrderService
     {
-        Task<Order> CreateOrderAsync(int? customerId, dynamic cartItems, string paymentMethod, decimal discountAmount = 0);
+        Task<Order> CreateOrderAsync(int? customerId, List<CartItemForOrder> cartItems, string paymentMethod, decimal discountAmount = 0);
         Task<List<Order>> GetCustomerOrdersAsync(int customerId);
         Task<Order?> GetOrderByIdAsync(int orderId);
         Task<Order?> GetOrderWithDetailsAsync(int orderId);
@@ -21,8 +28,22 @@ namespace BlazorApp1.Services
             _context = context;
         }
 
-        public async Task<Order> CreateOrderAsync(int? customerId, dynamic cartItems, string paymentMethod, decimal discountAmount = 0)
+        public async Task<Order> CreateOrderAsync(int? customerId, List<CartItemForOrder> cartItems, string paymentMethod, decimal discountAmount = 0)
         {
+            // Validate inventory before creating order
+            foreach (var item in cartItems)
+            {
+                var totalInventory = await _context.Inventories
+                    .Where(i => i.ProductId == item.ProductId)
+                    .SumAsync(i => i.Quantity);
+
+                if (item.Quantity > totalInventory)
+                {
+                    var product = await _context.Products.FindAsync(item.ProductId);
+                    throw new InvalidOperationException($"Không đủ hàng cho sản phẩm {product?.ProductName}. Chỉ còn {totalInventory} sản phẩm trong kho.");
+                }
+            }
+
             // Calculate total from cart items
             decimal totalAmount = 0;
             foreach (var item in cartItems)
@@ -50,7 +71,7 @@ namespace BlazorApp1.Services
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            // Add order items
+            // Add order items and deduct inventory
             foreach (var item in cartItems)
             {
                 var product = await _context.Products.FindAsync(item.ProductId);
@@ -65,6 +86,23 @@ namespace BlazorApp1.Services
                         Subtotal = product.Price * item.Quantity
                     };
                     _context.OrderItems.Add(orderItem);
+
+                    // Deduct from inventory (FIFO - first warehouse first)
+                    var remainingQuantity = item.Quantity;
+                    var inventories = await _context.Inventories
+                        .Where(i => i.ProductId == item.ProductId && i.Quantity > 0)
+                        .OrderBy(i => i.InventoryId) // FIFO
+                        .ToListAsync();
+
+                    foreach (var inventory in inventories)
+                    {
+                        if (remainingQuantity <= 0) break;
+
+                        var deductAmount = Math.Min(inventory.Quantity, remainingQuantity);
+                        inventory.Quantity -= deductAmount;
+                        inventory.UpdatedAt = DateTime.Now;
+                        remainingQuantity -= deductAmount;
+                    }
                 }
             }
 

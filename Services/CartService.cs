@@ -21,8 +21,8 @@ namespace BlazorApp1.Services
     {
         event Action? OnChange;
         Task<List<CartItemDto>> GetCartItemsAsync();
-        Task AddToCartAsync(Product product, int quantity = 1);
-        Task UpdateQuantityAsync(int productId, int quantity);
+        Task<(bool success, string message)> AddToCartAsync(Product product, int quantity = 1);
+        Task<(bool success, string message)> UpdateQuantityAsync(int productId, int quantity);
         Task RemoveFromCartAsync(int productId);
         Task ClearCartAsync();
         Task<decimal> GetTotalAsync();
@@ -174,13 +174,26 @@ namespace BlazorApp1.Services
             return cartItems;
         }
 
-        public async Task AddToCartAsync(Product product, int quantity = 1)
+        public async Task<(bool success, string message)> AddToCartAsync(Product product, int quantity = 1)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
             var cart = await GetOrCreateCartAsync();
 
+            // Check available inventory
+            var totalInventory = await context.Inventories
+                .Where(i => i.ProductId == product.ProductId)
+                .SumAsync(i => i.Quantity);
+
             var existingItem = await context.CartItems
                 .FirstOrDefaultAsync(ci => ci.CartId == cart.CartId && ci.ProductId == product.ProductId);
+
+            var currentCartQuantity = existingItem?.Quantity ?? 0;
+            var requestedTotal = currentCartQuantity + quantity;
+
+            if (requestedTotal > totalInventory)
+            {
+                return (false, $"Không đủ hàng! Chỉ còn {totalInventory} sản phẩm trong kho (bạn đã có {currentCartQuantity} trong giỏ)");
+            }
 
             if (existingItem != null)
             {
@@ -201,9 +214,10 @@ namespace BlazorApp1.Services
             cart.UpdatedAt = DateTime.Now;
             await context.SaveChangesAsync();
             NotifyStateChanged();
+            return (true, "Đã thêm vào giỏ hàng thành công!");
         }
 
-        public async Task UpdateQuantityAsync(int productId, int quantity)
+        public async Task<(bool success, string message)> UpdateQuantityAsync(int productId, int quantity)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
             var cart = await GetOrCreateCartAsync();
@@ -219,13 +233,25 @@ namespace BlazorApp1.Services
                 }
                 else
                 {
+                    // Check available inventory
+                    var totalInventory = await context.Inventories
+                        .Where(i => i.ProductId == productId)
+                        .SumAsync(i => i.Quantity);
+
+                    if (quantity > totalInventory)
+                    {
+                        return (false, $"Không đủ hàng! Chỉ còn {totalInventory} sản phẩm trong kho");
+                    }
+
                     item.Quantity = quantity;
                 }
 
                 cart.UpdatedAt = DateTime.Now;
                 await context.SaveChangesAsync();
                 NotifyStateChanged();
+                return (true, "Cập nhật giỏ hàng thành công!");
             }
+            return (false, "Không tìm thấy sản phẩm trong giỏ hàng");
         }
 
         public async Task RemoveFromCartAsync(int productId)

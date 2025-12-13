@@ -28,7 +28,7 @@ else if (product == null)
             </div>
             <h2 class="text-2xl font-bold text-gray-900 mb-2">Không tìm thấy sản phẩm</h2>
             <p class="text-gray-600 mb-6">Sản phẩm này không tồn tại hoặc đã bị xóa</p>
-            <button @onclick='() => NavigationManager.NavigateTo("/store")' 
+            <button @onclick='() => NavigationManager.NavigateTo("/store")'
                     class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition duration-200">
                 <i class="fas fa-arrow-left mr-2"></i>
                 Quay lại cửa hàng
@@ -71,8 +71,8 @@ else
                     <div class="aspect-square bg-gray-100 rounded-xl overflow-hidden">
                         @if (!string.IsNullOrEmpty(product.ImageUrl))
                         {
-                            <img src="@product.ImageUrl" 
-                                 alt="@product.ProductName" 
+                            <img src="@product.ImageUrl"
+                                 alt="@product.ProductName"
                                  class="w-full h-full object-cover" />
                         }
                         else
@@ -96,7 +96,7 @@ else
                                 </span>
                             }
                         </div>
-                        
+
                         <!-- Price -->
                         <div class="mb-6 pb-6 border-b border-gray-200">
                             <div class="flex items-baseline gap-3">
@@ -152,15 +152,15 @@ else
                         <div class="mb-8">
                             <h3 class="text-lg font-bold text-gray-900 mb-3">Số lượng</h3>
                             <div class="flex items-center gap-3">
-                                <button @onclick="DecreaseQuantity" 
+                                <button @onclick="DecreaseQuantity"
                                         class="w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded-lg font-bold text-xl transition">
                                     <i class="fas fa-minus"></i>
                                 </button>
-                                <input type="number" 
-                                       @bind="quantity" 
+                                <input type="number"
+                                       @bind="quantity"
                                        min="1"
                                        class="w-20 h-12 text-center border-2 border-gray-300 rounded-lg font-bold text-xl focus:outline-none focus:border-blue-500" />
-                                <button @onclick="IncreaseQuantity" 
+                                <button @onclick="IncreaseQuantity"
                                         class="w-12 h-12 bg-gray-200 hover:bg-gray-300 rounded-lg font-bold text-xl transition">
                                     <i class="fas fa-plus"></i>
                                 </button>
@@ -171,22 +171,22 @@ else
                     <!-- Actions -->
                     <div class="space-y-3">
                         <div class="grid grid-cols-2 gap-3">
-                            <button @onclick="AddToCart" 
+                            <button @onclick="AddToCart"
                                     disabled="@(!product.Inventories.Any() || product.Inventories.Sum(i => i.Quantity) <= 0)"
                                     class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-4 rounded-xl font-bold text-lg transition duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
                                 <i class="fas fa-cart-plus text-xl"></i>
                                 <span>Thêm vào giỏ</span>
                             </button>
-                            
-                            <button @onclick="BuyNow" 
+
+                            <button @onclick="BuyNow"
                                     disabled="@(!product.Inventories.Any() || product.Inventories.Sum(i => i.Quantity) <= 0)"
                                     class="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-6 py-4 rounded-xl font-bold text-lg transition duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
                                 <i class="fas fa-shopping-bag text-xl"></i>
                                 <span>Mua ngay</span>
                             </button>
                         </div>
-                        
-                        <button @onclick='() => NavigationManager.NavigateTo("/store")' 
+
+                        <button @onclick='() => NavigationManager.NavigateTo("/store")'
                                 class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-4 rounded-xl font-semibold text-lg transition duration-200 flex items-center justify-center gap-3">
                             <i class="fas fa-arrow-left"></i>
                             <span>Tiếp tục mua sắm</span>
@@ -301,11 +301,11 @@ else
     private async Task LoadProduct()
     {
         isLoading = true;
-        
+
         try
         {
             var decodedName = Uri.UnescapeDataString(ProductName);
-            
+
             product = await DbContext.Products
                 .Include(p => p.Category)
                 .Include(p => p.Inventories)
@@ -329,8 +329,8 @@ else
         {
             relatedProducts = await DbContext.Products
                 .Include(p => p.Category)
-                .Where(p => p.CategoryId == product.CategoryId && 
-                           p.ProductId != product.ProductId && 
+                .Where(p => p.CategoryId == product.CategoryId &&
+                           p.ProductId != product.ProductId &&
                            p.Status == "active")
                 .Take(4)
                 .ToListAsync();
@@ -360,15 +360,19 @@ else
 
         try
         {
-            for (int i = 0; i < quantity; i++)
+            var (success, message) = await CartService.AddToCartAsync(product, quantity);
+
+            if (success)
             {
-                await CartService.AddToCartAsync(product);
+                toastMessage = $"Đã thêm {quantity} {product.ProductName} vào giỏ hàng!";
+                quantity = 1; // Reset quantity
+            }
+            else
+            {
+                toastMessage = message;
             }
 
-            toastMessage = $"Đã thêm {quantity} {product.ProductName} vào giỏ hàng!";
             showToast = true;
-            quantity = 1; // Reset quantity
-
             await Task.Delay(3000);
             showToast = false;
             await InvokeAsync(StateHasChanged);
@@ -385,13 +389,21 @@ else
 
         try
         {
-            for (int i = 0; i < quantity; i++)
-            {
-                await CartService.AddToCartAsync(product);
-            }
+            var (success, message) = await CartService.AddToCartAsync(product, quantity);
 
-            // Navigate to checkout page
-            NavigationManager.NavigateTo("/store/checkout");
+            if (success)
+            {
+                // Navigate to checkout page
+                NavigationManager.NavigateTo("/store/checkout");
+            }
+            else
+            {
+                toastMessage = message;
+                showToast = true;
+                await Task.Delay(3000);
+                showToast = false;
+                await InvokeAsync(StateHasChanged);
+            }
         }
         catch (Exception ex)
         {

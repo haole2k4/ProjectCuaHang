@@ -181,7 +181,7 @@
                                         SL: @totalStock
                                     </span>
                                 </div>
-                                
+
                                 <!-- In Stock Badge - Top Right -->
                                 <div class="absolute top-3 right-3">
                                     <span class="bg-green-600 px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg">
@@ -209,7 +209,7 @@
                                     @product.Category.CategoryName
                                 </span>
                             }
-                            
+
                             <!-- Product Name -->
                             <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition leading-normal">
                                 @product.ProductName
@@ -309,14 +309,14 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadCategories();
-        
+
         // Set selected category from URL parameter
         if (CategoryId.HasValue)
         {
             selectedCategoryId = CategoryId;
             selectedCategoryName = categories?.FirstOrDefault(c => c.CategoryId == CategoryId)?.CategoryName;
         }
-        
+
         await LoadProducts();
     }
 
@@ -399,11 +399,11 @@
         selectedCategoryName = categoryId.HasValue
             ? categories?.FirstOrDefault(c => c.CategoryId == categoryId)?.CategoryName
             : null;
-        
+
         // Update URL
         var url = categoryId.HasValue ? $"/store/category/{categoryId}" : "/store";
         NavigationManager.NavigateTo(url);
-        
+
         await LoadProducts();
     }
 
@@ -437,10 +437,18 @@
 
     private async Task AddToCart(Product product)
     {
-        await CartService.AddToCartAsync(product);
-        toastMessage = $"{product.ProductName} added to cart!";
-        showToast = true;
+        var (success, message) = await CartService.AddToCartAsync(product);
 
+        if (success)
+        {
+            toastMessage = $"{product.ProductName} đã thêm vào giỏ hàng!";
+        }
+        else
+        {
+            toastMessage = message;
+        }
+
+        showToast = true;
         await Task.Delay(3000);
         showToast = false;
         await InvokeAsync(StateHasChanged);

@@ -214,7 +214,7 @@ else
         // However, CartService only stores the result values now.
         // Ideally CartService should store DiscountType and Value.
         // For now, let's assume if Percent > 0 it's percent, otherwise fixed.
-        
+
         decimal newDiscount = 0;
         if (CartService.DiscountPercent > 0)
         {
@@ -238,7 +238,11 @@ else
 
   private async Task UpdateQuantity(int productId, int quantity)
   {
-    await CartService.UpdateQuantityAsync(productId, quantity);
+    var (success, message) = await CartService.UpdateQuantityAsync(productId, quantity);
+    if (!success)
+    {
+      await promoNotification.Show("Thông báo", message, PromoNotification.NotificationType.Error);
+    }
   }
 
   private async Task RemoveItem(int productId)
@@ -265,7 +269,11 @@ else
     try
     {
       var code = promoCode.Trim().ToUpper();
+      Console.WriteLine($"[Cart] Applying promo code: '{code}'");
+
       var promotion = await PromotionService.ValidateAndGetPromotionAsync(code);
+
+      Console.WriteLine($"[Cart] Promotion result: {(promotion != null ? "Found" : "Not found")}");
 
       if (promotion != null)
       {
@@ -282,14 +290,14 @@ else
             discountAmount = promotion.DiscountValue;
             if (discountAmount > subtotal) discountAmount = subtotal;
         }
-        
+
         CartService.ApplyDiscount(code, promotion.PromoId, discountPercent, discountAmount);
-        
+
         // Removed immediate increment of usage count
         // await PromotionService.IncrementUsageCountAsync(promotion.PromoId);
-        
-        string saveMessage = promotion.DiscountType == "percent" 
-            ? $"${discountAmount:N2} ({discountPercent}% off)" 
+
+        string saveMessage = promotion.DiscountType == "percent"
+            ? $"${discountAmount:N2} ({discountPercent}% off)"
             : $"${discountAmount:N2}";
 
         await promoNotification.Show("Success", $"Promo code applied! You saved {saveMessage}", PromoNotification.NotificationType.Success);
@@ -300,8 +308,10 @@ else
         await promoNotification.Show("Error", "Invalid or expired promo code. Please try again.", PromoNotification.NotificationType.Error);
       }
     }
-    catch
+    catch (Exception ex)
     {
+      Console.WriteLine($"[Cart] Error applying promo: {ex.Message}");
+      Console.WriteLine($"[Cart] Stack trace: {ex.StackTrace}");
       await promoNotification.Show("Error", "Error applying promo code. Please try again.", PromoNotification.NotificationType.Error);
     }
     finally
