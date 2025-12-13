@@ -28,6 +28,13 @@ namespace BlazorApp1.Services
         Task<decimal> GetTotalAsync();
         Task<int> GetItemCountAsync();
         Task MergeGuestCartToCustomerAsync(int customerId);
+
+        // Promo code properties
+        string AppliedPromoCode { get; }
+        decimal DiscountPercent { get; }
+        decimal DiscountAmount { get; }
+        void ApplyDiscount(string promoCode, decimal percent, decimal amount);
+        void RemoveDiscount();
     }
 
     public class CartService : ICartService
@@ -38,6 +45,10 @@ namespace BlazorApp1.Services
 
         public event Action? OnChange;
 
+        public string AppliedPromoCode { get; private set; } = "";
+        public decimal DiscountPercent { get; private set; }
+        public decimal DiscountAmount { get; private set; }
+
         public CartService(
             IDbContextFactory<StoreDbContext> contextFactory,
             AuthenticationStateProvider authStateProvider,
@@ -46,6 +57,22 @@ namespace BlazorApp1.Services
             _contextFactory = contextFactory;
             _authStateProvider = authStateProvider;
             _httpContextAccessor = httpContextAccessor;
+        }
+
+        public void ApplyDiscount(string promoCode, decimal percent, decimal amount)
+        {
+            AppliedPromoCode = promoCode;
+            DiscountPercent = percent;
+            DiscountAmount = amount;
+            NotifyStateChanged();
+        }
+
+        public void RemoveDiscount()
+        {
+            AppliedPromoCode = "";
+            DiscountPercent = 0;
+            DiscountAmount = 0;
+            NotifyStateChanged();
         }
 
         private async Task<Cart> GetOrCreateCartAsync()

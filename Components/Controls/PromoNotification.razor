@@ -1,0 +1,85 @@
+@using Blazorise
+
+<style>
+    @@keyframes slideInUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    .animate-slide-up {
+        animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+</style>
+
+@if (IsVisible)
+{
+    <div class="fixed bottom-4 left-4 z-50 bg-white rounded-lg shadow-lg p-4 max-w-sm animate-slide-up border-0 flex items-start gap-3">
+        <div class="flex-shrink-0">
+            @if (Type == NotificationType.Success)
+            {
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="text-green-500 text-xl" />
+            }
+            else if (Type == NotificationType.Error)
+            {
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationCircle" class="text-red-500 text-xl" />
+            }
+            else
+            {
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.InfoCircle" class="text-blue-500 text-xl" />
+            }
+        </div>
+        <div class="flex-1">
+            <h4 class="font-semibold text-gray-900 text-sm mb-1">@Title</h4>
+            <p class="text-gray-600 text-sm m-0">@Message</p>
+        </div>
+        <button @onclick="Close" class="text-gray-400 hover:text-gray-600 transition bg-transparent border-0 p-0 cursor-pointer">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Times" />
+        </button>
+    </div>
+}
+
+@code {
+    public bool IsVisible { get; private set; }
+    public string Title { get; private set; } = "";
+    public string Message { get; private set; } = "";
+    public NotificationType Type { get; private set; } = NotificationType.Info;
+
+    public enum NotificationType
+    {
+        Success,
+        Error,
+        Info
+    }
+
+    public async Task Show(string title, string message, NotificationType type = NotificationType.Info, int duration = 3000)
+    {
+        Title = title;
+        Message = message;
+        Type = type;
+        IsVisible = true;
+        StateHasChanged();
+
+        if (duration > 0)
+        {
+            await Task.Delay(duration);
+            // Only hide if it's still the same notification (simple check)
+            // In a real app we might want a more robust ID check, but this is fine for now.
+            if (IsVisible && Title == title && Message == message) 
+            {
+                IsVisible = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    public void Close()
+    {
+        IsVisible = false;
+        StateHasChanged();
+    }
+}

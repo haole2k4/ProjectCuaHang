@@ -6,7 +6,7 @@ namespace BlazorApp1.Services
 {
     public interface ICustomerOrderService
     {
-        Task<Order> CreateOrderAsync(int? customerId, dynamic cartItems, string paymentMethod);
+        Task<Order> CreateOrderAsync(int? customerId, dynamic cartItems, string paymentMethod, decimal discountAmount = 0);
         Task<List<Order>> GetCustomerOrdersAsync(int customerId);
         Task<Order?> GetOrderByIdAsync(int orderId);
         Task<Order?> GetOrderWithDetailsAsync(int orderId);
@@ -21,7 +21,7 @@ namespace BlazorApp1.Services
             _context = context;
         }
 
-        public async Task<Order> CreateOrderAsync(int? customerId, dynamic cartItems, string paymentMethod)
+        public async Task<Order> CreateOrderAsync(int? customerId, dynamic cartItems, string paymentMethod, decimal discountAmount = 0)
         {
             // Calculate total from cart items
             decimal totalAmount = 0;
@@ -34,13 +34,17 @@ namespace BlazorApp1.Services
                 }
             }
 
+            // Apply discount
+            decimal finalAmount = totalAmount - discountAmount;
+            if (finalAmount < 0) finalAmount = 0;
+
             var order = new Order
             {
                 CustomerId = customerId,
                 OrderDate = DateTime.Now,
                 Status = "pending",
-                TotalAmount = totalAmount,
-                DiscountAmount = 0
+                TotalAmount = finalAmount,
+                DiscountAmount = discountAmount
             };
 
             _context.Orders.Add(order);

@@ -245,9 +245,16 @@ else
                             <span class="text-gray-600">Tax</span>
                             <span class="font-medium">$0.00</span>
                         </div>
+                        @if (CartService.DiscountAmount > 0)
+                        {
+                            <div class="flex justify-between text-sm text-green-600">
+                                <span>Discount (@CartService.AppliedPromoCode)</span>
+                                <span>-$@CartService.DiscountAmount.ToString("N2")</span>
+                            </div>
+                        }
                         <div class="flex justify-between items-center pt-3 border-t-2 border-gray-300">
                             <span class="text-lg font-bold text-gray-900">Total</span>
-                            <span class="text-2xl font-bold text-green-600">$@(cartItems?.Sum(x => x.Subtotal).ToString("N2") ?? "0.00")</span>
+                            <span class="text-2xl font-bold text-green-600">$@((cartItems?.Sum(x => x.Subtotal) - CartService.DiscountAmount ?? 0).ToString("N2"))</span>
                         </div>
                     </div>
                 </div>
@@ -329,9 +336,14 @@ else
             }).ToList();
 
             // Pass customerId (can be null for guest checkout)
-            var order = await OrderService.CreateOrderAsync(customerId, orderItems, checkoutModel.PaymentMethod);
+            // We need to pass the discount amount to the order service
+            var order = await OrderService.CreateOrderAsync(customerId, orderItems, checkoutModel.PaymentMethod, CartService.DiscountAmount);
             orderId = order.OrderId;
+            
+            // Clear cart and discount
             await CartService.ClearCartAsync();
+            CartService.RemoveDiscount();
+            
             orderPlaced = true;
         }
         catch (Exception ex)
