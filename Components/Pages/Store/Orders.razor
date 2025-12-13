@@ -154,9 +154,24 @@ else
     {
         isLoading = true;
 
-        if (customerId.HasValue)
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var isAdmin = user.IsInRole("ADMIN");
+
+        if (isAdmin)
         {
-            // Load only customer's orders
+            // ADMIN: Load all orders
+            orders = await DbContext.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                .Include(o => o.Payments)
+                .OrderByDescending(o => o.OrderDate)
+                .ToListAsync();
+        }
+        else if (customerId.HasValue)
+        {
+            // CUSTOMER: Load only their orders
             orders = await DbContext.Orders
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)

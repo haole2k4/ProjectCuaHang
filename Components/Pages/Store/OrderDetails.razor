@@ -1,13 +1,20 @@
 @page "/store/orders/{OrderId:int}"
 @layout StoreLayout
 @rendermode InteractiveServer
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 @using BlazorApp1.Services
 @using StoreManagementAPI.Models
+@using StoreManagementAPI.Data
+@using Microsoft.EntityFrameworkCore
 @using Blazorise
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 
 @inject ICustomerOrderService OrderService
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject StoreDbContext DbContext
 
 <PageTitle>Order Details</PageTitle>
 
@@ -258,7 +265,37 @@ else
     private async Task LoadOrder()
     {
         isLoading = true;
-        order = await OrderService.GetOrderWithDetailsAsync(OrderId);
+        
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var isAdmin = user.IsInRole("ADMIN");
+
+        if (isAdmin)
+        {
+            // ADMIN: Can view any order
+            order = await OrderService.GetOrderWithDetailsAsync(OrderId);
+        }
+        else
+        {
+            // CUSTOMER: Check if order belongs to them
+            var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId != null)
+            {
+                var customer = await DbContext.Customers
+                    .FirstOrDefaultAsync(c => c.ApplicationUserId == userId);
+                
+                if (customer != null)
+                {
+                    order = await DbContext.Orders
+                        .Include(o => o.Customer)
+                        .Include(o => o.OrderItems)
+                            .ThenInclude(oi => oi.Product)
+                        .Include(o => o.Payments)
+                        .FirstOrDefaultAsync(o => o.OrderId == OrderId && o.CustomerId == customer.CustomerId);
+                }
+            }
+        }
+        
         isLoading = false;
     }
 
