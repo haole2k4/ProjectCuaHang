@@ -170,6 +170,8 @@
                 </TableBody>
             </Table>
         </div>
+        
+        <PaginationComponent CurrentPage="@currentPage" PageSize="@pageSize" TotalItems="@totalItems" OnPageChanged="@HandlePageChanged" />
     </CardBody>
 </Card>
 
@@ -304,6 +306,7 @@
         public int TotalStock { get; set; }
     }
 
+    private List<WarehouseViewModel>? allWarehouses;
     private List<WarehouseViewModel>? warehouses;
     private Modal warehouseModal = null!;
     private Modal detailsModal = null!;
@@ -314,6 +317,11 @@
     private List<StoreManagementAPI.Models.Inventory>? warehouseInventory;
 
     private WarehouseDto currentWarehouse = new();
+
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalItems = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -336,7 +344,26 @@
             .OrderBy(w => w.WarehouseName)
             .ToListAsync();
 
-        warehouses = data;
+        allWarehouses = data;
+        totalItems = allWarehouses?.Count ?? 0;
+        UpdatePagedData();
+    }
+
+    private void UpdatePagedData()
+    {
+        if (allWarehouses != null)
+        {
+            warehouses = allWarehouses
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+    }
+
+    private void HandlePageChanged(int page)
+    {
+        currentPage = page;
+        UpdatePagedData();
     }
 
     private async Task ViewWarehouseDetails(WarehouseViewModel warehouse)

@@ -1,0 +1,65 @@
+@* Pagination Component *@
+@if (TotalItems > 0)
+{
+    <div class="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
+        <div class="text-sm text-gray-700">
+            Showing <span class="font-semibold">@StartItem</span> to <span class="font-semibold">@EndItem</span> of <span class="font-semibold">@TotalItems</span> results
+        </div>
+        @if (TotalPages > 1)
+        {
+            <nav class="flex items-center gap-2">
+                <button @onclick="() => HandlePageChange(CurrentPage - 1)"
+                        disabled="@(CurrentPage == 1)"
+                        class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </button>
+
+                @for (int i = StartPage; i <= EndPage; i++)
+                {
+                    var pageNumber = i;
+                    <button @onclick="() => HandlePageChange(pageNumber)"
+                            class="@GetPageButtonClass(pageNumber)">
+                        @pageNumber
+                    </button>
+                }
+
+                <button @onclick="() => HandlePageChange(CurrentPage + 1)"
+                        disabled="@(CurrentPage == TotalPages)"
+                        class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
+            </nav>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public int PageSize { get; set; } = 10;
+    [Parameter] public int TotalItems { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+
+    private int TotalPages => (int)Math.Ceiling((double)TotalItems / PageSize);
+    private int StartItem => TotalItems == 0 ? 0 : (CurrentPage - 1) * PageSize + 1;
+    private int EndItem => Math.Min(CurrentPage * PageSize, TotalItems);
+
+    // Show max 7 page numbers
+    private int StartPage => Math.Max(1, CurrentPage - 3);
+    private int EndPage => Math.Min(TotalPages, CurrentPage + 3);
+
+    private string GetPageButtonClass(int page)
+    {
+        var baseClass = "px-3 py-2 text-sm font-medium rounded-lg transition";
+        return page == CurrentPage
+            ? $"{baseClass} bg-blue-600 text-white"
+            : $"{baseClass} text-gray-700 bg-white border border-gray-300 hover:bg-gray-50";
+    }
+
+    private async Task HandlePageChange(int page)
+    {
+        if (page >= 1 && page <= TotalPages)
+        {
+            await OnPageChanged.InvokeAsync(page);
+        }
+    }
+}

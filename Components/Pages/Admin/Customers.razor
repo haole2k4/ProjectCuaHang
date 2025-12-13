@@ -162,18 +162,50 @@
                 </TableBody>
             </Table>
         </div>
+        
+        <PaginationComponent CurrentPage="@currentPage" PageSize="@pageSize" TotalItems="@totalItems" OnPageChanged="@HandlePageChanged" />
     </CardBody>
 </Card>
 
 @code {
+    private List<Customer>? allCustomers;
     private List<Customer>? customers;
+
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalItems = 0;
 
     protected override async Task OnInitializedAsync()
     {
-        customers = await DbContext.Customers
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        allCustomers = await DbContext.Customers
             .Include(c => c.Orders)
             .OrderByDescending(c => c.CreatedAt)
-            .Take(50)
             .ToListAsync();
+        
+        totalItems = allCustomers?.Count ?? 0;
+        UpdatePagedData();
+    }
+
+    private void UpdatePagedData()
+    {
+        if (allCustomers != null)
+        {
+            customers = allCustomers
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+    }
+
+    private void HandlePageChanged(int page)
+    {
+        currentPage = page;
+        UpdatePagedData();
     }
 }

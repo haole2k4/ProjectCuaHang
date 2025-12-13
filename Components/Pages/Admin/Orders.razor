@@ -191,6 +191,8 @@
                 </TableBody>
             </Table>
         </div>
+        
+        <PaginationComponent CurrentPage="@currentPage" PageSize="@pageSize" TotalItems="@totalItems" OnPageChanged="@HandlePageChanged" />
     </CardBody>
 </Card>
 
@@ -446,6 +448,7 @@
 </style>
 
 @code {
+    private List<Order>? allOrders;
     private List<Order>? orders;
     private bool isProcessing;
     private bool showToast;
@@ -457,6 +460,11 @@
     private bool showDetailsModal;
     private Order? selectedOrder;
 
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalItems = 0;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadOrders();
@@ -464,11 +472,30 @@
 
     private async Task LoadOrders()
     {
-        orders = await DbContext.Orders
+        allOrders = await DbContext.Orders
             .Include(o => o.Customer)
             .OrderByDescending(o => o.OrderDate)
-            .Take(50)
             .ToListAsync();
+        
+        totalItems = allOrders?.Count ?? 0;
+        UpdatePagedData();
+    }
+
+    private void UpdatePagedData()
+    {
+        if (allOrders != null)
+        {
+            orders = allOrders
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+    }
+
+    private void HandlePageChanged(int page)
+    {
+        currentPage = page;
+        UpdatePagedData();
     }
 
     private async Task ViewOrder(int orderId)

@@ -173,31 +173,28 @@
                                 </div>
                             }
 
-                            <!-- Stock Status Badge -->
-                            <div class="absolute top-3 right-3 flex flex-col gap-2 items-end">
-                                @if (totalStock > 0)
-                                {
+                            @if (totalStock > 0)
+                            {
+                                <!-- Stock Quantity Badge - Top Left -->
+                                <div class="absolute top-3 left-3">
+                                    <span class="bg-white/95 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-gray-800 shadow-lg">
+                                        SL: @totalStock
+                                    </span>
+                                </div>
+                                
+                                <!-- In Stock Badge - Top Right -->
+                                <div class="absolute top-3 right-3">
                                     <span class="bg-green-600 px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg">
                                         <i class="fas fa-check-circle mr-1"></i>CÒN HÀNG
                                     </span>
-                                    <span class="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-gray-800 shadow-md">
-                                        SL: @totalStock
-                                    </span>
-                                }
-                                else
-                                {
+                                </div>
+                            }
+                            else
+                            {
+                                <!-- Out of Stock Badge - Top Right -->
+                                <div class="absolute top-3 right-3">
                                     <span class="bg-red-600 px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg">
                                         <i class="fas fa-times-circle mr-1"></i>HẾT HÀNG
-                                    </span>
-                                }
-                            </div>
-
-                            <!-- Category Badge -->
-                            @if (product.Category != null)
-                            {
-                                <div class="absolute top-3 left-3">
-                                    <span class="bg-red-600 px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg uppercase tracking-wide">
-                                        @product.Category.CategoryName
                                     </span>
                                 </div>
                             }
@@ -205,11 +202,21 @@
 
                         <!-- Product Info -->
                         <div class="p-5 flex-1 flex flex-col">
-                            <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition">
+                            <!-- Category -->
+                            @if (product.Category != null)
+                            {
+                                <span class="text-sm font-semibold text-orange-600 uppercase tracking-wider mb-2">
+                                    @product.Category.CategoryName
+                                </span>
+                            }
+                            
+                            <!-- Product Name -->
+                            <h3 class="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition leading-normal">
                                 @product.ProductName
                             </h3>
 
-                            <p class="text-gray-600 text-sm mb-4 line-clamp-2 flex-1">
+                            <!-- Description -->
+                            <p class="text-gray-600 text-sm mb-4 line-clamp-2 flex-1 leading-relaxed">
                                 @(product.Description ?? "No description available")
                             </p>
 

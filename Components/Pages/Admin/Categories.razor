@@ -95,6 +95,11 @@
                 </TableBody>
             </Table>
         </div>
+        
+        <PaginationComponent CurrentPage="@currentPage" 
+                           PageSize="@pageSize" 
+                           TotalItems="@totalItems" 
+                           OnPageChanged="@HandlePageChanged" />
     </CardBody>
 </Card>
 
@@ -140,11 +145,17 @@
 </Modal>
 
 @code {
+    private List<CategoryDto>? allCategories;
     private List<CategoryDto>? categories;
     private Modal categoryModal = null!;
     private bool isEditMode = false;
     private bool isSaving = false;
     private string? errorMessage;
+
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalItems = 0;
 
     private class CategoryFormModel
     {
@@ -163,7 +174,26 @@
     private async Task LoadData()
     {
         var categoryDtos = await CategoryService.GetAllCategoriesAsync();
-        categories = categoryDtos.ToList();
+        allCategories = categoryDtos.ToList();
+        totalItems = allCategories.Count;
+        UpdatePagedData();
+    }
+
+    private void UpdatePagedData()
+    {
+        if (allCategories == null) return;
+        
+        categories = allCategories
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private async Task HandlePageChanged(int page)
+    {
+        currentPage = page;
+        UpdatePagedData();
+        await InvokeAsync(StateHasChanged);
     }
 
     private void OpenAddModal()

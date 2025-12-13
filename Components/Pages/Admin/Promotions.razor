@@ -181,6 +181,8 @@
                 </TableBody>
             </Table>
         </div>
+        
+        <PaginationComponent CurrentPage="@currentPage" PageSize="@pageSize" TotalItems="@totalItems" OnPageChanged="@HandlePageChanged" />
     </CardBody>
 </Card>
 
@@ -272,6 +274,7 @@
 </Modal>
 
 @code {
+    private List<Promotion>? allPromotions;
     private List<Promotion>? promotions;
     private Modal promotionModal = null!;
     private bool isEditMode = false;
@@ -280,6 +283,11 @@
 
     private CreatePromotionDto currentPromotion = new();
 
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalItems = 0;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
@@ -287,9 +295,29 @@
 
     private async Task LoadData()
     {
-        promotions = await DbContext.Promotions
+        allPromotions = await DbContext.Promotions
             .OrderByDescending(p => p.StartDate)
             .ToListAsync();
+        
+        totalItems = allPromotions?.Count ?? 0;
+        UpdatePagedData();
+    }
+
+    private void UpdatePagedData()
+    {
+        if (allPromotions != null)
+        {
+            promotions = allPromotions
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+    }
+
+    private void HandlePageChanged(int page)
+    {
+        currentPage = page;
+        UpdatePagedData();
     }
 
     private void OpenAddModal()

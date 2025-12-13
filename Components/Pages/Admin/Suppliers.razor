@@ -205,6 +205,8 @@
                 </TableBody>
             </Table>
         </div>
+        
+        <PaginationComponent CurrentPage="@currentPage" PageSize="@pageSize" TotalItems="@totalItems" OnPageChanged="@HandlePageChanged" />
     </CardBody>
 </Card>
 
@@ -266,6 +268,7 @@
 @code {
     private List<Supplier>? suppliers;
     private List<Supplier>? allSuppliers;
+    private List<Supplier>? filteredSuppliers;
     private Modal supplierModal = null!;
     private bool isEditMode = false;
     private bool isSaving = false;
@@ -274,6 +277,11 @@
     private string filterStatus = string.Empty;
 
     private Supplier currentSupplier = new();
+
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalItems = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -288,36 +296,44 @@
             .OrderBy(s => s.Name)
             .ToListAsync();
         
-        suppliers = allSuppliers;
+        filteredSuppliers = allSuppliers;
+        totalItems = filteredSuppliers?.Count ?? 0;
+        currentPage = 1;
+        UpdatePagedData();
     }
 
     private async Task ApplyFilters()
     {
         if (string.IsNullOrWhiteSpace(searchTerm) && string.IsNullOrWhiteSpace(filterStatus))
         {
-            suppliers = allSuppliers;
-            return;
+            filteredSuppliers = allSuppliers;
         }
-
-        var filtered = allSuppliers!.AsEnumerable();
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
+        else
         {
-            var search = searchTerm.ToLower();
-            filtered = filtered.Where(s => 
-                s.Name.ToLower().Contains(search) ||
-                (s.Phone != null && s.Phone.Contains(search)) ||
-                (s.Email != null && s.Email.ToLower().Contains(search)) ||
-                (s.Address != null && s.Address.ToLower().Contains(search))
-            );
-        }
+            var filtered = allSuppliers!.AsEnumerable();
 
-        if (!string.IsNullOrWhiteSpace(filterStatus))
-        {
-            filtered = filtered.Where(s => s.Status == filterStatus);
-        }
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var search = searchTerm.ToLower();
+                filtered = filtered.Where(s => 
+                    s.Name.ToLower().Contains(search) ||
+                    (s.Phone != null && s.Phone.Contains(search)) ||
+                    (s.Email != null && s.Email.ToLower().Contains(search)) ||
+                    (s.Address != null && s.Address.ToLower().Contains(search))
+                );
+            }
 
-        suppliers = filtered.ToList();
+            if (!string.IsNullOrWhiteSpace(filterStatus))
+            {
+                filtered = filtered.Where(s => s.Status == filterStatus);
+            }
+
+            filteredSuppliers = filtered.ToList();
+        }
+        
+        totalItems = filteredSuppliers?.Count ?? 0;
+        currentPage = 1;
+        UpdatePagedData();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -325,7 +341,27 @@
     {
         searchTerm = string.Empty;
         filterStatus = string.Empty;
-        suppliers = allSuppliers;
+        filteredSuppliers = allSuppliers;
+        totalItems = filteredSuppliers?.Count ?? 0;
+        currentPage = 1;
+        UpdatePagedData();
+    }
+
+    private void UpdatePagedData()
+    {
+        if (filteredSuppliers != null)
+        {
+            suppliers = filteredSuppliers
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+    }
+
+    private void HandlePageChanged(int page)
+    {
+        currentPage = page;
+        UpdatePagedData();
     }
 
     private void OpenAddModal()

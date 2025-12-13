@@ -143,9 +143,9 @@ else
                         </TableRow>
                     </TableHeader>
                     <TableBody class="bg-white divide-y divide-gray-200">
-                        @if (inventoryStats?.LowStockItems != null && inventoryStats.LowStockItems.Any())
+                        @if (lowStockItems != null && lowStockItems.Any())
                         {
-                            @foreach (var item in inventoryStats.LowStockItems.Take(10))
+                            @foreach (var item in lowStockItems)
                             {
                                 <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
                                     <TableRowCell class="px-6 py-4">
@@ -293,6 +293,8 @@ else
 
 @code {
     private InventoryStatisticsDto? inventoryStats;
+    private List<LowStockProductDto>? allLowStockItems;
+    private List<LowStockProductDto>? lowStockItems;
     private string? errorMessage;
     private string? successMessage;
     private string? modalErrorMessage;
@@ -309,6 +311,11 @@ else
     private LowStockProductDto? selectedProduct;
     private int restockQuantity = 10;
 
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalItems = 0;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
@@ -321,7 +328,7 @@ else
             isLoading = true;
             errorMessage = null;
             
-            inventoryStats = await StatisticsService.GetInventoryStatisticsAsync(10);
+            inventoryStats = await StatisticsService.GetInventoryStatisticsAsync(100);
             
             allProducts = await DbContext.Products
                 .Where(p => p.Status == "active")
@@ -332,6 +339,10 @@ else
                 .Where(w => w.Status == "active")
                 .OrderBy(w => w.WarehouseName)
                 .ToListAsync();
+            
+            allLowStockItems = inventoryStats?.LowStockItems?.ToList() ?? new List<LowStockProductDto>();
+            totalItems = allLowStockItems.Count;
+            UpdatePagedData();
         }
         catch (Exception ex)
         {
@@ -342,6 +353,23 @@ else
         {
             isLoading = false;
         }
+    }
+
+    private void UpdatePagedData()
+    {
+        if (allLowStockItems != null)
+        {
+            lowStockItems = allLowStockItems
+                .Skip((currentPage - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+    }
+
+    private void HandlePageChanged(int page)
+    {
+        currentPage = page;
+        UpdatePagedData();
     }
 
     private void OpenAddStockModal()
