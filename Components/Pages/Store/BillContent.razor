@@ -1,4 +1,4 @@
-@using StoreManagementAPI.Models
+@* @using StoreManagementAPI.Models
 @using Blazorise
 
 <Card class="card-shadow-lg max-w-4xl mx-auto">
@@ -177,6 +177,200 @@
         "processing" => "bg-blue-600",
         "shipped" => "bg-cyan-600",
         _ => "bg-gray-500"
+    };
+
+    private string GetPaymentMethodDisplay(string method) => method.ToLower() switch
+    {
+        "cash" => "Cash on Delivery",
+        "card" => "Credit/Debit Card",
+        "transfer" => "Bank Transfer",
+        _ => method
+    };
+} *@
+
+
+@using StoreManagementAPI.Models
+@using Blazorise
+
+<Card class="shadow-xl max-w-4xl mx-auto !bg-white border border-gray-200">
+    <div class="bg-gray-50 border-b border-gray-200 px-8 py-6">
+        <div class="flex flex-wrap justify-between items-center gap-4">
+            <div>
+                <Heading Size="HeadingSize.Is3" class="mb-1 text-gray-900 font-bold">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2 text-blue-600" /> E-Store
+                </Heading>
+                <Paragraph class="text-gray-500 mb-0 text-sm">Your trusted online shopping destination</Paragraph>
+            </div>
+            <div class="text-right">
+                <Heading Size="HeadingSize.Is4" class="mb-1 text-gray-900 font-bold uppercase tracking-widest">Invoice</Heading>
+                <Paragraph class="text-gray-500 mb-0 text-sm font-mono">#INV-@Order.OrderId.ToString("D6")</Paragraph>
+            </div>
+        </div>
+    </div>
+
+    <CardBody class="p-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div>
+                <Heading Size="HeadingSize.Is6" class="uppercase tracking-wider mb-4 text-xs font-bold text-gray-400">Bill To</Heading>
+                @if (Order.Customer != null)
+                {
+                    <Heading Size="HeadingSize.Is5" class="mb-2 text-gray-900 font-bold">@Order.Customer.Name</Heading>
+                    <div class="text-sm text-gray-600 space-y-1">
+                        @if (!string.IsNullOrEmpty(Order.Customer.Address))
+                        {
+                            <p class="mb-0">@Order.Customer.Address</p>
+                        }
+                        @if (!string.IsNullOrEmpty(Order.Customer.Email))
+                        {
+                            <p class="mb-0">@Order.Customer.Email</p>
+                        }
+                        @if (!string.IsNullOrEmpty(Order.Customer.Phone))
+                        {
+                            <p class="mb-0">@Order.Customer.Phone</p>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <Paragraph class="text-gray-600 text-sm">Guest Customer</Paragraph>
+                }
+            </div>
+            
+            <div class="md:text-right">
+                <div class="space-y-3">
+                    <div class="flex justify-between md:justify-end md:gap-12 text-sm border-b border-gray-100 pb-2">
+                        <span class="text-gray-500">Invoice Date</span>
+                        <span class="font-semibold text-gray-900">@DateTime.Now.ToString("MMM dd, yyyy")</span>
+                    </div>
+                    <div class="flex justify-between md:justify-end md:gap-12 text-sm border-b border-gray-100 pb-2">
+                        <span class="text-gray-500">Order Date</span>
+                        <span class="font-semibold text-gray-900">@Order.OrderDate.ToString("MMM dd, yyyy")</span>
+                    </div>
+                    <div class="flex justify-between md:justify-end md:gap-12 text-sm items-center border-b border-gray-100 pb-2">
+                        <span class="text-gray-500">Status</span>
+                        <span class="@GetStatusBadgeClass(Order.Status) px-2.5 py-0.5 rounded-full text-xs font-semibold text-white">@Order.Status.ToUpper()</span>
+                    </div>
+                    @if (Order.Payments.Any())
+                    {
+                        <div class="flex justify-between md:justify-end md:gap-12 text-sm pb-2">
+                            <span class="text-gray-500">Payment</span>
+                            <span class="font-semibold text-gray-900">@GetPaymentMethodDisplay(Order.Payments.First().PaymentMethod)</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-lg border border-gray-200 mb-8">
+            <Table Striped class="mb-0">
+                <TableHeader class="bg-gray-50">
+                    <TableRow>
+                        <TableHeaderCell class="w-1/2 text-xs font-bold text-gray-500 uppercase tracking-wider py-3 px-4">Description</TableHeaderCell>
+                        <TableHeaderCell TextAlignment="TextAlignment.Center" class="text-xs font-bold text-gray-500 uppercase tracking-wider py-3 px-4">Quantity</TableHeaderCell>
+                        <TableHeaderCell TextAlignment="TextAlignment.End" class="text-xs font-bold text-gray-500 uppercase tracking-wider py-3 px-4">Unit Price</TableHeaderCell>
+                        <TableHeaderCell TextAlignment="TextAlignment.End" class="text-xs font-bold text-gray-500 uppercase tracking-wider py-3 px-4">Amount</TableHeaderCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    @foreach (var item in Order.OrderItems)
+                    {
+                        <TableRow class="hover:bg-gray-50">
+                            <TableRowCell class="py-4 px-4">
+                                <strong class="text-gray-900 text-sm">@item.Product?.ProductName</strong>
+                                @if (!string.IsNullOrEmpty(item.Product?.Unit))
+                                {
+                                    <div class="text-gray-500 text-xs mt-0.5">Unit: @item.Product.Unit</div>
+                                }
+                            </TableRowCell>
+                            <TableRowCell TextAlignment="TextAlignment.Center" class="text-sm text-gray-900 py-4 px-4">@item.Quantity</TableRowCell>
+                            <TableRowCell TextAlignment="TextAlignment.End" class="text-sm text-gray-900 py-4 px-4">$@item.Price.ToString("N2")</TableRowCell>
+                            <TableRowCell TextAlignment="TextAlignment.End" class="text-sm font-semibold text-gray-900 py-4 px-4">$@item.Subtotal.ToString("N2")</TableRowCell>
+                        </TableRow>
+                    }
+                </TableBody>
+            </Table>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-gray-50 rounded-lg p-6 h-full border border-gray-100">
+                <Heading Size="HeadingSize.Is6" class="mb-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Payment Details</Heading>
+                @if (Order.Payments.Any())
+                {
+                    var payment = Order.Payments.First();
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Method:</span>
+                            <span class="font-medium text-gray-900">@GetPaymentMethodDisplay(payment.PaymentMethod)</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Date:</span>
+                            <span class="font-medium text-gray-900">@payment.PaymentDate.ToString("MMM dd, yyyy HH:mm")</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+                            <span class="text-gray-600">Status:</span>
+                            <span class="text-green-700 bg-green-100 px-2 py-0.5 rounded text-xs font-bold uppercase">Paid</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="flex items-center text-red-600 font-medium text-sm">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationCircle" class="mr-2" />
+                        Payment Pending
+                    </div>
+                }
+            </div>
+            
+            <div class="flex flex-col justify-end">
+                <div class="space-y-3">
+                    <div class="flex justify-between text-sm text-gray-600">
+                        <span>Subtotal</span>
+                        <span class="font-medium text-gray-900">$@((Order.TotalAmount + Order.DiscountAmount).ToString("N2"))</span>
+                    </div>
+                    @if (Order.DiscountAmount > 0)
+                    {
+                        <div class="flex justify-between text-sm text-green-600">
+                            <span>Discount</span>
+                            <span class="font-medium">-$@Order.DiscountAmount.ToString("N2")</span>
+                        </div>
+                    }
+                    <div class="flex justify-between text-sm text-gray-600">
+                        <span>Shipping</span>
+                        <span class="font-medium text-gray-900">Free</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-600 pb-4 border-b border-gray-200">
+                        <span>Tax (0%)</span>
+                        <span class="font-medium text-gray-900">$0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2">
+                        <span class="text-base font-bold text-gray-900">Total Due</span>
+                        <span class="text-3xl font-bold text-blue-600">$@Order.TotalAmount.ToString("N2")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-12 pt-8 border-t border-gray-200">
+            <Paragraph class="mb-1 text-sm font-semibold text-gray-900">Thank you for your business!</Paragraph>
+            <Paragraph class="text-xs mb-0 text-gray-500">
+                If you have any questions about this invoice, please contact support@estore.com
+            </Paragraph>
+        </div>
+    </CardBody>
+</Card>
+
+@code {
+    [Parameter]
+    public Order Order { get; set; } = null!;
+
+    private string GetStatusBadgeClass(string status) => status.ToLower() switch
+    {
+        "pending" => "bg-red-500",
+        "completed" => "bg-green-500",
+        "cancelled" or "canceled" => "bg-gray-500",
+        "processing" => "bg-blue-500",
+        "shipped" => "bg-cyan-500",
+        _ => "bg-gray-400"
     };
 
     private string GetPaymentMethodDisplay(string method) => method.ToLower() switch
