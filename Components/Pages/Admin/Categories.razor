@@ -26,6 +26,52 @@
     </Button>
 </div>
 
+<!-- Search Panel -->
+<Card class="!bg-white shadow-md border border-gray-200 rounded-xl overflow-hidden mb-6">
+    <CardBody>
+        <div class="flex items-center justify-between mb-4">
+            <Heading Size="HeadingSize.Is5" class="text-gray-900 font-bold mb-0">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="mr-2" />
+                Search
+            </Heading>
+            <Button Color="Color.Light" Size="Size.Small" Clicked="ClearSearch" class="!border !border-gray-300">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Redo" class="mr-1" /> Clear
+            </Button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Category Name</label>
+                <TextEdit Text="@searchName"
+                          TextChanged="@OnSearchTextChanged"
+                          Placeholder="Search by category name..."
+                          class="w-full !border-gray-300" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <Select TValue="string?"
+                        SelectedValue="searchStatus"
+                        SelectedValueChanged="@OnStatusChanged"
+                        class="w-full !border-gray-300">
+                    <SelectItem Value="@((string?)null)">All Status</SelectItem>
+                    <SelectItem Value="@("active")">Active</SelectItem>
+                    <SelectItem Value="@("inactive")">Inactive</SelectItem>
+                </Select>
+            </div>
+        </div>
+
+        @if (filteredCategories != null && allCategories != null && filteredCategories.Count != allCategories.Count)
+        {
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <p class="text-sm text-gray-600">
+                    Found <span class="font-bold text-blue-600">@totalItems</span> categories matching your search
+                </p>
+            </div>
+        }
+    </CardBody>
+</Card>
+
 <Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
     <CardBody Padding="Padding.Is0">
         <div class="overflow-x-auto">
@@ -150,11 +196,16 @@
 
 @code {
     private List<CategoryDto>? allCategories;
+    private List<CategoryDto>? filteredCategories;
     private List<CategoryDto>? categories;
     private Modal categoryModal = null!;
     private bool isEditMode = false;
     private bool isSaving = false;
     private string? errorMessage;
+
+    // Search filters
+    private string searchName = string.Empty;
+    private string? searchStatus;
 
     // Pagination
     private int currentPage = 1;
@@ -179,15 +230,41 @@
     {
         var categoryDtos = await CategoryService.GetAllCategoriesAsync();
         allCategories = categoryDtos.ToList();
-        totalItems = allCategories.Count;
+        FilterCategories();
+    }
+
+    private void FilterCategories()
+    {
+        if (allCategories == null) return;
+
+        var query = allCategories.AsEnumerable();
+
+        // Filter by name
+        if (!string.IsNullOrWhiteSpace(searchName))
+        {
+            var searchTerm = searchName.ToLower().Trim();
+            query = query.Where(c =>
+                c.CategoryName.ToLower().Contains(searchTerm));
+        }
+
+        // Filter by status
+        if (!string.IsNullOrWhiteSpace(searchStatus))
+        {
+            query = query.Where(c =>
+                c.Status != null && c.Status == searchStatus);
+        }
+
+        filteredCategories = query.ToList();
+        totalItems = filteredCategories.Count;
+        currentPage = 1; // Reset to first page on filter
         UpdatePagedData();
     }
 
     private void UpdatePagedData()
     {
-        if (allCategories == null) return;
-        
-        categories = allCategories
+        if (filteredCategories == null) return;
+
+        categories = filteredCategories
             .Skip((currentPage - 1) * pageSize)
             .Take(pageSize)
             .ToList();
@@ -197,6 +274,29 @@
     {
         currentPage = page;
         UpdatePagedData();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // Auto-search event handlers
+    private async Task OnSearchTextChanged(string value)
+    {
+        searchName = value;
+        FilterCategories();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnStatusChanged(string? value)
+    {
+        searchStatus = value;
+        FilterCategories();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClearSearch()
+    {
+        searchName = string.Empty;
+        searchStatus = null;
+        FilterCategories();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -230,7 +330,7 @@
     private async Task SaveCategory()
     {
         errorMessage = null;
-        
+
         if (string.IsNullOrWhiteSpace(currentCategory.CategoryName))
         {
             errorMessage = "Category name is required";
@@ -258,7 +358,11 @@
                 await CategoryService.CreateCategoryAsync(createDto);
             }
 
-            await LoadData();
+            // Reload data and reapply filters
+            var categoryDtos = await CategoryService.GetAllCategoriesAsync();
+            allCategories = categoryDtos.ToList();
+            FilterCategories();
+
             CloseModal();
         }
         catch (Exception ex)
@@ -279,9 +383,12 @@
         try
         {
             var result = await CategoryService.DeleteCategoryAsync(category.CategoryId);
-            
-            await LoadData();
-            
+
+            // Reload data and reapply filters
+            var categoryDtos = await CategoryService.GetAllCategoriesAsync();
+            allCategories = categoryDtos.ToList();
+            FilterCategories();
+
             if (result.SoftDeleted)
             {
                 await JSRuntime.InvokeVoidAsync("alert", result.Message);

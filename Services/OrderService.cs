@@ -12,6 +12,7 @@ namespace StoreManagementAPI.Services
         Task<OrderResponseDto?> CreateOrderAsync(CreateOrderDto dto, string? ipAddress = null);
         Task<OrderResponseDto?> GetOrderByIdAsync(int id);
         Task<IEnumerable<OrderResponseDto>> GetAllOrdersAsync();
+        Task<OrderSearchResultDto> SearchOrdersAdvancedAsync(OrderSearchDto searchDto);
         Task<bool> UpdateOrderStatusAsync(int orderId, string status);
         Task<bool> ProcessPaymentAsync(PaymentDto dto);
     }
@@ -525,6 +526,161 @@ namespace StoreManagementAPI.Services
             );
 
             return true;
+        }
+
+        public async Task<OrderSearchResultDto> SearchOrdersAdvancedAsync(OrderSearchDto searchDto)
+        {
+            // Validate and sanitize pagination parameters
+            var pageNumber = searchDto.PageNumber < 1 ? 1 : searchDto.PageNumber;
+            var pageSize = searchDto.PageSize < 1 ? 20 : searchDto.PageSize > 100 ? 100 : searchDto.PageSize;
+
+            // Validate and swap date range if needed
+            if (searchDto.StartDate.HasValue && searchDto.EndDate.HasValue && searchDto.StartDate.Value > searchDto.EndDate.Value)
+            {
+                var temp = searchDto.StartDate;
+                searchDto.StartDate = searchDto.EndDate;
+                searchDto.EndDate = temp;
+            }
+
+            // Validate and swap amount range if needed
+            if (searchDto.MinAmount.HasValue && searchDto.MaxAmount.HasValue && searchDto.MinAmount.Value > searchDto.MaxAmount.Value)
+            {
+                var temp = searchDto.MinAmount;
+                searchDto.MinAmount = searchDto.MaxAmount;
+                searchDto.MaxAmount = temp;
+            }
+
+            // Start with base query
+            var query = _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.User)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .Include(o => o.Payments)
+                .Include(o => o.Promotion)
+                .AsQueryable();
+
+            // Apply filters
+            // 1. Filter by search term (order ID or customer name)
+            if (!string.IsNullOrWhiteSpace(searchDto.SearchTerm))
+            {
+                var searchTerm = searchDto.SearchTerm.ToLower().Trim();
+                query = query.Where(o =>
+                    o.OrderId.ToString().Contains(searchTerm) ||
+                    (o.Customer != null && o.Customer.Name.ToLower().Contains(searchTerm)));
+            }
+
+            // 2. Filter by status (only if Status is not null or empty)
+            if (!string.IsNullOrWhiteSpace(searchDto.Status))
+            {
+                var status = searchDto.Status.ToLower().Trim();
+                query = query.Where(o => o.Status != null && o.Status.ToLower() == status);
+            }
+
+            // 3. Filter by amount range
+            if (searchDto.MinAmount.HasValue && searchDto.MinAmount.Value > 0)
+            {
+                query = query.Where(o => o.TotalAmount >= searchDto.MinAmount.Value);
+            }
+
+            if (searchDto.MaxAmount.HasValue && searchDto.MaxAmount.Value > 0)
+            {
+                query = query.Where(o => o.TotalAmount <= searchDto.MaxAmount.Value);
+            }
+
+            // 4. Filter by date range
+            if (searchDto.StartDate.HasValue)
+            {
+                query = query.Where(o => o.OrderDate >= searchDto.StartDate.Value);
+            }
+
+            if (searchDto.EndDate.HasValue)
+            {
+                // Add one day to include the end date
+                var endDate = searchDto.EndDate.Value.AddDays(1);
+                query = query.Where(o => o.OrderDate < endDate);
+            }
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply sorting
+            var sortBy = searchDto.SortBy?.ToLower() ?? "orderdate";
+            var sortDirection = searchDto.SortDirection?.ToLower() ?? "desc";
+
+            query = sortBy switch
+            {
+                "totalamount" => sortDirection == "desc"
+                    ? query.OrderByDescending(o => o.TotalAmount)
+                    : query.OrderBy(o => o.TotalAmount),
+                "status" => sortDirection == "desc"
+                    ? query.OrderByDescending(o => o.Status)
+                    : query.OrderBy(o => o.Status),
+                _ => sortDirection == "desc"
+                    ? query.OrderByDescending(o => o.OrderDate)
+                    : query.OrderBy(o => o.OrderDate)
+            };
+
+            // Apply pagination
+            var orders = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Map to DTOs
+            var orderDtos = orders.Select(order => {
+                var payment = order.Payments.FirstOrDefault();
+
+                return new OrderResponseDto
+                {
+                    OrderId = order.OrderId,
+                    CustomerId = order.CustomerId,
+                    CustomerName = order.Customer?.Name,
+                    UserId = order.UserId,
+                    UserName = order.User?.FullName,
+                    OrderDate = order.OrderDate,
+                    Status = order.Status,
+                    TotalAmount = order.TotalAmount + order.DiscountAmount,
+                    DiscountAmount = order.DiscountAmount,
+                    FinalAmount = order.TotalAmount,
+                    PaymentMethod = payment?.PaymentMethod,
+                    PaymentDate = payment?.PaymentDate,
+                    PromoId = order.PromoId,
+                    PromoCode = order.Promotion?.PromoCode,
+                    PromoType = order.Promotion?.ApplyType,
+                    PromoDescription = order.Promotion != null ? $"{order.Promotion.PromoCode} - {GetApplyTypeDescription(order.Promotion.ApplyType)}" : null,
+                    Items = order.OrderItems.Select(oi => {
+                        decimal originalSubtotal = oi.Quantity * oi.Price;
+                        decimal discountAmount = originalSubtotal - oi.Subtotal;
+                        decimal discountPercent = discountAmount > 0 ? (discountAmount / originalSubtotal) * 100 : 0;
+
+                        return new OrderItemResponseDto
+                        {
+                            ProductId = oi.ProductId ?? 0,
+                            ProductName = oi.Product?.ProductName ?? "Unknown",
+                            Quantity = oi.Quantity,
+                            Price = oi.Price,
+                            Subtotal = oi.Subtotal,
+                            DiscountAmount = discountAmount,
+                            DiscountPercent = discountPercent
+                        };
+                    }).ToList()
+                };
+            }).ToList();
+
+            // Calculate pagination metadata
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            return new OrderSearchResultDto
+            {
+                Orders = orderDtos,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                HasPreviousPage = pageNumber > 1,
+                HasNextPage = pageNumber < totalPages
+            };
         }
     }
 }

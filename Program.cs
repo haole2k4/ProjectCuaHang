@@ -2,6 +2,7 @@ using BlazorApp1.Components;
 using BlazorApp1.Components.Account;
 using BlazorApp1.Data;
 using BlazorApp1.Services;
+using BlazorApp1.Endpoints;
 using Blazorise;
 using Blazorise.Tailwind;
 using Blazorise.Icons.FontAwesome;
@@ -20,6 +21,30 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Add API Explorer and Swagger for Minimal API documentation
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Store Management API",
+        Version = "v1",
+        Description = "ASP.NET Core Minimal API for Store Management System",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "Store Management Team"
+        }
+    });
+
+    // Include XML comments for Swagger documentation
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (System.IO.File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+});
 
 // Add Blazorise
 builder.Services
@@ -123,6 +148,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 // Register Statistics service for admin dashboard
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
@@ -245,14 +271,27 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// Remove custom logout endpoint as Identity handles it
-/*
+// Map Minimal API endpoints
+app.MapProductEndpoints();
+
+// Enable Swagger UI in development
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Store Management API v1");
+        options.RoutePrefix = "api-docs"; // Swagger UI available at /api-docs
+        options.DisplayRequestDuration();
+    });
+}
+
+// Add custom logout endpoint with different path to avoid conflict with Identity
 app.MapGet("/auth/logout", async (HttpContext context) =>
 {
     await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
     return Results.Redirect("/");
 });
-*/
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();

@@ -85,6 +85,107 @@
     </Card>
 </div>
 
+<!-- Advanced Search Panel -->
+<Card class="!bg-white shadow-md border border-gray-200 rounded-xl overflow-hidden mb-6">
+    <CardBody>
+        <div class="flex items-center justify-between mb-4">
+            <Heading Size="HeadingSize.Is5" class="text-gray-900 font-bold mb-0">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="mr-2" />
+                Search & Filter Promotions
+            </Heading>
+            <Button Color="Color.Light" Size="Size.Small" Clicked="ClearFilters" class="!border !border-gray-300">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Redo" class="mr-1" /> Clear
+            </Button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Search Term -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Promo Code</label>
+                <TextEdit Text="@searchCriteria.SearchTerm"
+                          TextChanged="@OnSearchTextChanged"
+                          Placeholder="Search code..."
+                          class="w-full !border-gray-300" />
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <Select TValue="string?"
+                        SelectedValue="searchCriteria.Status"
+                        SelectedValueChanged="@OnStatusChanged"
+                        class="w-full !border-gray-300">
+                    <SelectItem Value="@((string?)null)">All Status</SelectItem>
+                    <SelectItem Value="@("active")">Active</SelectItem>
+                    <SelectItem Value="@("inactive")">Inactive</SelectItem>
+                </Select>
+            </div>
+
+            <!-- Discount Type Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Discount Type</label>
+                <Select TValue="string?"
+                        SelectedValue="searchCriteria.DiscountType"
+                        SelectedValueChanged="@OnDiscountTypeChanged"
+                        class="w-full !border-gray-300">
+                    <SelectItem Value="@((string?)null)">All Types</SelectItem>
+                    <SelectItem Value="@("percent")">Percentage</SelectItem>
+                    <SelectItem Value="@("fixed")">Fixed Amount</SelectItem>
+                </Select>
+            </div>
+
+            <!-- Apply Type -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Apply To</label>
+                <Select TValue="string"
+                        SelectedValue="searchCriteria.ApplyType"
+                        SelectedValueChanged="@OnApplyTypeChanged"
+                        class="w-full !border-gray-300">
+                    <SelectItem Value="@((string?)null)">All Apply Types</SelectItem>
+                    <SelectItem Value="@("order")">Order</SelectItem>
+                    <SelectItem Value="@("product")">Specific Product</SelectItem>
+                    <SelectItem Value="@("combo")">Combo</SelectItem>
+                </Select>
+            </div>
+        </div>
+
+        <!-- Date Range Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Valid Date Range</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <DateEdit TValue="DateTime?"
+                              Date="searchCriteria.StartDate"
+                              DateChanged="@OnStartDateChanged"
+                              Placeholder="Start"
+                              class="w-full !border-gray-300" />
+                    <DateEdit TValue="DateTime?"
+                              Date="searchCriteria.EndDate"
+                              DateChanged="@OnEndDateChanged"
+                              Placeholder="End"
+                              class="w-full !border-gray-300" />
+                </div>
+                @if (!string.IsNullOrEmpty(dateErrorMessage))
+                {
+                    <div class="mt-2 text-red-600 text-sm font-semibold">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationTriangle" class="mr-1" />
+                        @dateErrorMessage
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (searchResult != null)
+        {
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <span class="text-gray-600">
+                    Found <span class="font-bold text-blue-600">@searchResult.TotalCount</span> promotions
+                </span>
+            </div>
+        }
+    </CardBody>
+</Card>
+
 <!-- Promotions Table -->
 <Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
     <CardBody Padding="Padding.Is0">
@@ -294,6 +395,7 @@
     private bool isEditMode = false;
     private bool isSaving = false;
     private string? errorMessage;
+    private string? dateErrorMessage;
 
     private CreatePromotionDto currentPromotion = new();
 
@@ -302,9 +404,20 @@
     private int pageSize = 10;
     private int totalItems = 0;
 
+    // Search & Filter
+    private PromotionSearchDto searchCriteria = new PromotionSearchDto
+    {
+        PageNumber = 1,
+        PageSize = 10,
+        SortBy = "StartDate",
+        SortDirection = "desc"
+    };
+    private PromotionSearchResultDto? searchResult;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
+        await SearchPromotions();
     }
 
     private async Task LoadData()
@@ -315,6 +428,33 @@
         
         totalItems = allPromotions?.Count ?? 0;
         UpdatePagedData();
+    }
+
+    private async Task SearchPromotions()
+    {
+        try
+        {
+            searchCriteria.PageNumber = currentPage;
+            searchCriteria.PageSize = pageSize;
+
+            searchResult = await PromotionService.SearchPromotionsAdvancedAsync(searchCriteria);
+
+            // Convert PromotionDto to Promotion for compatibility
+            var promoIds = searchResult.Promotions.Select(x => x.PromoId).ToList();
+            allPromotions = await DbContext.Promotions
+                .Where(p => promoIds.Contains(p.PromoId))
+                .OrderByDescending(p => p.StartDate)
+                .ToListAsync();
+
+            promotions = allPromotions;
+            totalItems = searchResult.TotalCount;
+
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error searching promotions: {ex.Message}";
+        }
     }
 
     private void UpdatePagedData()
@@ -328,10 +468,87 @@
         }
     }
 
-    private void HandlePageChanged(int page)
+    private async Task HandlePageChanged(int page)
     {
         currentPage = page;
-        UpdatePagedData();
+        await SearchPromotions();
+    }
+
+    private async Task ClearFilters()
+    {
+        searchCriteria = new PromotionSearchDto
+        {
+            PageNumber = 1,
+            PageSize = pageSize,
+            SortBy = "StartDate",
+            SortDirection = "desc"
+        };
+        dateErrorMessage = null;
+        currentPage = 1;
+        await SearchPromotions();
+    }
+
+    // Auto-search event handlers
+    private async Task OnSearchTextChanged(string value)
+    {
+        searchCriteria.SearchTerm = value;
+        currentPage = 1;
+        await SearchPromotions();
+    }
+
+    private async Task OnStatusChanged(string? value)
+    {
+        searchCriteria.Status = value;
+        currentPage = 1;
+        await SearchPromotions();
+    }
+
+    private async Task OnDiscountTypeChanged(string? value)
+    {
+        searchCriteria.DiscountType = value;
+        currentPage = 1;
+        await SearchPromotions();
+    }
+
+    private async Task OnApplyTypeChanged(string? value)
+    {
+        searchCriteria.ApplyType = value;
+        currentPage = 1;
+        await SearchPromotions();
+    }
+
+    private async Task OnStartDateChanged(DateTime? value)
+    {
+        searchCriteria.StartDate = value;
+        
+        // Validate: StartDate should not be after EndDate
+        if (value.HasValue && searchCriteria.EndDate.HasValue && value.Value > searchCriteria.EndDate.Value)
+        {
+            dateErrorMessage = $"Start date cannot be after end date";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        
+        dateErrorMessage = null;
+        currentPage = 1;
+        await SearchPromotions();
+    }
+
+    private async Task OnEndDateChanged(DateTime? value)
+    {
+        searchCriteria.EndDate = value;
+        
+        // Validate: EndDate should not be before StartDate
+        if (value.HasValue && searchCriteria.StartDate.HasValue && value.Value < searchCriteria.StartDate.Value)
+        {
+            dateErrorMessage = $"End date cannot be before start date";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        
+        dateErrorMessage = null;
+        currentPage = 1;
+        await SearchPromotions();
     }
 
     private void OpenAddModal()
