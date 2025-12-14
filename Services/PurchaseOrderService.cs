@@ -51,6 +51,7 @@ namespace StoreManagementAPI.Services
             var purchaseOrders = await _context.PurchaseOrders
                 .Include(po => po.Supplier)
                 .Include(po => po.User)
+                .Include(po => po.Warehouse)
                 .Include(po => po.PurchaseItems)
                     .ThenInclude(pi => pi.Product)
                 .OrderByDescending(po => po.PurchaseDate)
@@ -64,6 +65,7 @@ namespace StoreManagementAPI.Services
             var purchaseOrder = await _context.PurchaseOrders
                 .Include(po => po.Supplier)
                 .Include(po => po.User)
+                .Include(po => po.Warehouse)
                 .Include(po => po.PurchaseItems)
                     .ThenInclude(pi => pi.Product)
                 .FirstOrDefaultAsync(po => po.PurchaseId == purchaseId);
@@ -323,8 +325,11 @@ namespace StoreManagementAPI.Services
                 PurchaseId = po.PurchaseId,
                 SupplierId = po.SupplierId,
                 SupplierName = po.Supplier?.Name,
+                WarehouseId = po.WarehouseId ?? 0,
+                WarehouseName = po.Warehouse?.WarehouseName,
                 UserId = po.UserId,
                 UserName = po.User?.FullName,
+                Username = po.User?.Username,
                 PurchaseDate = po.PurchaseDate,
                 TotalAmount = po.TotalAmount,
                 Status = po.Status,

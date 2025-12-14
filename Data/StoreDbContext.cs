@@ -26,6 +26,7 @@ namespace StoreManagementAPI.Data
         public DbSet<PromotionProduct> PromotionProducts { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<Employee> Employees { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -165,6 +166,23 @@ namespace StoreManagementAPI.Data
             {
                 entity.ToTable("cart_items");
                 entity.HasKey(e => e.CartItemId);
+            });
+
+            // Configure Employee entity
+            modelBuilder.Entity<Employee>(entity =>
+            {
+                entity.ToTable("employees");
+                entity.HasKey(e => e.EmployeeId);
+                entity.Property(e => e.FullName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Phone).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.EmployeeType).HasMaxLength(20).HasDefaultValue("sales");
+                entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("active");
+                
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
         }
     }

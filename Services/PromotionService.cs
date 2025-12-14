@@ -16,6 +16,7 @@ namespace StoreManagementAPI.Services
         Task<Promotion> CreatePromotionAsync(CreatePromotionDto dto);
         Task<Promotion> UpdatePromotionAsync(int promoId, CreatePromotionDto dto);
         Task<bool> DeletePromotionAsync(int promoId);
+        Task<List<PromotionDisplayDto>> GetValidPromotionsForOrderAsync(decimal orderAmount);
     }
 
     public class PromotionService : IPromotionService
@@ -334,6 +335,55 @@ namespace StoreManagementAPI.Services
                 HasPreviousPage = pageNumber > 1,
                 HasNextPage = pageNumber < totalPages
             };
+        }
+
+        public async Task<List<PromotionDisplayDto>> GetValidPromotionsForOrderAsync(decimal orderAmount)
+        {
+            var today = DateTime.Now.Date;
+            
+            var validPromotions = await _context.Promotions
+                .Where(p => p.Status == "active" && 
+                           p.StartDate.Date <= today && 
+                           p.EndDate.Date >= today &&
+                           (p.UsageLimit == 0 || p.UsedCount < p.UsageLimit) &&
+                           p.MinOrderAmount <= orderAmount &&
+                           p.ApplyType == "order")
+                .ToListAsync();
+
+            var promotionDisplayList = validPromotions.Select(p => 
+            {
+                decimal discountAmount = 0;
+                string displayText = "";
+
+                if (p.DiscountType == "percent")
+                {
+                    discountAmount = orderAmount * (p.DiscountValue / 100);
+                    displayText = $"{p.PromoCode} - Giảm {p.DiscountValue}% (Tiết kiệm: ${discountAmount:N2})";
+                }
+                else // fixed
+                {
+                    discountAmount = Math.Min(p.DiscountValue, orderAmount);
+                    displayText = $"{p.PromoCode} - Giảm ${p.DiscountValue:N2} (Tiết kiệm: ${discountAmount:N2})";
+                }
+
+                if (!string.IsNullOrEmpty(p.Description))
+                {
+                    displayText += $" - {p.Description}";
+                }
+
+                return new PromotionDisplayDto
+                {
+                    PromoId = p.PromoId,
+                    PromoCode = p.PromoCode,
+                    DisplayText = displayText,
+                    DiscountAmount = discountAmount,
+                    DiscountType = p.DiscountType,
+                    DiscountValue = p.DiscountValue,
+                    Description = p.Description
+                };
+            }).OrderByDescending(p => p.DiscountAmount).ToList();
+
+            return promotionDisplayList;
         }
     }
 }

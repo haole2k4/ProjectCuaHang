@@ -38,7 +38,7 @@ namespace StoreManagementAPI.Services
             var users = await _userRepository.FindAsync(u => u.Username == loginDto.Username);
             var user = users.FirstOrDefault();
 
-            if (user == null || user.Password != loginDto.Password)
+            if (user == null)
             {
                 // Log failed login attempt
                 await _auditLogService.LogActionAsync(
@@ -53,7 +53,49 @@ namespace StoreManagementAPI.Services
                     username: loginDto.Username,
                     additionalInfo: new Dictionary<string, object>
                     {
-                        { "Reason", user == null ? "Tài khoản không tồn tại" : "Sai mật khẩu" },
+                        { "Reason", "Tài khoản không tồn tại" },
+                        { "AttemptTime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") }
+                    }
+                );
+                return null;
+            }
+
+            // Verify password - support both BCrypt and plaintext
+            bool isPasswordValid = false;
+            if (user.Password.StartsWith("$2a$") || user.Password.StartsWith("$2b$") || user.Password.StartsWith("$2y$"))
+            {
+                // BCrypt hashed password
+                try
+                {
+                    isPasswordValid = BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password);
+                }
+                catch
+                {
+                    isPasswordValid = false;
+                }
+            }
+            else
+            {
+                // Plaintext password (for backward compatibility)
+                isPasswordValid = user.Password == loginDto.Password;
+            }
+
+            if (!isPasswordValid)
+            {
+                // Log failed login attempt
+                await _auditLogService.LogActionAsync(
+                    action: "LOGIN_FAILED",
+                    entityType: "User",
+                    entityId: user.UserId,
+                    entityName: loginDto.Username,
+                    oldValues: null,
+                    newValues: null,
+                    changesSummary: $"Đăng nhập thất bại cho tài khoản '{loginDto.Username}'",
+                    userId: null,
+                    username: loginDto.Username,
+                    additionalInfo: new Dictionary<string, object>
+                    {
+                        { "Reason", "Sai mật khẩu" },
                         { "AttemptTime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") }
                     }
                 );

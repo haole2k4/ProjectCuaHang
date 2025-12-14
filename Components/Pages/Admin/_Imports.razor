@@ -3,4 +3,5 @@
 @using BlazorApp1.Components.Shared
 @using Microsoft.AspNetCore.Authorization
 @layout BlazorApp1.Components.Layout.AdminLayout
-@attribute [Authorize(Roles = "Admin")]
+@* Allow all authenticated users - AdminLayout will handle menu visibility based on role *@
+@attribute [Authorize]

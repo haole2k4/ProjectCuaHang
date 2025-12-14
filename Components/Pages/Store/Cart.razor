@@ -5,6 +5,7 @@
 @using BlazorApp1.Services
 @using Blazorise
 @using StoreManagementAPI.Services
+@using StoreManagementAPI.DTOs
 @using BlazorApp1.Components.Controls
 
 @inject ICartService CartService
@@ -140,27 +141,40 @@ else
           </div>
 
           <Field class="mt-6">
-            <FieldLabel>Promo Code</FieldLabel>
-            <Addons>
-              <Addon AddonType="AddonType.Body">
-                <TextEdit Placeholder="Enter code" @bind-Text="promoCode"
-                  Disabled="@(!string.IsNullOrEmpty(appliedPromoCode))" class="uppercase" />
-              </Addon>
-              <Addon AddonType="AddonType.End">
-                @if (string.IsNullOrEmpty(appliedPromoCode))
+            <FieldLabel>Mã Giảm Giá</FieldLabel>
+            @if (string.IsNullOrEmpty(appliedPromoCode))
+            {
+              <Select TValue="int?" SelectedValue="@selectedPromoId" SelectedValueChanged="OnPromotionSelected" 
+                      class="w-full !border-gray-300 mb-2" Disabled="@isLoadingPromotions">
+                <SelectItem Value="@((int?)null)">-- Chọn mã giảm giá --</SelectItem>
+                @if (availablePromotions != null)
                 {
-                  <Button Color="Color.Success" Clicked="ApplyPromo" Loading="@isApplyingPromo" class="!bg-green-600 hover:!bg-green-700 !text-white !border-green-600 font-semibold">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Check" class="mr-1" /> Apply
-                  </Button>
+                  @foreach (var promo in availablePromotions)
+                  {
+                    <SelectItem Value="@promo.PromoId">@promo.DisplayText</SelectItem>
+                  }
                 }
-                else
-                {
-                  <Button Color="Color.Danger" Clicked="RemovePromo" class="!bg-red-600 hover:!bg-red-700 !text-white !border-red-600 font-semibold">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Times" class="mr-1" /> Remove
-                  </Button>
-                }
-              </Addon>
-            </Addons>
+              </Select>
+              @if (availablePromotions == null || !availablePromotions.Any())
+              {
+                <Paragraph TextColor="TextColor.Muted" class="text-sm mt-2">
+                  <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.InfoCircle" class="mr-1" />
+                  Không có mã giảm giá nào khả dụng cho đơn hàng này.
+                </Paragraph>
+              }
+            }
+            else
+            {
+              <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex-1">
+                  <div class="font-semibold text-green-800">@appliedPromoCode</div>
+                  <div class="text-sm text-green-600">Bạn đang tiết kiệm: $@discount.ToString("N2")</div>
+                </div>
+                <Button Color="Color.Danger" Size="Size.Small" Clicked="RemovePromo" class="!bg-red-600 hover:!bg-red-700 !text-white !border-red-600">
+                  <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Times" class="mr-1" /> Xóa
+                </Button>
+              </div>
+            }
           </Field>
 
           <Button Color="Color.Success" Size="Size.Large" Block
@@ -189,8 +203,9 @@ else
 
 @code {
   private List<CartItemDto>? cartItems;
-  private string promoCode = "";
-  private bool isApplyingPromo = false;
+  private List<PromotionDisplayDto>? availablePromotions;
+  private int? selectedPromoId = null;
+  private bool isLoadingPromotions = false;
   private PromoNotification promoNotification;
 
   private decimal subtotal => cartItems?.Sum(x => x.Subtotal) ?? 0;
@@ -202,6 +217,7 @@ else
   {
     CartService.OnChange += async () => await RefreshCart();
     await RefreshCart();
+    await LoadAvailablePromotions();
   }
 
   private async Task RefreshCart()
@@ -233,7 +249,42 @@ else
             CartService.ApplyDiscount(CartService.AppliedPromoCode, CartService.AppliedPromoId ?? 0, CartService.DiscountPercent, newDiscount);
         }
     }
+    await LoadAvailablePromotions();
     await InvokeAsync(StateHasChanged);
+  }
+
+  private async Task LoadAvailablePromotions()
+  {
+    if (!string.IsNullOrEmpty(appliedPromoCode))
+    {
+      availablePromotions = new List<PromotionDisplayDto>();
+      return;
+    }
+
+    isLoadingPromotions = true;
+    try
+    {
+      availablePromotions = await PromotionService.GetValidPromotionsForOrderAsync(subtotal);
+    }
+    catch (Exception ex)
+    {
+      Console.WriteLine($"[Cart] Error loading promotions: {ex.Message}");
+      availablePromotions = new List<PromotionDisplayDto>();
+    }
+    finally
+    {
+      isLoadingPromotions = false;
+    }
+  }
+
+  private async Task OnPromotionSelected(int? promoId)
+  {
+    selectedPromoId = promoId;
+    
+    if (promoId.HasValue)
+    {
+      await ApplySelectedPromotion(promoId.Value);
+    }
   }
 
   private async Task UpdateQuantity(int productId, int quantity)
@@ -256,74 +307,55 @@ else
     await RemovePromo();
   }
 
-  private async Task ApplyPromo()
+  private async Task ApplySelectedPromotion(int promoId)
   {
-    if (string.IsNullOrWhiteSpace(promoCode))
-    {
-      await promoNotification.Show("Warning", "Please enter a promo code", PromoNotification.NotificationType.Info);
-      return;
-    }
-
-    isApplyingPromo = true;
-
     try
     {
-      var code = promoCode.Trim().ToUpper();
-      Console.WriteLine($"[Cart] Applying promo code: '{code}'");
-
-      var promotion = await PromotionService.ValidateAndGetPromotionAsync(code);
-
-      Console.WriteLine($"[Cart] Promotion result: {(promotion != null ? "Found" : "Not found")}");
-
-      if (promotion != null)
+      var selectedPromo = availablePromotions?.FirstOrDefault(p => p.PromoId == promoId);
+      
+      if (selectedPromo == null)
       {
-        decimal discountAmount = 0;
-        decimal discountPercent = 0;
-
-        if (promotion.DiscountType == "percent")
-        {
-            discountPercent = promotion.DiscountValue;
-            discountAmount = subtotal * (discountPercent / 100);
-        }
-        else // fixed
-        {
-            discountAmount = promotion.DiscountValue;
-            if (discountAmount > subtotal) discountAmount = subtotal;
-        }
-
-        CartService.ApplyDiscount(code, promotion.PromoId, discountPercent, discountAmount);
-
-        // Removed immediate increment of usage count
-        // await PromotionService.IncrementUsageCountAsync(promotion.PromoId);
-
-        string saveMessage = promotion.DiscountType == "percent"
-            ? $"${discountAmount:N2} ({discountPercent}% off)"
-            : $"${discountAmount:N2}";
-
-        await promoNotification.Show("Success", $"Promo code applied! You saved {saveMessage}", PromoNotification.NotificationType.Success);
-        promoCode = "";
+        await promoNotification.Show("Lỗi", "Không tìm thấy mã giảm giá", PromoNotification.NotificationType.Error);
+        return;
       }
-      else
+
+      decimal discountAmount = 0;
+      decimal discountPercent = 0;
+
+      if (selectedPromo.DiscountType == "percent")
       {
-        await promoNotification.Show("Error", "Invalid or expired promo code. Please try again.", PromoNotification.NotificationType.Error);
+        discountPercent = selectedPromo.DiscountValue;
+        discountAmount = subtotal * (discountPercent / 100);
       }
+      else // fixed
+      {
+        discountAmount = Math.Min(selectedPromo.DiscountValue, subtotal);
+      }
+
+      CartService.ApplyDiscount(selectedPromo.PromoCode, selectedPromo.PromoId, discountPercent, discountAmount);
+
+      string saveMessage = selectedPromo.DiscountType == "percent"
+          ? $"${discountAmount:N2} ({discountPercent}% off)"
+          : $"${discountAmount:N2}";
+
+      await promoNotification.Show("Áp dụng thành công", $"Mã giảm giá đã được áp dụng! Bạn tiết kiệm {saveMessage}", PromoNotification.NotificationType.Success);
+      
+      selectedPromoId = null;
+      await LoadAvailablePromotions();
     }
     catch (Exception ex)
     {
       Console.WriteLine($"[Cart] Error applying promo: {ex.Message}");
-      Console.WriteLine($"[Cart] Stack trace: {ex.StackTrace}");
-      await promoNotification.Show("Error", "Error applying promo code. Please try again.", PromoNotification.NotificationType.Error);
-    }
-    finally
-    {
-      isApplyingPromo = false;
+      await promoNotification.Show("Lỗi", "Không thể áp dụng mã giảm giá", PromoNotification.NotificationType.Error);
     }
   }
 
   private async Task RemovePromo()
   {
     CartService.RemoveDiscount();
-    await promoNotification.Show("Info", "Promo code removed", PromoNotification.NotificationType.Info);
+    selectedPromoId = null;
+    await LoadAvailablePromotions();
+    await promoNotification.Show("Đã xóa", "Mã giảm giá đã được gỡ bỏ", PromoNotification.NotificationType.Info);
   }
 
   private void ProceedToCheckout()
