@@ -22,8 +22,11 @@ namespace StoreManagementAPI.DTOs
         public int PurchaseId { get; set; }
         public int SupplierId { get; set; }
         public string? SupplierName { get; set; }
+        public int WarehouseId { get; set; }
+        public string? WarehouseName { get; set; }
         public int UserId { get; set; }
         public string? UserName { get; set; }
+        public string? Username { get; set; }
         public DateTime PurchaseDate { get; set; }
         public decimal TotalAmount { get; set; }
         public string Status { get; set; } = string.Empty;
@@ -40,15 +43,6 @@ namespace StoreManagementAPI.DTOs
         public int Quantity { get; set; }
         public decimal CostPrice { get; set; }
         public decimal Subtotal { get; set; }
-    }
-
-    // DTO for warehouse
-    public class WarehouseDto
-    {
-        public int WarehouseId { get; set; }
-        public string? WarehouseName { get; set; }
-        public string? Address { get; set; }
-        public string Status { get; set; } = "active";
     }
 
     // DTO for updating purchase order status

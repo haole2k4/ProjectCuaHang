@@ -1,0 +1,551 @@
+@page "/admin/purchase-orders"
+@rendermode InteractiveServer
+
+@using StoreManagementAPI.Data
+@using StoreManagementAPI.Models
+@using StoreManagementAPI.Services
+@using StoreManagementAPI.DTOs
+@using Microsoft.EntityFrameworkCore
+@using Blazorise
+@using System.Text
+
+@inject StoreDbContext DbContext
+@inject IPurchaseOrderService PurchaseOrderService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Purchase Orders - Admin</PageTitle>
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+            Purchase Orders
+        </Heading>
+        <Paragraph class="text-gray-600 mb-0">Manage inventory imports from suppliers</Paragraph>
+    </div>
+    <div class="flex gap-3">
+        <Button Color="Color.Success" Clicked="ExportToExcel" class="!text-white !bg-green-600 hover:!bg-green-700 shadow-md">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.FileExcel" class="mr-2" /> Export Excel
+        </Button>
+        <Button Color="Color.Primary" Clicked="OpenCreateModal" class="!text-white !bg-blue-600 hover:!bg-blue-700 shadow-md">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Create Order
+        </Button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <Alert Color="Color.Success" Visible class="mb-4">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="mr-2" />
+        @successMessage
+    </Alert>
+}
+
+<!-- Purchase Orders List -->
+<Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
+    <CardBody Padding="Padding.Is0">
+        <div class="overflow-x-auto">
+            <Table class="mb-0 w-full">
+                <TableHeader>
+                    <TableRow class="bg-white border-b-2 border-gray-200">
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">PO #</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Supplier</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Warehouse</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Date</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Total Amount</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
+                    </TableRow>
+                </TableHeader>
+                <TableBody class="bg-white divide-y divide-gray-200">
+                    @if (purchaseOrders != null && purchaseOrders.Any())
+                    {
+                        @foreach (var po in purchaseOrders)
+                        {
+                            <TableRow class="hover:bg-gray-50 transition-colors">
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <span class="font-bold text-blue-600">#PO-@po.PurchaseId</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <span class="font-medium text-gray-900">@po.SupplierName</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <span class="text-gray-700">@(po.WarehouseName ?? "N/A")</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <span class="text-gray-700">@po.PurchaseDate.ToString("dd/MM/yyyy HH:mm")</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <span class="font-bold text-green-600">$@po.TotalAmount.ToString("N2")</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    @if (po.Status == "completed")
+                                    {
+                                        <Badge Color="Color.Success" class="!bg-green-100 !text-green-800">Completed</Badge>
+                                    }
+                                    else if (po.Status == "pending")
+                                    {
+                                        <Badge Color="Color.Warning" class="!bg-yellow-100 !text-yellow-800">Pending</Badge>
+                                    }
+                                    else
+                                    {
+                                        <Badge Color="Color.Danger" class="!bg-red-100 !text-red-800">Canceled</Badge>
+                                    }
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <Button Color="Color.Info" Size="Size.Small" Clicked="@(() => ViewDetails(po))" class="!bg-blue-50 !text-blue-600 hover:!bg-blue-100">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Eye" />
+                                    </Button>
+                                </TableRowCell>
+                            </TableRow>
+                        }
+                    }
+                    else
+                    {
+                        <TableRow>
+                            <TableRowCell ColumnSpan="7" class="text-center py-12">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-gray-400 text-4xl mb-3" />
+                                <p class="text-gray-600">Chưa có phiếu nhập hàng nào</p>
+                            </TableRowCell>
+                        </TableRow>
+                    }
+                </TableBody>
+            </Table>
+        </div>
+    </CardBody>
+</Card>
+
+<!-- Create Purchase Order Modal -->
+<Modal @ref="createModal">
+    <ModalContent Size="ModalSize.ExtraLarge">
+        <ModalHeader class="bg-white border-b border-gray-200">
+            <ModalTitle class="text-gray-900 font-bold">Tạo Phiếu Nhập Hàng</ModalTitle>
+            <CloseButton Clicked="CloseCreateModal" />
+        </ModalHeader>
+        <ModalBody class="bg-white">
+            <div class="space-y-4">
+                <!-- Nhà cung cấp -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Nhà cung cấp *</label>
+                    <Select TValue="int?" @bind-SelectedValue="selectedSupplierId" class="w-full !border-gray-300">
+                        <SelectItem Value="@((int?)null)">-- Chọn nhà cung cấp --</SelectItem>
+                        @if (suppliers != null)
+                        {
+                            @foreach (var supplier in suppliers)
+                            {
+                                <SelectItem Value="@supplier.SupplierId">@supplier.Name</SelectItem>
+                            }
+                        }
+                    </Select>
+                </div>
+
+                <!-- Kho -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Kho nhập *</label>
+                    <Select TValue="int?" @bind-SelectedValue="selectedWarehouseId" class="w-full !border-gray-300">
+                        <SelectItem Value="@((int?)null)">-- Chọn kho --</SelectItem>
+                        @if (warehouses != null)
+                        {
+                            @foreach (var warehouse in warehouses)
+                            {
+                                <SelectItem Value="@warehouse.WarehouseId">@warehouse.WarehouseName</SelectItem>
+                            }
+                        }
+                    </Select>
+                </div>
+
+                <!-- Thêm Sản Phẩm -->
+                <div class="border-t border-gray-200 pt-4">
+                    <h5 class="font-bold text-gray-900 mb-3">Thêm Sản Phẩm</h5>
+
+                    <div class="grid grid-cols-12 gap-3 mb-3">
+                        <div class="col-span-5">
+                            <Select TValue="int?" @bind-SelectedValue="selectedProductId" class="w-full !border-gray-300">
+                                <SelectItem Value="@((int?)null)">-- Chọn sản phẩm --</SelectItem>
+                                @if (products != null)
+                                {
+                                    @foreach (var product in products)
+                                    {
+                                        <SelectItem Value="@product.ProductId">@product.ProductName</SelectItem>
+                                    }
+                                }
+                            </Select>
+                        </div>
+                        <div class="col-span-2">
+                            <NumericEdit TValue="int" @bind-Value="itemQuantity" Min="1" Placeholder="Số lượng" class="w-full !border-gray-300" />
+                        </div>
+                        <div class="col-span-3">
+                            <NumericEdit TValue="decimal" @bind-Value="itemCostPrice" Min="0" Step="1000" Placeholder="Giá nhập" class="w-full !border-gray-300" />
+                        </div>
+                        <div class="col-span-2">
+                            <Button Color="Color.Primary" Clicked="AddItem" class="w-full !bg-blue-600 hover:!bg-blue-700 !text-white">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-1" /> Thêm
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danh sách sản phẩm đã thêm -->
+                @if (purchaseItems.Any())
+                {
+                    <div class="border border-gray-200 rounded-lg overflow-hidden">
+                        <Table class="mb-0">
+                            <TableHeader>
+                                <TableRow class="bg-gray-50">
+                                    <TableHeaderCell>Sản phẩm</TableHeaderCell>
+                                    <TableHeaderCell>Số lượng</TableHeaderCell>
+                                    <TableHeaderCell>Giá nhập</TableHeaderCell>
+                                    <TableHeaderCell>Thành tiền</TableHeaderCell>
+                                    <TableHeaderCell></TableHeaderCell>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                @foreach (var item in purchaseItems)
+                                {
+                                    <TableRow>
+                                        <TableRowCell>
+                                            <span class="font-medium">@item.ProductName</span>
+                                        </TableRowCell>
+                                        <TableRowCell>@item.Quantity</TableRowCell>
+                                        <TableRowCell>@item.CostPrice.ToString("N0") đ</TableRowCell>
+                                        <TableRowCell class="font-bold">@item.Subtotal.ToString("N0") đ</TableRowCell>
+                                        <TableRowCell>
+                                            <Button Color="Color.Danger" Size="Size.Small" Clicked="@(() => RemoveItem(item))">
+                                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" />
+                                            </Button>
+                                        </TableRowCell>
+                                    </TableRow>
+                                }
+                            </TableBody>
+                        </Table>
+                        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-gray-900">Tổng cộng:</span>
+                                <span class="text-2xl font-bold text-blue-600">@CalculateTotal().ToString("N0") đ</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-8 text-gray-500 border border-gray-200 rounded-lg">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-4xl mb-2" />
+                        <p>Chưa có sản phẩm nào. Thêm sản phẩm để tạo phiếu nhập.</p>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(modalErrorMessage))
+                {
+                    <Alert Color="Color.Danger" Visible class="!bg-red-50 !border-red-200 !text-red-900">
+                        @modalErrorMessage
+                    </Alert>
+                }
+            </div>
+        </ModalBody>
+        <ModalFooter class="bg-gray-50 border-t border-gray-200">
+            <Button Color="Color.Secondary" Clicked="CloseCreateModal" class="!bg-white !border-2 !border-gray-300 !text-gray-900 hover:!bg-gray-100">Hủy</Button>
+            <Button Color="Color.Primary" Clicked="SavePurchaseOrder" Loading="isSaving" Disabled="@(!purchaseItems.Any())" class="!bg-blue-600 hover:!bg-blue-700 !text-white shadow-md">
+                Tạo Phiếu Nhập
+            </Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal>
+
+<!-- View Details Modal -->
+<Modal @ref="detailsModal">
+    <ModalContent Size="ModalSize.Large">
+        <ModalHeader class="bg-white border-b border-gray-200">
+            <ModalTitle class="text-gray-900 font-bold">Chi tiết phiếu nhập #PO-@selectedPurchaseOrder?.PurchaseId</ModalTitle>
+            <CloseButton Clicked="@(() => detailsModal.Hide())" />
+        </ModalHeader>
+        <ModalBody class="bg-white">
+            @if (selectedPurchaseOrder != null)
+            {
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-1">Nhà cung cấp</p>
+                            <p class="font-bold text-gray-900">@selectedPurchaseOrder.SupplierName</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-1">Kho</p>
+                            <p class="font-bold text-gray-900">@selectedPurchaseOrder.WarehouseName</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-1">Ngày nhập</p>
+                            <p class="font-bold text-gray-900">@selectedPurchaseOrder.PurchaseDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600 mb-1">Người tạo</p>
+                            <p class="font-bold text-gray-900">@selectedPurchaseOrder.Username</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h5 class="font-bold text-gray-900 mb-3">Chi tiết sản phẩm</h5>
+                        <Table class="border border-gray-200 rounded-lg">
+                            <TableHeader>
+                                <TableRow class="bg-gray-50">
+                                    <TableHeaderCell>Sản phẩm</TableHeaderCell>
+                                    <TableHeaderCell>Số lượng</TableHeaderCell>
+                                    <TableHeaderCell>Giá nhập</TableHeaderCell>
+                                    <TableHeaderCell>Thành tiền</TableHeaderCell>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                @foreach (var item in selectedPurchaseOrder.Items)
+                                {
+                                    <TableRow>
+                                        <TableRowCell>@item.ProductName</TableRowCell>
+                                        <TableRowCell>@item.Quantity</TableRowCell>
+                                        <TableRowCell>@item.CostPrice.ToString("N0") đ</TableRowCell>
+                                        <TableRowCell class="font-bold">@item.Subtotal.ToString("N0") đ</TableRowCell>
+                                    </TableRow>
+                                }
+                            </TableBody>
+                        </Table>
+                        <div class="bg-blue-50 px-6 py-4 rounded-lg mt-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-gray-900">Tổng cộng:</span>
+                                <span class="text-2xl font-bold text-blue-600">@selectedPurchaseOrder.TotalAmount.ToString("N0") đ</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </ModalBody>
+    </ModalContent>
+</Modal>
+
+@code {
+    private class PurchaseItemViewModel
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = string.Empty;
+        public int Quantity { get; set; }
+        public decimal CostPrice { get; set; }
+        public decimal Subtotal => Quantity * CostPrice;
+    }
+
+    private List<PurchaseOrderResponseDto>? purchaseOrders;
+    private List<Supplier>? suppliers;
+    private List<Warehouse>? warehouses;
+    private List<Product>? products;
+    private List<PurchaseItemViewModel> purchaseItems = new();
+
+    private Modal createModal = null!;
+    private Modal detailsModal = null!;
+
+    private int? selectedSupplierId;
+    private int? selectedWarehouseId;
+    private int? selectedProductId;
+    private int itemQuantity = 1;
+    private decimal itemCostPrice = 0;
+
+    private bool isSaving = false;
+    private string? modalErrorMessage;
+    private string? successMessage;
+
+    private PurchaseOrderResponseDto? selectedPurchaseOrder;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        purchaseOrders = await PurchaseOrderService.GetAllPurchaseOrders();
+
+        suppliers = await DbContext.Suppliers
+            .Where(s => s.Status == "active")
+            .OrderBy(s => s.Name)
+            .ToListAsync();
+
+        warehouses = await DbContext.Warehouses
+            .Where(w => w.Status == "active")
+            .OrderBy(w => w.WarehouseName)
+            .ToListAsync();
+
+        products = await DbContext.Products
+            .Where(p => p.Status == "active")
+            .OrderBy(p => p.ProductName)
+            .ToListAsync();
+    }
+
+    private void OpenCreateModal()
+    {
+        selectedSupplierId = null;
+        selectedWarehouseId = null;
+        selectedProductId = null;
+        itemQuantity = 1;
+        itemCostPrice = 0;
+        purchaseItems.Clear();
+        modalErrorMessage = null;
+        createModal.Show();
+    }
+
+    private void CloseCreateModal()
+    {
+        createModal.Hide();
+    }
+
+    private void AddItem()
+    {
+        modalErrorMessage = null;
+
+        if (!selectedProductId.HasValue)
+        {
+            modalErrorMessage = "Vui lòng chọn sản phẩm";
+            return;
+        }
+
+        if (itemQuantity <= 0)
+        {
+            modalErrorMessage = "Số lượng phải lớn hơn 0";
+            return;
+        }
+
+        if (itemCostPrice <= 0)
+        {
+            modalErrorMessage = "Giá nhập phải lớn hơn 0";
+            return;
+        }
+
+        // Check if product already added
+        if (purchaseItems.Any(i => i.ProductId == selectedProductId.Value))
+        {
+            modalErrorMessage = "Sản phẩm đã có trong danh sách";
+            return;
+        }
+
+        var product = products?.FirstOrDefault(p => p.ProductId == selectedProductId.Value);
+        if (product == null) return;
+
+        purchaseItems.Add(new PurchaseItemViewModel
+        {
+            ProductId = product.ProductId,
+            ProductName = product.ProductName,
+            Quantity = itemQuantity,
+            CostPrice = itemCostPrice
+        });
+
+        // Reset form
+        selectedProductId = null;
+        itemQuantity = 1;
+        itemCostPrice = 0;
+    }
+
+    private void RemoveItem(PurchaseItemViewModel item)
+    {
+        purchaseItems.Remove(item);
+    }
+
+    private decimal CalculateTotal()
+    {
+        return purchaseItems.Sum(i => i.Subtotal);
+    }
+
+    private async Task SavePurchaseOrder()
+    {
+        modalErrorMessage = null;
+
+        if (!selectedSupplierId.HasValue)
+        {
+            modalErrorMessage = "Vui lòng chọn nhà cung cấp";
+            return;
+        }
+
+        if (!selectedWarehouseId.HasValue)
+        {
+            modalErrorMessage = "Vui lòng chọn kho";
+            return;
+        }
+
+        if (!purchaseItems.Any())
+        {
+            modalErrorMessage = "Vui lòng thêm ít nhất một sản phẩm";
+            return;
+        }
+
+        isSaving = true;
+        try
+        {
+            var createDto = new CreatePurchaseOrderDto
+            {
+                SupplierId = selectedSupplierId.Value,
+                WarehouseId = selectedWarehouseId.Value,
+                Items = purchaseItems.Select(i => new PurchaseItemDto
+                {
+                    ProductId = i.ProductId,
+                    Quantity = i.Quantity,
+                    CostPrice = i.CostPrice
+                }).ToList()
+            };
+
+            await PurchaseOrderService.CreatePurchaseOrder(createDto, 1); // userId = 1 (admin)
+
+            successMessage = "Tạo phiếu nhập hàng thành công!";
+            CloseCreateModal();
+            await LoadData();
+
+            await Task.Delay(3000);
+            successMessage = null;
+        }
+        catch (Exception ex)
+        {
+            modalErrorMessage = $"Lỗi: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            var allPurchaseOrders = await DbContext.PurchaseOrders
+                .Include(p => p.Supplier)
+                .Include(p => p.Warehouse)
+                .Include(p => p.User)
+                .Include(p => p.PurchaseItems)
+                    .ThenInclude(i => i.Product)
+                .OrderByDescending(p => p.PurchaseDate)
+                .ToListAsync();
+
+            var csv = new StringBuilder();
+            csv.AppendLine("PO #,Supplier,Warehouse,Date,User,Product,Quantity,Cost Price,Subtotal,Total Amount,Status");
+
+            foreach (var po in allPurchaseOrders)
+            {
+                foreach (var item in po.PurchaseItems)
+                {
+                    csv.AppendLine($"{po.PurchaseId},\"{po.Supplier?.Name}\",\"{po.Warehouse?.WarehouseName}\",{po.PurchaseDate:yyyy-MM-dd HH:mm:ss},\"{po.User?.Username}\",\"{item.Product?.ProductName}\",{item.Quantity},{item.CostPrice},{item.Subtotal},{po.TotalAmount},{po.Status}");
+                }
+            }
+
+            var fileName = $"PurchaseOrders_Export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            var bytes = Encoding.UTF8.GetBytes(csv.ToString());
+            var base64 = Convert.ToBase64String(bytes);
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, base64);
+
+            successMessage = "Purchase orders exported successfully!";
+            await Task.Delay(3000);
+            successMessage = null;
+        }
+        catch (Exception ex)
+        {
+            successMessage = $"Error exporting: {ex.Message}";
+            await Task.Delay(3000);
+            successMessage = null;
+        }
+    }
+
+    private async Task ViewDetails(PurchaseOrderResponseDto po)
+    {
+        selectedPurchaseOrder = await PurchaseOrderService.GetPurchaseOrderById(po.PurchaseId);
+        detailsModal.Show();
+    }
+}

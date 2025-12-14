@@ -170,7 +170,7 @@
                 </TableBody>
             </Table>
         </div>
-        
+
         <PaginationComponent CurrentPage="@currentPage" PageSize="@pageSize" TotalItems="@totalItems" OnPageChanged="@HandlePageChanged" />
     </CardBody>
 </Card>
@@ -289,6 +289,84 @@
                             </div>
                         }
                     </div>
+
+                    <!-- Lịch sử nhập/xuất kho -->
+                    <div class="mt-6">
+                        <div class="flex items-center justify-between mb-3">
+                            <h5 class="font-bold text-gray-900">Lịch sử nhập/xuất hàng</h5>
+                            <Buttons>
+                                <Button Size="Size.Small" Color="@GetFilterColor("ALL")" Clicked="@(() => FilterHistory("ALL"))">Tất cả</Button>
+                                <Button Size="Size.Small" Color="@GetFilterColor("IN")" Clicked="@(() => FilterHistory("IN"))">Nhập hàng</Button>
+                                <Button Size="Size.Small" Color="@GetFilterColor("OUT")" Clicked="@(() => FilterHistory("OUT"))">Xuất hàng</Button>
+                            </Buttons>
+                        </div>
+                        @if (warehouseHistory != null && warehouseHistory.Any())
+                        {
+                            <div class="border border-gray-200 rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+                                <Table class="mb-0">
+                                    <TableHeader class="sticky top-0 bg-gray-50">
+                                        <TableRow>
+                                            <TableHeaderCell>Thời gian</TableHeaderCell>
+                                            <TableHeaderCell>Loại</TableHeaderCell>
+                                            <TableHeaderCell>Sản phẩm</TableHeaderCell>
+                                            <TableHeaderCell>Số lượng</TableHeaderCell>
+                                            <TableHeaderCell>Đơn giá</TableHeaderCell>
+                                            <TableHeaderCell>Tổng tiền</TableHeaderCell>
+                                            <TableHeaderCell>Ghi chú</TableHeaderCell>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        @foreach (var history in warehouseHistory)
+                                        {
+                                            <TableRow class="@(history.TransactionType == "IN" ? "bg-green-50" : "bg-red-50")">
+                                                <TableRowCell>
+                                                    <div class="text-sm">
+                                                        <div class="font-medium">@history.TransactionDate.ToString("dd/MM/yyyy")</div>
+                                                        <div class="text-gray-500">@history.TransactionDate.ToString("HH:mm")</div>
+                                                    </div>
+                                                </TableRowCell>
+                                                <TableRowCell>
+                                                    @if (history.TransactionType == "IN")
+                                                    {
+                                                        <Badge Color="Color.Success" class="font-semibold">
+                                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowDown" class="mr-1" /> Nhập
+                                                        </Badge>
+                                                    }
+                                                    else
+                                                    {
+                                                        <Badge Color="Color.Danger" class="font-semibold">
+                                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowUp" class="mr-1" /> Xuất
+                                                        </Badge>
+                                                    }
+                                                </TableRowCell>
+                                                <TableRowCell>
+                                                    <div class="font-medium">@history.ProductName</div>
+                                                </TableRowCell>
+                                                <TableRowCell>
+                                                    <span class="font-bold @(history.TransactionType == "IN" ? "text-green-600" : "text-red-600")">
+                                                        @(history.TransactionType == "IN" ? "+" : "-")@history.Quantity
+                                                    </span>
+                                                </TableRowCell>
+                                                <TableRowCell>@history.Price.ToString("N0") đ</TableRowCell>
+                                                <TableRowCell class="font-semibold">@history.TotalAmount.ToString("N0") đ</TableRowCell>
+                                                <TableRowCell>
+                                                    <div class="text-sm text-gray-600">@history.Notes</div>
+                                                    <div class="text-xs text-gray-400">Bởi: @history.Username</div>
+                                                </TableRowCell>
+                                            </TableRow>
+                                        }
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-8 text-gray-500 border border-gray-200 rounded-lg">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.History" class="text-4xl mb-2" />
+                                <p>Chưa có lịch sử giao dịch</p>
+                            </div>
+                        }
+                    </div>
                 </div>
             }
         </ModalBody>
@@ -315,6 +393,9 @@
     private string? errorMessage;
     private WarehouseViewModel? selectedWarehouse;
     private List<StoreManagementAPI.Models.Inventory>? warehouseInventory;
+    private List<WarehouseTransactionHistoryDto>? allWarehouseHistory;
+    private List<WarehouseTransactionHistoryDto>? warehouseHistory;
+    private string historyFilter = "ALL";
 
     private WarehouseDto currentWarehouse = new();
 
@@ -374,8 +455,27 @@
             .Where(i => i.WarehouseId == warehouse.WarehouseId)
             .OrderByDescending(i => i.Quantity)
             .ToListAsync();
-        
+
+        // Load lịch sử giao dịch
+        var filter = new WarehouseHistoryFilterDto { WarehouseId = warehouse.WarehouseId };
+        allWarehouseHistory = await WarehouseService.GetWarehouseTransactionHistory(filter);
+        historyFilter = "ALL";
+        FilterHistory("ALL");
+
         detailsModal.Show();
+    }
+
+    private void FilterHistory(string filterType)
+    {
+        historyFilter = filterType;
+        if (allWarehouseHistory == null) return;
+
+        warehouseHistory = filterType switch
+        {
+            "IN" => allWarehouseHistory.Where(h => h.TransactionType == "IN").ToList(),
+            "OUT" => allWarehouseHistory.Where(h => h.TransactionType == "OUT").ToList(),
+            _ => allWarehouseHistory.ToList()
+        };
     }
 
     private void OpenAddModal()
@@ -409,7 +509,7 @@
     private async Task SaveWarehouse()
     {
         errorMessage = null;
-        
+
         if (string.IsNullOrWhiteSpace(currentWarehouse.WarehouseName))
         {
             errorMessage = "Warehouse name is required";
@@ -461,5 +561,16 @@
         {
             await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
         }
+    }
+
+    private Color GetFilterColor(string filterType)
+    {
+        return filterType switch
+        {
+            "ALL" when historyFilter == "ALL" => Color.Primary,
+            "IN" when historyFilter == "IN" => Color.Success,
+            "OUT" when historyFilter == "OUT" => Color.Danger,
+            _ => Color.Light
+        };
     }
 }

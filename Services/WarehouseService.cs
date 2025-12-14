@@ -12,6 +12,7 @@ namespace StoreManagementAPI.Services
         Task<WarehouseDto> CreateWarehouse(WarehouseDto dto);
         Task<WarehouseDto> UpdateWarehouse(int warehouseId, WarehouseDto dto);
         Task<bool> DeleteWarehouse(int warehouseId);
+        Task<List<WarehouseTransactionHistoryDto>> GetWarehouseTransactionHistory(WarehouseHistoryFilterDto? filter = null);
     }
 
     public class WarehouseService : IWarehouseService
@@ -87,6 +88,117 @@ namespace StoreManagementAPI.Services
             warehouse.Status = "deleted";
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<WarehouseTransactionHistoryDto>> GetWarehouseTransactionHistory(WarehouseHistoryFilterDto? filter = null)
+        {
+            var transactions = new List<WarehouseTransactionHistoryDto>();
+
+            // Lấy lịch sử NHẬP HÀNG từ PurchaseOrder
+            var purchaseQuery = _context.PurchaseOrders
+                .Include(po => po.PurchaseItems)
+                    .ThenInclude(pi => pi.Product)
+                .Include(po => po.Warehouse)
+                .Include(po => po.Supplier)
+                .Include(po => po.User)
+                .Where(po => po.Status == "completed")
+                .AsQueryable();
+
+            if (filter?.WarehouseId.HasValue == true)
+                purchaseQuery = purchaseQuery.Where(po => po.WarehouseId == filter.WarehouseId.Value);
+
+            if (filter?.FromDate.HasValue == true)
+                purchaseQuery = purchaseQuery.Where(po => po.PurchaseDate >= filter.FromDate.Value);
+
+            if (filter?.ToDate.HasValue == true)
+                purchaseQuery = purchaseQuery.Where(po => po.PurchaseDate <= filter.ToDate.Value);
+
+            var purchaseOrders = await purchaseQuery.ToListAsync();
+
+            foreach (var po in purchaseOrders)
+            {
+                foreach (var item in po.PurchaseItems)
+                {
+                    if (filter?.ProductId.HasValue == true && item.ProductId != filter.ProductId.Value)
+                        continue;
+
+                    transactions.Add(new WarehouseTransactionHistoryDto
+                    {
+                        TransactionId = po.PurchaseId,
+                        TransactionType = "IN",
+                        TransactionDate = po.PurchaseDate,
+                        ProductId = item.ProductId,
+                        ProductName = item.Product?.ProductName ?? "N/A",
+                        Quantity = item.Quantity,
+                        Price = item.CostPrice,
+                        TotalAmount = item.Subtotal,
+                        WarehouseId = po.WarehouseId,
+                        WarehouseName = po.Warehouse?.WarehouseName,
+                        SupplierName = po.Supplier?.Name,
+                        Username = po.User?.Username,
+                        Status = po.Status,
+                        Notes = $"Nhập hàng từ {po.Supplier?.Name}"
+                    });
+                }
+            }
+
+            // Lấy lịch sử XUẤT HÀNG (BÁN) từ Order
+            if (filter?.TransactionType == null || filter.TransactionType == "OUT")
+            {
+                var orderQuery = _context.Orders
+                    .Include(o => o.OrderItems)
+                        .ThenInclude(oi => oi.Product)
+                    .Include(o => o.Customer)
+                    .Include(o => o.User)
+                    .Where(o => o.Status != "canceled")
+                    .AsQueryable();
+
+                if (filter?.FromDate.HasValue == true)
+                    orderQuery = orderQuery.Where(o => o.OrderDate >= filter.FromDate.Value);
+
+                if (filter?.ToDate.HasValue == true)
+                    orderQuery = orderQuery.Where(o => o.OrderDate <= filter.ToDate.Value);
+
+                var orders = await orderQuery.ToListAsync();
+
+                foreach (var order in orders)
+                {
+                    foreach (var item in order.OrderItems)
+                    {
+                        if (filter?.ProductId.HasValue == true && item.ProductId != filter.ProductId.Value)
+                            continue;
+
+                        // Tìm warehouse của sản phẩm này (lấy warehouse đầu tiên có tồn kho)
+                        var inventory = await _context.Inventories
+                            .Include(i => i.Warehouse)
+                            .FirstOrDefaultAsync(i => i.ProductId == item.ProductId);
+
+                        if (filter?.WarehouseId.HasValue == true && inventory?.WarehouseId.GetValueOrDefault() != filter.WarehouseId.Value)
+                            continue;
+
+                        transactions.Add(new WarehouseTransactionHistoryDto
+                        {
+                            TransactionId = order.OrderId,
+                            TransactionType = "OUT",
+                            TransactionDate = order.OrderDate,
+                            ProductId = item.ProductId,
+                            ProductName = item.Product?.ProductName ?? "N/A",
+                            Quantity = item.Quantity,
+                            Price = item.Price,
+                            TotalAmount = item.Subtotal,
+                            WarehouseId = inventory?.WarehouseId,
+                            WarehouseName = inventory?.Warehouse?.WarehouseName,
+                            CustomerName = order.Customer?.Name,
+                            Username = order.User?.Username,
+                            Status = order.Status,
+                            Notes = $"Bán hàng cho {order.Customer?.Name}"
+                        });
+                    }
+                }
+            }
+
+            // Sắp xếp theo thời gian mới nhất
+            return transactions.OrderByDescending(t => t.TransactionDate).ToList();
         }
 
         private WarehouseDto MapToDto(Warehouse w)
