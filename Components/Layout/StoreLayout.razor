@@ -13,33 +13,33 @@
     <nav class="bg-white text-gray-800 sticky top-0 z-50 shadow-md border-b border-gray-100">
         <div class="w-full px-4">
             <div class="flex items-center justify-between h-16">
-                <!-- Left Side: Brand & Navigation -->
-                <div class="flex items-center gap-3">
+                <!-- Left Side: Brand -->
+                <div class="flex items-center gap-3 flex-1">
                     <!-- Brand -->
                     <a href="/" class="flex items-center gap-2 text-gray-900 hover:text-blue-600 transition no-underline">
                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="text-xl text-blue-600" />
                         <span class="font-bold text-xl">E-Store</span>
                     </a>
+                </div>
 
-                    <!-- Navigation Links -->
-                    <div class="hidden md:flex items-center gap-4">
-                        <a href="/" class="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition font-medium no-underline">
-                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Home" /> Home
-                        </a>
-                        <a href="/store" class="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition font-medium no-underline">
-                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ThLarge" /> Products
-                        </a>
-                        <a href="/store/categories" class="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition font-medium no-underline">
-                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" /> Categories
-                        </a>
-                        <a href="/about-us" class="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition font-medium no-underline">
-                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.InfoCircle" /> About Us
-                        </a>
-                    </div>
+                <!-- Center: Navigation Links -->
+                <div class="hidden md:flex items-center gap-6 flex-1 justify-center">
+                    <a href="/" class="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition font-medium no-underline">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Home" /> Home
+                    </a>
+                    <a href="/store" class="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition font-medium no-underline">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ThLarge" /> Products
+                    </a>
+                    <a href="/store/categories" class="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition font-medium no-underline">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" /> Categories
+                    </a>
+                    <a href="/about-us" class="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition font-medium no-underline">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.InfoCircle" /> About Us
+                    </a>
                 </div>
 
                 <!-- Right Side -->
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 flex-1 justify-end">
                     <!-- Cart -->
                     <a href="/store/cart" class="flex items-center gap-1 text-gray-600 hover:text-blue-600 transition relative no-underline">
                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" />
@@ -105,43 +105,120 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-100 text-gray-600 py-12 mt-auto border-t border-gray-100">
-        <div class="w-full px-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-300 py-16 mt-auto border-t border-gray-700">
+        <div class="w-full px-4 max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+                <!-- About Section -->
                 <div>
-                    <h5 class="text-gray-900 font-bold text-lg mb-4 flex items-center gap-2">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="text-blue-600" /> E-Store
+                    <h5 class="text-white font-bold text-xl mb-4 flex items-center gap-2">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="text-blue-500" /> E-Store
                     </h5>
-                    <p class="text-gray-600 leading-relaxed">Your trusted online shopping destination for quality products and exceptional service.</p>
+                    <p class="text-gray-400 leading-relaxed mb-4">Your trusted online shopping destination for quality products and exceptional service.</p>
+                    <div class="flex gap-3 mt-4">
+                        <a href="#" class="w-10 h-10 bg-gray-700 hover:bg-blue-600 rounded-full flex items-center justify-center transition">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Facebook" />
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-700 hover:bg-blue-400 rounded-full flex items-center justify-center transition">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Twitter" />
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-700 hover:bg-pink-600 rounded-full flex items-center justify-center transition">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Instagram" />
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-gray-700 hover:bg-blue-700 rounded-full flex items-center justify-center transition">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Linkedin" />
+                        </a>
+                    </div>
                 </div>
+
+                <!-- Quick Links -->
                 <div>
-                    <h5 class="text-gray-900 font-bold text-lg mb-4">Quick Links</h5>
-                    <ul class="space-y-2">
-                        <li><a href="/store" class="text-gray-600 hover:text-blue-600 transition no-underline">Products</a></li>
-                        <li><a href="/store/categories" class="text-gray-600 hover:text-blue-600 transition no-underline">Categories</a></li>
-                        <li><a href="/about-us" class="text-gray-600 hover:text-blue-600 transition no-underline">About Us</a></li>
-                        <li><a href="/store/cart" class="text-gray-600 hover:text-blue-600 transition no-underline">Cart</a></li>
+                    <h5 class="text-white font-bold text-lg mb-4 flex items-center gap-2">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Link" class="text-blue-500" /> Quick Links
+                    </h5>
+                    <ul class="space-y-3">
+                        <li>
+                            <a href="/" class="text-gray-400 hover:text-blue-500 transition flex items-center gap-2 no-underline">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronRight" class="text-xs" /> Home
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/store" class="text-gray-400 hover:text-blue-500 transition flex items-center gap-2 no-underline">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronRight" class="text-xs" /> Products
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/store/categories" class="text-gray-400 hover:text-blue-500 transition flex items-center gap-2 no-underline">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronRight" class="text-xs" /> Categories
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/about-us" class="text-gray-400 hover:text-blue-500 transition flex items-center gap-2 no-underline">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronRight" class="text-xs" /> About Us
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/store/cart" class="text-gray-400 hover:text-blue-500 transition flex items-center gap-2 no-underline">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronRight" class="text-xs" /> Shopping Cart
+                            </a>
+                        </li>
                     </ul>
                 </div>
+
+                <!-- Contact Info -->
                 <div>
-                    <h5 class="text-gray-900 font-bold text-lg mb-4">Contact</h5>
-                    <p class="text-gray-600 mb-2 flex items-center gap-2">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Envelope" class="text-blue-600" /> support@estore.com
-                    </p>
-                    <p class="text-gray-600 flex items-center gap-2">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Phone" class="text-blue-600" /> +1 234 567 890
-                    </p>
+                    <h5 class="text-white font-bold text-lg mb-4 flex items-center gap-2">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Phone" class="text-blue-500" /> Contact Us
+                    </h5>
+                    <ul class="space-y-3">
+                        <li class="flex items-start gap-3 text-gray-400">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.MapMarkerAlt" class="text-blue-500 mt-1" />
+                            <span>Trường Đại học Sài Gòn, Quận 5, TP.HCM</span>
+                        </li>
+                        <li class="flex items-center gap-3 text-gray-400">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Envelope" class="text-blue-500" />
+                            <a href="mailto:support@estore.com" class="hover:text-blue-500 transition no-underline">support@estore.com</a>
+                        </li>
+                        <li class="flex items-center gap-3 text-gray-400">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Phone" class="text-blue-500" />
+                            <a href="tel:+1234567890" class="hover:text-blue-500 transition no-underline">+1 234 567 890</a>
+                        </li>
+                        <li class="flex items-center gap-3 text-gray-400">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Clock" class="text-blue-500" />
+                            <span>Mon - Fri: 9:00 AM - 6:00 PM</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Map Section -->
+                <div>
+                    <h5 class="text-white font-bold text-lg mb-4 flex items-center gap-2">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.MapMarked" class="text-blue-500" /> Our Location
+                    </h5>
+                    <div class="rounded-lg overflow-hidden shadow-lg border border-gray-700">
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d4371.323405146385!2d106.67620215426446!3d10.75784975864679!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f1b7c3ed289%3A0xa06651894598e488!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBTw6BpIEfDsm4!5e0!3m2!1svi!2s!4v1765717399416!5m2!1svi!2s" 
+                            width="100%" 
+                            height="200" 
+                            style="border:0;" 
+                            allowfullscreen="" 
+                            loading="lazy" 
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                    </div>
                 </div>
             </div>
-            <hr class="my-8 border-gray-200" />
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                <p class="text-center text-gray-500 text-sm">
-                    &copy; @DateTime.Now.Year E-Store. All rights reserved.
-                </p>
-                <div class="flex gap-4">
-                    <a href="#" class="text-gray-400 hover:text-blue-600 transition"><Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Facebook" /></a>
-                    <a href="#" class="text-gray-400 hover:text-blue-400 transition"><Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Twitter" /></a>
-                    <a href="#" class="text-gray-400 hover:text-pink-600 transition"><Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Instagram" /></a>
+
+            <!-- Bottom Bar -->
+            <div class="border-t border-gray-700 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p class="text-gray-400 text-sm text-center md:text-left">
+                        &copy; @DateTime.Now.Year <span class="text-blue-500 font-semibold">E-Store</span>. All rights reserved. Made with <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Heart" class="text-red-500" /> in Vietnam
+                    </p>
+                    <div class="flex gap-6 text-sm">
+                        <a href="#" class="text-gray-400 hover:text-blue-500 transition no-underline">Privacy Policy</a>
+                        <a href="#" class="text-gray-400 hover:text-blue-500 transition no-underline">Terms of Service</a>
+                        <a href="#" class="text-gray-400 hover:text-blue-500 transition no-underline">Cookie Policy</a>
+                    </div>
                 </div>
             </div>
         </div>

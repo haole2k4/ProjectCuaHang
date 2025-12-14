@@ -262,7 +262,22 @@
 
     private void UpdatePagedData()
     {
-        if (filteredCategories == null) return;
+        if (filteredCategories == null || !filteredCategories.Any())
+        {
+            categories = new List<CategoryDto>();
+            return;
+        }
+
+        // Ensure currentPage is within valid range
+        var totalPages = (int)Math.Ceiling(filteredCategories.Count / (double)pageSize);
+        if (currentPage > totalPages && totalPages > 0)
+        {
+            currentPage = totalPages;
+        }
+        else if (currentPage < 1)
+        {
+            currentPage = 1;
+        }
 
         categories = filteredCategories
             .Skip((currentPage - 1) * pageSize)

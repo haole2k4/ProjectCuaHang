@@ -354,13 +354,27 @@
 
     private void UpdatePagedData()
     {
-        if (filteredSuppliers != null)
+        if (filteredSuppliers == null || !filteredSuppliers.Any())
         {
-            suppliers = filteredSuppliers
-                .Skip((currentPage - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+            suppliers = new List<Supplier>();
+            return;
         }
+
+        // Ensure currentPage is within valid range
+        var totalPages = (int)Math.Ceiling(filteredSuppliers.Count / (double)pageSize);
+        if (currentPage > totalPages && totalPages > 0)
+        {
+            currentPage = totalPages;
+        }
+        else if (currentPage < 1)
+        {
+            currentPage = 1;
+        }
+
+        suppliers = filteredSuppliers
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
     }
 
     private void HandlePageChanged(int page)

@@ -434,6 +434,9 @@
     {
         try
         {
+            // Ensure currentPage is valid
+            if (currentPage < 1) currentPage = 1;
+            
             searchCriteria.PageNumber = currentPage;
             searchCriteria.PageSize = pageSize;
 
@@ -448,6 +451,26 @@
 
             promotions = allPromotions;
             totalItems = searchResult.TotalCount;
+
+            // If current page is beyond total pages, reset to last page
+            if (totalItems > 0)
+            {
+                var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+                if (currentPage > totalPages)
+                {
+                    currentPage = totalPages;
+                    searchCriteria.PageNumber = currentPage;
+                    searchResult = await PromotionService.SearchPromotionsAdvancedAsync(searchCriteria);
+                    
+                    promoIds = searchResult.Promotions.Select(x => x.PromoId).ToList();
+                    allPromotions = await DbContext.Promotions
+                        .Where(p => promoIds.Contains(p.PromoId))
+                        .OrderByDescending(p => p.StartDate)
+                        .ToListAsync();
+                    
+                    promotions = allPromotions;
+                }
+            }
 
             await InvokeAsync(StateHasChanged);
         }
