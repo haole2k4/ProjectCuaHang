@@ -2,8 +2,14 @@
 @using Blazorise
 @using System.Security.Claims
 @using BlazorApp1.Components.Shared
+@using Microsoft.AspNetCore.Components.Authorization
+@using StoreManagementAPI.Data
+@using StoreManagementAPI.Models
+@using Microsoft.EntityFrameworkCore
 
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IDbContextFactory<StoreDbContext> DbContextFactory
 
 <div class="admin-layout flex min-h-screen bg-gray-100">
     <!-- Sidebar -->
@@ -24,50 +30,101 @@
         <!-- Navigation -->
         <nav class="flex-1 px-4 py-2 overflow-y-auto">
             <div class="space-y-1">
+                <!-- Dashboard - visible to all -->
                 <NavLink href="/admin/dashboard" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600" Match="NavLinkMatch.All">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChartLine" />
                     <span>Dashboard</span>
                 </NavLink>
 
-                <NavLink href="/admin/products" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" />
-                    <span>Products</span>
-                </NavLink>
+                <!-- Products - visible to admin and sales_staff -->
+                @if (userRole == "admin" || userRole == "sales_staff")
+                {
+                    <NavLink href="/admin/products" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" />
+                        <span>Products</span>
+                    </NavLink>
+                }
 
-                <NavLink href="/admin/categories" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" />
-                    <span>Categories</span>
-                </NavLink>
+                <!-- Categories - visible to admin and sales_staff -->
+                @if (userRole == "admin" || userRole == "sales_staff")
+                {
+                    <NavLink href="/admin/categories" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" />
+                        <span>Categories</span>
+                    </NavLink>
+                }
 
-                <NavLink href="/admin/orders" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" />
-                    <span>Orders</span>
-                </NavLink>
+                <!-- Orders - visible to admin and sales_staff -->
+                @if (userRole == "admin" || userRole == "sales_staff")
+                {
+                    <NavLink href="/admin/orders" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" />
+                        <span>Orders</span>
+                    </NavLink>
+                }
 
-                <NavLink href="/admin/customers" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Users" />
-                    <span>Customers</span>
-                </NavLink>
+                <!-- Customers - visible to admin only -->
+                @if (userRole == "admin")
+                {
+                    <NavLink href="/admin/customers" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Users" />
+                        <span>Customers</span>
+                    </NavLink>
+                }
 
-                <NavLink href="/admin/suppliers" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.TruckMoving" />
-                    <span>Suppliers</span>
-                </NavLink>
+                <!-- Employees - visible to admin only -->
+                @if (userRole == "admin")
+                {
+                    <NavLink href="/admin/employees" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.UserTag" />
+                        <span>Employees</span>
+                    </NavLink>
+                }
 
-                <NavLink href="/admin/warehouses" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Warehouse" />
-                    <span>Warehouses</span>
-                </NavLink>
+                <!-- Suppliers - visible to admin and warehouse_staff -->
+                @if (userRole == "admin" || userRole == "warehouse_staff")
+                {
+                    <NavLink href="/admin/suppliers" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.TruckMoving" />
+                        <span>Suppliers</span>
+                    </NavLink>
+                }
 
-                <NavLink href="/admin/purchase-orders" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.FileInvoice" />
-                    <span>Purchase Orders</span>
-                </NavLink>
+                <!-- Warehouses - visible to admin and warehouse_staff -->
+                @if (userRole == "admin" || userRole == "warehouse_staff")
+                {
+                    <NavLink href="/admin/warehouses" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Warehouse" />
+                        <span>Warehouses</span>
+                    </NavLink>
+                }
 
-                <NavLink href="/admin/promotions" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Percent" />
-                    <span>Promotions</span>
-                </NavLink>
+                <!-- Purchase Orders - visible to admin and warehouse_staff -->
+                @if (userRole == "admin" || userRole == "warehouse_staff")
+                {
+                    <NavLink href="/admin/purchase-orders" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.FileInvoice" />
+                        <span>Purchase Orders</span>
+                    </NavLink>
+                }
+
+                <!-- Inventories - visible to admin and warehouse_staff -->
+                @if (userRole == "admin" || userRole == "warehouse_staff")
+                {
+                    <NavLink href="/admin/inventories" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxesStacked" />
+                        <span>Inventories</span>
+                    </NavLink>
+                }
+
+                <!-- Promotions - visible to admin and sales_staff -->
+                @if (userRole == "admin" || userRole == "sales_staff")
+                {
+                    <NavLink href="/admin/promotions" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Percent" />
+                        <span>Promotions</span>
+                    </NavLink>
+                }
             </div>
         </nav>
     </aside>
@@ -98,6 +155,21 @@
 
                 <!-- Right: Actions -->
                 <div class="flex items-center gap-4">
+                    <!-- Role Badge -->
+                    <AuthorizeView>
+                        <Authorized>
+                            @{
+                                var roleBadge = GetRoleBadge(userRole);
+                            }
+                            <div class="@roleBadge.bgClass px-4 py-2 rounded-lg shadow-sm">
+                                <div class="flex items-center gap-2">
+                                    <Icon Name="@roleBadge.icon" class="@roleBadge.textClass" />
+                                    <span class="@roleBadge.textClass font-semibold text-sm">@roleBadge.label</span>
+                                </div>
+                            </div>
+                        </Authorized>
+                    </AuthorizeView>
+
                     <!-- User Dropdown -->
                     <AuthorizeView>
                         <Authorized>
@@ -168,4 +240,56 @@
 
 @code {
     private int cartItemCount = 0;
+    private string userRole = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var claimsPrincipal = authState.User;
+
+        if (claimsPrincipal.Identity?.IsAuthenticated == true)
+        {
+            // Try to get role from claim (ApplicationUser role - "Admin" role)
+            var roleClaim = claimsPrincipal.FindFirst(ClaimTypes.Role);
+            if (roleClaim != null && roleClaim.Value.ToLower() == "admin")
+            {
+                userRole = "admin";
+            }
+            else
+            {
+                // Try to get username and lookup role from User table
+                var username = claimsPrincipal.Identity.Name;
+                if (!string.IsNullOrEmpty(username))
+                {
+                    await using var context = await DbContextFactory.CreateDbContextAsync();
+                    var user = await context.Users
+                        .FirstOrDefaultAsync(u => u.Username == username);
+
+                    if (user != null)
+                    {
+                        userRole = user.Role;
+                    }
+                    else
+                    {
+                        userRole = "admin"; // Default to admin if user not found in User table
+                    }
+                }
+                else
+                {
+                    userRole = "admin"; // Default to admin if no username
+                }
+            }
+        }
+    }
+
+    private (string label, string bgClass, string textClass, string icon) GetRoleBadge(string role)
+    {
+        return role switch
+        {
+            "admin" => ("Administrator", "bg-gradient-to-r from-purple-500 to-pink-500", "text-white", "Blazorise.Icons.FontAwesome.FontAwesomeIcons.Crown"),
+            "sales_staff" => ("Sales Staff", "bg-gradient-to-r from-blue-500 to-cyan-500", "text-white", "Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart"),
+            "warehouse_staff" => ("Warehouse Staff", "bg-gradient-to-r from-green-500 to-teal-500", "text-white", "Blazorise.Icons.FontAwesome.FontAwesomeIcons.Warehouse"),
+            _ => ("Staff", "bg-gray-500", "text-white", "Blazorise.Icons.FontAwesome.FontAwesomeIcons.User")
+        };
+    }
 }

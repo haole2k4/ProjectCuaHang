@@ -231,9 +231,18 @@
                                         <Button Color="Color.Light" Size="Size.Small" Clicked="() => OpenEditModal(product)" class="!border-2 !border-gray-300 hover:!bg-gray-200 !text-gray-900 shadow-sm">
                                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
                                         </Button>
-                                        <Button Color="Color.Danger" Size="Size.Small" Clicked="() => DeleteProduct(product)" class="!bg-red-600 hover:!bg-red-700 !text-white shadow-sm">
-                                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" />
-                                        </Button>
+                                        @if (product.Status == "active")
+                                        {
+                                            <Button Color="Color.Danger" Size="Size.Small" Clicked="() => DeleteProduct(product)" class="!bg-red-600 hover:!bg-red-700 !text-white shadow-sm">
+                                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" />
+                                            </Button>
+                                        }
+                                        else
+                                        {
+                                            <Button Color="Color.Success" Size="Size.Small" Clicked="() => RestoreProduct(product)" class="!bg-green-600 hover:!bg-green-700 !text-white shadow-sm" Title="Phục hồi sản phẩm">
+                                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Undo" />
+                                            </Button>
+                                        }
                                     </Buttons>
                                 </TableRowCell>
                             </TableRow>
@@ -676,7 +685,7 @@
 
     private async Task DeleteProduct(ProductDto product)
     {
-        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{product.ProductName}'?");
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn xóa/ẩn '{product.ProductName}'?");
         if (!confirmed) return;
 
         try
@@ -702,10 +711,39 @@
             {
                 await JSRuntime.InvokeVoidAsync("alert", result.Message);
             }
+            else if (result.Success)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Xóa sản phẩm thành công");
+            }
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", $"Lỗi: {ex.Message}");
+        }
+    }
+
+    private async Task RestoreProduct(ProductDto product)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Bạn có muốn phục hồi sản phẩm '{product.ProductName}'?");
+        if (!confirmed) return;
+
+        try
+        {
+            var result = await ProductService.RestoreProductAsync(product.ProductId);
+
+            if (result)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Phục hồi sản phẩm thành công");
+                await SearchProducts();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Không tìm thấy sản phẩm");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Lỗi: {ex.Message}");
         }
     }
 }

@@ -93,7 +93,7 @@ namespace StoreManagementAPI.Services
                         userId = dto.UserId.Value;
                     }
                 }
-                
+
                 // If still null, try to find a default user
                 if (!userId.HasValue)
                 {
@@ -123,7 +123,7 @@ namespace StoreManagementAPI.Services
                     var totalInventory = await _context.Inventories
                         .Where(i => i.ProductId == item.ProductId)
                         .SumAsync(i => i.Quantity);
-                    
+
                     if (totalInventory < item.Quantity)
                     {
                         throw new Exception($"Insufficient stock for product {product.ProductName}. Available: {totalInventory}, Requested: {item.Quantity}");
@@ -146,12 +146,12 @@ namespace StoreManagementAPI.Services
                         .Where(i => i.ProductId == item.ProductId && i.Quantity > 0)
                         .OrderBy(i => i.WarehouseId) // Ưu tiên kho theo thứ tự ID
                         .ToListAsync();
-                    
+
                     int remainingQuantity = item.Quantity;
                     foreach (var inv in inventories)
                     {
                         if (remainingQuantity <= 0) break;
-                        
+
                         int deductQuantity = Math.Min(inv.Quantity, remainingQuantity);
                         inv.Quantity -= deductQuantity;
                         inv.UpdatedAt = DateTime.Now;
@@ -165,25 +165,25 @@ namespace StoreManagementAPI.Services
                 if (!string.IsNullOrEmpty(dto.PromoCode))
                 {
                     Console.WriteLine($"[DEBUG] Applying promotion: {dto.PromoCode}, TotalAmount: {totalAmount}");
-                    
+
                     var promotion = await _context.Promotions
                         .Include(p => p.PromotionProducts)
-                        .FirstOrDefaultAsync(p => 
-                            p.PromoCode.ToLower() == dto.PromoCode.ToLower() && 
+                        .FirstOrDefaultAsync(p =>
+                            p.PromoCode.ToLower() == dto.PromoCode.ToLower() &&
                             p.Status == "active" &&
                             p.StartDate <= DateTime.Now &&
                             p.EndDate >= DateTime.Now);
-                    
+
                     Console.WriteLine($"[DEBUG] Found promotion: {promotion?.PromoCode}, Status: {promotion?.Status}, MinOrderAmount: {promotion?.MinOrderAmount}");
-                    
+
                     if (promotion != null && totalAmount >= promotion.MinOrderAmount)
                     {
                         Console.WriteLine($"[DEBUG] Promotion eligible, calculating discount...");
-                        
+
                         if (promotion.UsageLimit == 0 || promotion.UsedCount < promotion.UsageLimit)
                         {
                             decimal discount = 0;
-                            
+
                             if (promotion.ApplyType == "order")
                             {
                                 // Apply to entire order
@@ -196,6 +196,7 @@ namespace StoreManagementAPI.Services
                                     discount = promotion.DiscountValue;
                                 }
                                 order.DiscountAmount = discount;
+                                order.TotalAmount = totalAmount - discount; // Trừ discount vào total
                             }
                             else if (promotion.ApplyType == "product")
                             {
@@ -282,7 +283,7 @@ namespace StoreManagementAPI.Services
 
                             order.PromoId = promotion.PromoId;
                             promotion.UsedCount++;
-                            
+
                             Console.WriteLine($"[DEBUG] Applied discount: {discount}, New TotalAmount: {order.TotalAmount}, PromoId: {order.PromoId}");
                         }
                         else

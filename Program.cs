@@ -22,6 +22,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Add Controllers for API endpoints
+builder.Services.AddControllers();
+
+// Add HttpClient for making API calls from Blazor components
+builder.Services.AddHttpClient("LocalApi", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5128/");
+});
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("LocalApi"));
+
 // Add API Explorer and Swagger for Minimal API documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -134,6 +144,7 @@ builder.Services.AddScoped<IRepository<Promotion>, Repository<Promotion>>();
 builder.Services.AddScoped<IRepository<Order>, Repository<Order>>();
 builder.Services.AddScoped<IRepository<OrderItem>, Repository<OrderItem>>();
 builder.Services.AddScoped<IRepository<Payment>, Repository<Payment>>();
+builder.Services.AddScoped<IRepository<Employee>, Repository<Employee>>();
 
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -151,6 +162,7 @@ builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 
 // Register Statistics service for admin dashboard
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
@@ -247,6 +259,75 @@ using (var scope = app.Services.CreateScope())
         });
         storeContext.SaveChanges();
     }
+
+    // Seed employee accounts if not exists
+    if (!storeContext.Employees.Any())
+    {
+        try
+        {
+            // Create sales employee account
+            var salesUser = new User
+            {
+                Username = "sales_user1@gmail.com",
+                Password = BCrypt.Net.BCrypt.HashPassword("Sales123!"),
+                FullName = "Nguyễn Văn A",
+                Role = "sales_staff",
+                Status = "active",
+                CreatedAt = DateTime.Now
+            };
+            storeContext.Users.Add(salesUser);
+            storeContext.SaveChanges();
+
+            var salesEmployee = new Employee
+            {
+                FullName = "Nguyễn Văn A",
+                Phone = "0901234567",
+                Email = "sales@estore.com",
+                EmployeeType = "sales",
+                UserId = salesUser.UserId,
+                PlaintextPassword = "Sales123!",
+                Status = "active",
+                CreatedAt = DateTime.Now
+            };
+            storeContext.Employees.Add(salesEmployee);
+
+            // Create warehouse employee account
+            var warehouseUser = new User
+            {
+                Username = "warehouse_user1@gmail.com",
+                Password = BCrypt.Net.BCrypt.HashPassword("Warehouse123!"),
+                FullName = "Trần Thị B",
+                Role = "warehouse_staff",
+                Status = "active",
+                CreatedAt = DateTime.Now
+            };
+            storeContext.Users.Add(warehouseUser);
+            storeContext.SaveChanges();
+
+            var warehouseEmployee = new Employee
+            {
+                FullName = "Trần Thị B",
+                Phone = "0907654321",
+                Email = "warehouse@estore.com",
+                EmployeeType = "warehouse",
+                UserId = warehouseUser.UserId,
+                PlaintextPassword = "Warehouse123!",
+                Status = "active",
+                CreatedAt = DateTime.Now
+            };
+            storeContext.Employees.Add(warehouseEmployee);
+
+            storeContext.SaveChanges();
+
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Employee accounts seeded successfully");
+        }
+        catch (Exception ex)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "An error occurred while seeding employee accounts");
+        }
+    }
 }
 
 // Configure the HTTP request pipeline.
@@ -272,6 +353,9 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// Map Controllers for API endpoints
+app.MapControllers();
 
 // Map Minimal API endpoints
 app.MapProductEndpoints();

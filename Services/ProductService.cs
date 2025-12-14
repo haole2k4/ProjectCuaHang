@@ -16,6 +16,7 @@ namespace StoreManagementAPI.Services
         Task<ProductDto> CreateProductAsync(CreateProductDto dto);
         Task<ProductDto?> UpdateProductAsync(int id, UpdateProductDto dto);
         Task<DeleteProductResult> DeleteProductAsync(int id);
+        Task<bool> RestoreProductAsync(int id);
         Task<bool> UpdateStockAsync(UpdateStockDto dto);
         Task<IEnumerable<ProductHistoryDto>> GetProductHistoryAsync(int productId);
     }
@@ -673,6 +674,45 @@ namespace StoreManagementAPI.Services
                     SoftDeleted = false,
                     Message = "Không thể xóa sản phẩm"
                 };
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<bool> RestoreProductAsync(int id)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var product = await _context.Products.FindAsync(id);
+
+                if (product == null)
+                    return false;
+
+                var (userId, username) = GetAuditInfo();
+                var oldStatus = product.Status;
+                product.Status = "active";
+                
+                await _productRepository.UpdateAsync(product);
+
+                // Log audit
+                await _auditLogService.LogActionAsync(
+                    action: "RESTORE",
+                    entityType: "Product",
+                    entityId: product.ProductId,
+                    entityName: product.ProductName,
+                    oldValues: new { Status = oldStatus },
+                    newValues: new { Status = "active" },
+                    changesSummary: $"Phục hồi sản phẩm '{product.ProductName}' về trạng thái hoạt động",
+                    userId: userId,
+                    username: username
+                );
+
+                await transaction.CommitAsync();
+                return true;
             }
             catch
             {

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet --version:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet run:*)",
+      "Bash(timeout /t 5)",
+      "Bash(dotnet build:*)",
+      "Bash(taskkill:*)",
+      "Bash(exit 0)",
+      "Bash(findstr:*)",
+      "Bash(timeout /t 2 /nobreak)",
+      "Bash(timeout /t 15 /nobreak)",
+      "Bash(powershell -Command:*)",
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(timeout /t 20 /nobreak)",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(sqlite3:*)",
+      "Bash(powershell:*)"
+    ]
+  }
+}

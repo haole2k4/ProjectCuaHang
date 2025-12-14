@@ -17,6 +17,17 @@ namespace StoreManagementAPI.DTOs
         public List<ProductSimpleDto> Products { get; set; } = new();
     }
 
+    public class PromotionDisplayDto
+    {
+        public int PromoId { get; set; }
+        public string PromoCode { get; set; } = string.Empty;
+        public string DisplayText { get; set; } = string.Empty;
+        public decimal DiscountAmount { get; set; }
+        public string DiscountType { get; set; } = string.Empty;
+        public decimal DiscountValue { get; set; }
+        public string? Description { get; set; }
+    }
+
     public class CreatePromotionDto
     {
         public int PromoId { get; set; }  // Th�m ?? support Edit mode

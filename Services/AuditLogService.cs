@@ -38,6 +38,10 @@ namespace StoreManagementAPI.Services
         {
             try
             {
+                _logger.LogInformation(
+                    "Logging audit action - Action: {Action}, EntityType: {EntityType}, EntityId: {EntityId}, UserId: {UserId}, Username: {Username}",
+                    action, entityType, entityId, userId, username);
+
                 var auditLog = new AuditLog
                 {
                     Action = action,
@@ -47,18 +51,23 @@ namespace StoreManagementAPI.Services
                     OldValues = oldValues != null ? JsonSerializer.Serialize(oldValues, new JsonSerializerOptions { WriteIndented = true }) : null,
                     NewValues = newValues != null ? JsonSerializer.Serialize(newValues, new JsonSerializerOptions { WriteIndented = true }) : null,
                     ChangesSummary = changesSummary,
-                    UserId = userId ?? 1, // Default to admin user (id=1)
-                    Username = username ?? "admin",
+                    UserId = userId, // Allow null for failed logins or anonymous actions
+                    Username = username ?? "anonymous",
                     AdditionalInfo = additionalInfo != null ? JsonSerializer.Serialize(additionalInfo, new JsonSerializerOptions { WriteIndented = true }) : null,
                     CreatedAt = DateTime.Now
                 };
 
                 _context.AuditLogs.Add(auditLog);
+
+                _logger.LogInformation("Saving audit log to database...");
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("Audit log saved successfully - AuditId: {AuditId}", auditLog.AuditId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error logging audit action: {Action} on {EntityType} {EntityId}", action, entityType, entityId);
+                _logger.LogError(ex,
+                    "Error logging audit action - Action: {Action}, EntityType: {EntityType}, EntityId: {EntityId}, UserId: {UserId}, Username: {Username}. Error: {ErrorMessage}",
+                    action, entityType, entityId, userId, username, ex.Message);
             }
         }
 
