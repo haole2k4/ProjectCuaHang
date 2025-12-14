@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 @using Blazorise
 @using System.Security.Claims
 @using BlazorApp1.Components.Shared
@@ -6,10 +7,12 @@
 @using StoreManagementAPI.Data
 @using StoreManagementAPI.Models
 @using Microsoft.EntityFrameworkCore
+@using BlazorApp1.Services
 
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IDbContextFactory<StoreDbContext> DbContextFactory
+@inject ICartService CartService
 
 <div class="admin-layout flex min-h-screen bg-gray-100">
     <!-- Sidebar -->
@@ -147,6 +150,18 @@
 
                 <!-- Right: Actions -->
                 <div class="flex items-center gap-4">
+                    <!-- Cart Link -->
+                    <a href="/store/cart" class="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition relative no-underline p-2 rounded-lg hover:bg-gray-50">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" />
+                        <span class="font-medium text-sm">Cart</span>
+                        @if (cartItemCount > 0)
+                        {
+                            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-sm">
+                                @cartItemCount
+                            </span>
+                        }
+                    </a>
+
                     <!-- Role Badge -->
                     <AuthorizeView>
                         <Authorized>
@@ -233,6 +248,23 @@
 
 @code {
     private int cartItemCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CartService.OnChange += async () => await UpdateCartCount();
+        await UpdateCartCount();
+    }
+
+    private async Task UpdateCartCount()
+    {
+        cartItemCount = await CartService.GetItemCountAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        CartService.OnChange -= async () => await UpdateCartCount();
+    }
 
     private (string label, string bgClass, string textClass, string icon) GetRoleBadge(string role)
     {

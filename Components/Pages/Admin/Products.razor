@@ -17,6 +17,14 @@
 
 <PageTitle>Products - Admin</PageTitle>
 
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <Alert Color="Color.Success" Visible="true" class="mb-4">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="mr-2" />
+        @successMessage
+    </Alert>
+}
+
 <div class="flex justify-between items-center mb-6">
     <div>
         <Heading Size="HeadingSize.Is3" class="!text-gray-900 font-bold">
@@ -170,6 +178,7 @@
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Image</TableHeaderCell>
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Product</TableHeaderCell>
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Category</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Unit</TableHeaderCell>
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Price</TableHeaderCell>
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Stock</TableHeaderCell>
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
@@ -206,6 +215,9 @@
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">
                                     <span class="text-gray-900 font-medium">@(product.CategoryName ?? "N/A")</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <span class="text-gray-700 font-medium">@product.Unit</span>
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">
                                     <span class="font-bold text-gray-900">$@product.Price.ToString("N2")</span>
@@ -290,7 +302,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-sm font-bold text-gray-900 mb-2">Category</label>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Category *</label>
                         <Select TValue="int?" @bind-SelectedValue="currentProduct.CategoryId" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                             <SelectItem Value="@((int?)null)">Select Category</SelectItem>
                             @foreach (var category in categories)
@@ -298,14 +310,22 @@
                                 <SelectItem Value="@category.CategoryId">@category.CategoryName</SelectItem>
                             }
                         </Select>
+                        @if (validationErrors.ContainsKey("CategoryId"))
+                        {
+                            <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["CategoryId"]</p>
+                        }
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Price *</label>
                         <NumericEdit TValue="decimal" @bind-Value="currentProduct.Price" Placeholder="0.00" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-900 mb-2">Unit</label>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Unit *</label>
                         <TextEdit @bind-Text="currentProduct.Unit" Placeholder="pcs" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
+                        @if (validationErrors.ContainsKey("Unit"))
+                        {
+                            <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Unit"]</p>
+                        }
                     </div>
                 </div>
 
@@ -315,7 +335,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-bold text-gray-900 mb-2">Product Image</label>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Product Image *</label>
                     <div class="flex gap-4 items-start">
                         @if (!string.IsNullOrEmpty(currentProduct.ImageUrl))
                         {
@@ -333,6 +353,10 @@
                                 Choose Image
                             </label>
                             <p class="text-sm text-gray-600 mt-2">Max 5MB, PNG/JPG/JPEG</p>
+                            @if (validationErrors.ContainsKey("ImageUrl"))
+                            {
+                                <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["ImageUrl"]</p>
+                            }
                         </div>
                     </div>
                 </div>
@@ -362,6 +386,8 @@
     private bool isSaving = false;
     private string? errorMessage;
     private string? priceErrorMessage;
+    private Dictionary<string, string> validationErrors = new();
+    private string? successMessage;
 
     // Search & Filter
     private ProductSearchDto searchCriteria = new ProductSearchDto
@@ -536,6 +562,8 @@
         isEditMode = false;
         currentProduct = new ProductFormModel { Unit = "pcs", Price = 0 };
         errorMessage = null;
+        validationErrors.Clear();
+        successMessage = null;
         productModal.Show();
     }
 
@@ -554,6 +582,8 @@
             ImageUrl = product.ImageUrl
         };
         errorMessage = null;
+        validationErrors.Clear();
+        successMessage = null;
         productModal.Show();
     }
 
@@ -561,21 +591,49 @@
     {
         productModal.Hide();
         errorMessage = null;
+        validationErrors.Clear();
     }
 
     private async Task SaveProduct()
     {
         errorMessage = null;
+        validationErrors.Clear();
+        
+        // Validate required fields
+        bool hasErrors = false;
         
         if (string.IsNullOrWhiteSpace(currentProduct.ProductName))
         {
             errorMessage = "Product name is required";
-            return;
+            hasErrors = true;
+        }
+
+        if (!currentProduct.CategoryId.HasValue || currentProduct.CategoryId.Value == 0)
+        {
+            validationErrors["CategoryId"] = "Category is required";
+            hasErrors = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentProduct.Unit))
+        {
+            validationErrors["Unit"] = "Unit is required";
+            hasErrors = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentProduct.ImageUrl))
+        {
+            validationErrors["ImageUrl"] = "Product image is required";
+            hasErrors = true;
         }
 
         if (currentProduct.Price <= 0)
         {
             errorMessage = "Price must be greater than 0";
+            hasErrors = true;
+        }
+
+        if (hasErrors)
+        {
             return;
         }
 
@@ -613,6 +671,16 @@
 
             await SearchProducts();
             CloseModal();
+            
+            successMessage = isEditMode ? "Product updated successfully!" : "Product created successfully!";
+            StateHasChanged();
+            
+            // Auto-clear success message after 3 seconds
+            _ = Task.Delay(3000).ContinueWith(_ => 
+            {
+                successMessage = null;
+                InvokeAsync(StateHasChanged);
+            });
         }
         catch (Exception ex)
         {

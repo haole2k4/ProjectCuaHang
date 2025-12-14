@@ -15,6 +15,8 @@ namespace StoreManagementAPI.Services
         Task<EmployeeDto> CreateEmployeeAsync(CreateEmployeeDto dto);
         Task<EmployeeDto?> UpdateEmployeeAsync(int id, UpdateEmployeeDto dto);
         Task<bool> DeleteEmployeeAsync(int id);
+        Task<bool> CheckPhoneExists(string phone, int? excludeEmployeeId = null);
+        Task<bool> CheckEmailExists(string email, int? excludeEmployeeId = null);
     }
 
     public class EmployeeService : IEmployeeService
@@ -220,6 +222,26 @@ namespace StoreManagementAPI.Services
             }
             
             return true;
+        }
+
+        public async Task<bool> CheckPhoneExists(string phone, int? excludeEmployeeId = null)
+        {
+            var query = _context.Employees.Where(e => e.Phone == phone && e.Status != "deleted");
+            if (excludeEmployeeId.HasValue)
+            {
+                query = query.Where(e => e.EmployeeId != excludeEmployeeId.Value);
+            }
+            return await query.AnyAsync();
+        }
+
+        public async Task<bool> CheckEmailExists(string email, int? excludeEmployeeId = null)
+        {
+            var query = _context.Employees.Where(e => e.Email.ToLower() == email.ToLower() && e.Status != "deleted");
+            if (excludeEmployeeId.HasValue)
+            {
+                query = query.Where(e => e.EmployeeId != excludeEmployeeId.Value);
+            }
+            return await query.AnyAsync();
         }
     }
 }

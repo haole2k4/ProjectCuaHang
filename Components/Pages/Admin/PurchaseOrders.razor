@@ -38,13 +38,122 @@
     </div>
 </div>
 
-@if (!string.IsNullOrEmpty(successMessage))
-{
-    <Alert Color="Color.Success" Visible class="mb-4">
-        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="mr-2" />
-        @successMessage
-    </Alert>
-}
+<!-- Advanced Search Panel -->
+<Card class="!bg-white shadow-md border border-gray-200 rounded-xl overflow-hidden mb-6">
+    <CardBody>
+        <div class="flex items-center justify-between mb-4">
+            <Heading Size="HeadingSize.Is5" class="!text-gray-900 !font-bold mb-0">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="mr-2" />
+                Search & Filter
+            </Heading>
+            <Button Color="Color.Light" Size="Size.Small" Clicked="ClearFilters" class="!border-2 !border-gray-400 !text-gray-900 !bg-white hover:!bg-gray-100">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Redo" class="mr-1" /> Clear
+            </Button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Purchase ID -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Purchase ID</label>
+                <NumericEdit TValue="int?" Value="@filterPurchaseId" ValueChanged="@OnPurchaseIdChanged" Placeholder="Search by ID..." class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
+            </div>
+
+            <!-- Supplier Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Supplier</label>
+                <Select TValue="int?" SelectedValue="@filterSupplierId" SelectedValueChanged="@OnSupplierChanged" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
+                    <SelectItem Value="@((int?)null)">All Suppliers</SelectItem>
+                    @if (suppliers != null)
+                    {
+                        @foreach (var supplier in suppliers)
+                        {
+                            <SelectItem Value="@supplier.SupplierId">@supplier.Name</SelectItem>
+                        }
+                    }
+                </Select>
+            </div>
+
+            <!-- Warehouse Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Warehouse</label>
+                <Select TValue="int?" SelectedValue="@filterWarehouseId" SelectedValueChanged="@OnWarehouseChanged" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
+                    <SelectItem Value="@((int?)null)">All Warehouses</SelectItem>
+                    @if (warehouses != null)
+                    {
+                        @foreach (var warehouse in warehouses)
+                        {
+                            <SelectItem Value="@warehouse.WarehouseId">@warehouse.WarehouseName</SelectItem>
+                        }
+                    }
+                </Select>
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <Select TValue="string?" SelectedValue="@filterStatus" SelectedValueChanged="@OnStatusChanged" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
+                    <SelectItem Value="@((string?)null)">All Status</SelectItem>
+                    <SelectItem Value="@("completed")">Completed</SelectItem>
+                    <SelectItem Value="@("pending")">Pending</SelectItem>
+                    <SelectItem Value="@("canceled")">Canceled</SelectItem>
+                </Select>
+            </div>
+
+            <!-- Date From -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Date From</label>
+                <DateEdit TValue="DateTime?" Date="@filterDateFrom" DateChanged="@OnDateFromChanged" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
+            </div>
+
+            <!-- Date To -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Date To</label>
+                <DateEdit TValue="DateTime?" Date="@filterDateTo" DateChanged="@OnDateToChanged" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
+                @if (!string.IsNullOrEmpty(dateRangeError))
+                {
+                    <p class="text-red-600 text-sm mt-1 font-semibold">@dateRangeError</p>
+                }
+            </div>
+
+            <!-- Min Amount -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Min Amount</label>
+                <NumericEdit TValue="decimal?" Value="@filterMinAmount" ValueChanged="@OnMinAmountChanged" Placeholder="Min" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" Decimals="2" />
+            </div>
+
+            <!-- Max Amount -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Max Amount</label>
+                <NumericEdit TValue="decimal?" Value="@filterMaxAmount" ValueChanged="@OnMaxAmountChanged" Placeholder="Max" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" Decimals="2" />
+                @if (!string.IsNullOrEmpty(amountRangeError))
+                {
+                    <p class="text-red-600 text-sm mt-1 font-semibold">@amountRangeError</p>
+                }
+            </div>
+
+            <!-- Product Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Product</label>
+                <Select TValue="int?" SelectedValue="@filterProductId" SelectedValueChanged="@OnProductChanged" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
+                    <SelectItem Value="@((int?)null)">All Products</SelectItem>
+                    @if (products != null)
+                    {
+                        @foreach (var product in products)
+                        {
+                            <SelectItem Value="@product.ProductId">@product.ProductName</SelectItem>
+                        }
+                    }
+                </Select>
+            </div>
+
+            <!-- Username Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">User</label>
+                <TextEdit Text="@filterUsername" TextChanged="@OnUsernameChanged" Placeholder="Search by username..." class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
+            </div>
+        </div>
+    </CardBody>
+</Card>
 
 <!-- Purchase Orders List -->
 <Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
@@ -67,6 +176,7 @@
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">PO #</TableHeaderCell>
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Supplier</TableHeaderCell>
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Warehouse</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">User</TableHeaderCell>
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Date</TableHeaderCell>
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Total Amount</TableHeaderCell>
                         <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
@@ -88,6 +198,9 @@
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">
                                     <span class="text-gray-700">@(po.WarehouseName ?? "N/A")</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <span class="text-gray-700 font-medium">@(po.Username ?? "N/A")</span>
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">
                                     <span class="text-gray-700">@po.PurchaseDate.ToString("dd/MM/yyyy HH:mm")</span>
@@ -120,7 +233,7 @@
                     else
                     {
                         <TableRow>
-                            <TableRowCell ColumnSpan="7" class="text-center py-12">
+                            <TableRowCell ColumnSpan="8" class="text-center py-12">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-gray-400 text-4xl mb-3" />
                                 <p class="text-gray-600">Chưa có phiếu nhập hàng nào</p>
                             </TableRowCell>
@@ -131,6 +244,27 @@
         </div>
     </CardBody>
 </Card>
+
+<!-- Toast Notification -->
+@if (showToast)
+{
+    <div class="fixed bottom-6 right-6 z-50 animate-slide-up">
+        <div class="@toastClass text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md">
+            <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <i class="@toastIcon text-lg"></i>
+                </div>
+            </div>
+            <div class="flex-1">
+                <p class="font-semibold">@toastMessage</p>
+            </div>
+            <button @onclick="() => showToast = false"
+                    class="flex-shrink-0 text-white/80 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+}
 
 <!-- Create Purchase Order Modal -->
 <Modal @ref="createModal">
@@ -339,6 +473,23 @@
     </ModalContent>
 </Modal>
 
+<style>
+    @@keyframes slide-up {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .animate-slide-up {
+        animation: slide-up 0.3s ease-out;
+    }
+</style>
+
 @code {
     private class PurchaseItemViewModel
     {
@@ -350,10 +501,25 @@
     }
 
     private List<PurchaseOrderResponseDto>? purchaseOrders;
+    private List<PurchaseOrderResponseDto>? allPurchaseOrders;
     private List<Supplier>? suppliers;
     private List<Warehouse>? warehouses;
     private List<Product>? products;
     private List<PurchaseItemViewModel> purchaseItems = new();
+
+    // Filter variables
+    private int? filterPurchaseId;
+    private int? filterSupplierId;
+    private int? filterWarehouseId;
+    private string? filterStatus;
+    private DateTime? filterDateFrom;
+    private DateTime? filterDateTo;
+    private decimal? filterMinAmount;
+    private decimal? filterMaxAmount;
+    private int? filterProductId;
+    private string? filterUsername;
+    private string? dateRangeError;
+    private string? amountRangeError;
 
     private Modal createModal = null!;
     private Modal detailsModal = null!;
@@ -366,7 +532,12 @@
 
     private bool isSaving = false;
     private string? modalErrorMessage;
-    private string? successMessage;
+
+    // Toast notification
+    private bool showToast = false;
+    private string toastMessage = "";
+    private string toastClass = "";
+    private string toastIcon = "";
 
     private PurchaseOrderResponseDto? selectedPurchaseOrder;
 
@@ -377,7 +548,8 @@
 
     private async Task LoadData()
     {
-        purchaseOrders = await PurchaseOrderService.GetAllPurchaseOrders();
+        allPurchaseOrders = await PurchaseOrderService.GetAllPurchaseOrders();
+        purchaseOrders = allPurchaseOrders;
 
         suppliers = await DbContext.Suppliers
             .Where(s => s.Status == "active")
@@ -393,6 +565,187 @@
             .Where(p => p.Status == "active")
             .OrderBy(p => p.ProductName)
             .ToListAsync();
+    }
+
+    private async Task OnPurchaseIdChanged(int? value)
+    {
+        filterPurchaseId = value;
+        await ApplyFilters();
+    }
+
+    private async Task OnSupplierChanged(int? value)
+    {
+        filterSupplierId = value;
+        await ApplyFilters();
+    }
+
+    private async Task OnWarehouseChanged(int? value)
+    {
+        filterWarehouseId = value;
+        await ApplyFilters();
+    }
+
+    private async Task OnStatusChanged(string? value)
+    {
+        filterStatus = value;
+        await ApplyFilters();
+    }
+
+    private async Task OnDateFromChanged(DateTime? value)
+    {
+        filterDateFrom = value;
+        dateRangeError = null;
+        
+        if (filterDateFrom.HasValue && filterDateTo.HasValue && filterDateFrom.Value > filterDateTo.Value)
+        {
+            dateRangeError = "Date From must be less than or equal to Date To";
+            return;
+        }
+        
+        await ApplyFilters();
+    }
+
+    private async Task OnDateToChanged(DateTime? value)
+    {
+        filterDateTo = value;
+        dateRangeError = null;
+        
+        if (filterDateFrom.HasValue && filterDateTo.HasValue && filterDateFrom.Value > filterDateTo.Value)
+        {
+            dateRangeError = "Date From must be less than or equal to Date To";
+            return;
+        }
+        
+        await ApplyFilters();
+    }
+
+    private async Task OnMinAmountChanged(decimal? value)
+    {
+        filterMinAmount = value;
+        amountRangeError = null;
+        
+        if (filterMinAmount.HasValue && filterMaxAmount.HasValue && filterMinAmount.Value > filterMaxAmount.Value)
+        {
+            amountRangeError = "Min Amount must be less than or equal to Max Amount";
+            return;
+        }
+        
+        await ApplyFilters();
+    }
+
+    private async Task OnMaxAmountChanged(decimal? value)
+    {
+        filterMaxAmount = value;
+        amountRangeError = null;
+        
+        if (filterMinAmount.HasValue && filterMaxAmount.HasValue && filterMinAmount.Value > filterMaxAmount.Value)
+        {
+            amountRangeError = "Min Amount must be less than or equal to Max Amount";
+            return;
+        }
+        
+        await ApplyFilters();
+    }
+
+    private async Task OnProductChanged(int? value)
+    {
+        filterProductId = value;
+        await ApplyFilters();
+    }
+
+    private async Task OnUsernameChanged(string value)
+    {
+        filterUsername = value;
+        await ApplyFilters();
+    }
+
+    private async Task ApplyFilters()
+    {
+        if (allPurchaseOrders == null) return;
+
+        var filtered = allPurchaseOrders.AsEnumerable();
+
+        // Filter by Purchase ID
+        if (filterPurchaseId.HasValue)
+        {
+            filtered = filtered.Where(po => po.PurchaseId == filterPurchaseId.Value);
+        }
+
+        // Filter by Supplier
+        if (filterSupplierId.HasValue)
+        {
+            filtered = filtered.Where(po => po.SupplierId == filterSupplierId.Value);
+        }
+
+        // Filter by Warehouse
+        if (filterWarehouseId.HasValue)
+        {
+            filtered = filtered.Where(po => po.WarehouseId == filterWarehouseId.Value);
+        }
+
+        // Filter by Status
+        if (!string.IsNullOrWhiteSpace(filterStatus))
+        {
+            filtered = filtered.Where(po => po.Status.Equals(filterStatus, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Filter by Date From
+        if (filterDateFrom.HasValue)
+        {
+            filtered = filtered.Where(po => po.PurchaseDate.Date >= filterDateFrom.Value.Date);
+        }
+
+        // Filter by Date To
+        if (filterDateTo.HasValue)
+        {
+            filtered = filtered.Where(po => po.PurchaseDate.Date <= filterDateTo.Value.Date);
+        }
+
+        // Filter by Min Amount
+        if (filterMinAmount.HasValue)
+        {
+            filtered = filtered.Where(po => po.TotalAmount >= filterMinAmount.Value);
+        }
+
+        // Filter by Max Amount
+        if (filterMaxAmount.HasValue)
+        {
+            filtered = filtered.Where(po => po.TotalAmount <= filterMaxAmount.Value);
+        }
+
+        // Filter by Product (check if any item contains the product)
+        if (filterProductId.HasValue)
+        {
+            filtered = filtered.Where(po => po.Items.Any(item => item.ProductId == filterProductId.Value));
+        }
+
+        // Filter by Username
+        if (!string.IsNullOrWhiteSpace(filterUsername))
+        {
+            filtered = filtered.Where(po => 
+                !string.IsNullOrEmpty(po.Username) && 
+                po.Username.Contains(filterUsername, StringComparison.OrdinalIgnoreCase));
+        }
+
+        purchaseOrders = filtered.ToList();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClearFilters()
+    {
+        filterPurchaseId = null;
+        filterSupplierId = null;
+        filterWarehouseId = null;
+        filterStatus = null;
+        filterDateFrom = null;
+        filterDateTo = null;
+        filterMinAmount = null;
+        filterMaxAmount = null;
+        filterProductId = null;
+        filterUsername = null;
+
+        purchaseOrders = allPurchaseOrders;
+        await InvokeAsync(StateHasChanged);
     }
 
     private void OpenCreateModal()
@@ -517,12 +870,9 @@
 
             await PurchaseOrderService.CreatePurchaseOrder(createDto, userId);
 
-            successMessage = "Tạo phiếu nhập hàng thành công!";
             CloseCreateModal();
             await LoadData();
-
-            await Task.Delay(3000);
-            successMessage = null;
+            ShowToast("Tạo phiếu nhập hàng thành công!", "bg-green-600", "fas fa-check");
         }
         catch (Exception ex)
         {
@@ -576,15 +926,11 @@
 
             await JSRuntime.InvokeVoidAsync("downloadFile", fileName, base64);
 
-            successMessage = "Purchase orders exported successfully!";
-            await Task.Delay(3000);
-            successMessage = null;
+            ShowToast("Purchase orders exported successfully!", "bg-green-600", "fas fa-check");
         }
         catch (Exception ex)
         {
-            successMessage = $"Error exporting: {ex.Message}";
-            await Task.Delay(3000);
-            successMessage = null;
+            ShowToast($"Error exporting: {ex.Message}", "bg-red-600", "fas fa-times");
         }
     }
 
@@ -592,5 +938,19 @@
     {
         selectedPurchaseOrder = await PurchaseOrderService.GetPurchaseOrderById(po.PurchaseId);
         detailsModal.Show();
+    }
+
+    private void ShowToast(string message, string cssClass, string icon)
+    {
+        toastMessage = message;
+        toastClass = cssClass;
+        toastIcon = icon;
+        showToast = true;
+
+        Task.Delay(3000).ContinueWith(_ =>
+        {
+            showToast = false;
+            InvokeAsync(StateHasChanged);
+        });
     }
 }

@@ -173,6 +173,23 @@ namespace StoreManagementAPI.Services
             };
 
             var result = await _promotionRepository.AddAsync(promotion);
+
+            // Add product associations if ApplyType is "product" or "combo" and ProductIds are provided
+            if ((dto.ApplyType == "product" || dto.ApplyType == "combo") && dto.ProductIds != null && dto.ProductIds.Any())
+            {
+                foreach (var productId in dto.ProductIds)
+                {
+                    var promotionProduct = new PromotionProduct
+                    {
+                        PromoId = result.PromoId,
+                        ProductId = productId,
+                        CreatedAt = DateTime.Now
+                    };
+                    _context.PromotionProducts.Add(promotionProduct);
+                }
+                await _context.SaveChangesAsync();
+            }
+
             return result;
         }
 
@@ -194,6 +211,46 @@ namespace StoreManagementAPI.Services
             promotion.ApplyType = dto.ApplyType;
 
             await _promotionRepository.UpdateAsync(promotion);
+
+            // Update product associations if ApplyType is "product" or "combo"
+            if (dto.ApplyType == "product" || dto.ApplyType == "combo")
+            {
+                // Remove existing product associations
+                var existingPromotionProducts = await _context.PromotionProducts
+                    .Where(pp => pp.PromoId == promoId)
+                    .ToListAsync();
+                _context.PromotionProducts.RemoveRange(existingPromotionProducts);
+
+                // Add new product associations if ProductIds are provided
+                if (dto.ProductIds != null && dto.ProductIds.Any())
+                {
+                    foreach (var productId in dto.ProductIds)
+                    {
+                        var promotionProduct = new PromotionProduct
+                        {
+                            PromoId = promoId,
+                            ProductId = productId,
+                            CreatedAt = DateTime.Now
+                        };
+                        _context.PromotionProducts.Add(promotionProduct);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                // If ApplyType is not "product" or "combo", remove all product associations
+                var existingPromotionProducts = await _context.PromotionProducts
+                    .Where(pp => pp.PromoId == promoId)
+                    .ToListAsync();
+                if (existingPromotionProducts.Any())
+                {
+                    _context.PromotionProducts.RemoveRange(existingPromotionProducts);
+                    await _context.SaveChangesAsync();
+                }
+            }
+
             return promotion;
         }
 

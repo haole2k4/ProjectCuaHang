@@ -228,6 +228,27 @@
     </CardBody>
 </Card>
 
+<!-- Toast Notification -->
+@if (showToast)
+{
+    <div class="fixed bottom-6 right-6 z-50 animate-slide-up">
+        <div class="@toastClass text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md">
+            <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <i class="@toastIcon text-lg"></i>
+                </div>
+            </div>
+            <div class="flex-1">
+                <p class="font-semibold">@toastMessage</p>
+            </div>
+            <button @onclick="() => showToast = false"
+                    class="flex-shrink-0 text-white/80 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+}
+
 <!-- Add/Edit Supplier Modal -->
 <Modal @ref="supplierModal">
     <ModalContent Size="ModalSize.Large">
@@ -240,16 +261,28 @@
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Supplier Name *</label>
                     <TextEdit @bind-Text="currentSupplier.Name" Placeholder="Enter supplier name" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
+                    @if (validationErrors.ContainsKey("Name"))
+                    {
+                        <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Name"]</p>
+                    }
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-bold text-gray-900 mb-2">Phone</label>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Phone *</label>
                         <TextEdit @bind-Text="currentSupplier.Phone" Placeholder="Enter phone number" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
+                        @if (validationErrors.ContainsKey("Phone"))
+                        {
+                            <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Phone"]</p>
+                        }
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-900 mb-2">Email</label>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Email *</label>
                         <TextEdit @bind-Text="currentSupplier.Email" Placeholder="Enter email address" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
+                        @if (validationErrors.ContainsKey("Email"))
+                        {
+                            <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Email"]</p>
+                        }
                     </div>
                 </div>
 
@@ -283,6 +316,23 @@
     </ModalContent>
 </Modal>
 
+<style>
+    @@keyframes slide-up {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .animate-slide-up {
+        animation: slide-up 0.3s ease-out;
+    }
+</style>
+
 @code {
     private List<Supplier>? suppliers;
     private List<Supplier>? allSuppliers;
@@ -291,8 +341,15 @@
     private bool isEditMode = false;
     private bool isSaving = false;
     private string? errorMessage;
+    private Dictionary<string, string> validationErrors = new();
     private string searchTerm = string.Empty;
     private string filterStatus = string.Empty;
+
+    // Toast notification
+    private bool showToast = false;
+    private string toastMessage = "";
+    private string toastClass = "";
+    private string toastIcon = "";
 
     private Supplier currentSupplier = new();
 
@@ -401,6 +458,7 @@
         isEditMode = false;
         currentSupplier = new Supplier { Status = "active" };
         errorMessage = null;
+        validationErrors.Clear();
         supplierModal.Show();
     }
 
@@ -417,6 +475,7 @@
             Status = supplier.Status
         };
         errorMessage = null;
+        validationErrors.Clear();
         supplierModal.Show();
     }
 
@@ -424,16 +483,61 @@
     {
         supplierModal.Hide();
         errorMessage = null;
+        validationErrors.Clear();
     }
 
     private async Task SaveSupplier()
     {
         errorMessage = null;
+        validationErrors.Clear();
+        bool hasErrors = false;
         
         if (string.IsNullOrWhiteSpace(currentSupplier.Name))
         {
-            errorMessage = "Supplier name is required";
+            validationErrors["Name"] = "Supplier name is required";
+            hasErrors = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentSupplier.Phone))
+        {
+            validationErrors["Phone"] = "Phone number is required";
+            hasErrors = true;
+        }
+        else if (!System.Text.RegularExpressions.Regex.IsMatch(currentSupplier.Phone, @"^[0-9]{10,11}$"))
+        {
+            validationErrors["Phone"] = "Phone must be 10-11 digits";
+            hasErrors = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentSupplier.Email))
+        {
+            validationErrors["Email"] = "Email is required";
+            hasErrors = true;
+        }
+        else if (!System.Text.RegularExpressions.Regex.IsMatch(currentSupplier.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        {
+            validationErrors["Email"] = "Email format is invalid";
+            hasErrors = true;
+        }
+
+        if (hasErrors)
+        {
             return;
+        }
+
+        // Check if supplier name already exists
+        if (!string.IsNullOrWhiteSpace(currentSupplier.Name))
+        {
+            var nameExists = await DbContext.Suppliers
+                .AnyAsync(s => s.Name.ToLower() == currentSupplier.Name.ToLower() 
+                    && s.Status != "deleted"
+                    && (!isEditMode || s.SupplierId != currentSupplier.SupplierId));
+            
+            if (nameExists)
+            {
+                validationErrors["Name"] = "Supplier name already exists";
+                return;
+            }
         }
 
         // Validate phone if provided
@@ -442,7 +546,7 @@
             var phoneExists = await SupplierService.CheckPhoneExists(currentSupplier.Phone);
             if (phoneExists && (!isEditMode || (isEditMode && suppliers!.First(s => s.SupplierId == currentSupplier.SupplierId).Phone != currentSupplier.Phone)))
             {
-                errorMessage = "Phone number already exists";
+                validationErrors["Phone"] = "Phone number already exists";
                 return;
             }
         }
@@ -453,7 +557,7 @@
             var emailExists = await SupplierService.CheckEmailExists(currentSupplier.Email);
             if (emailExists && (!isEditMode || (isEditMode && suppliers!.First(s => s.SupplierId == currentSupplier.SupplierId).Email != currentSupplier.Email)))
             {
-                errorMessage = "Email already exists";
+                validationErrors["Email"] = "Email already exists with another supplier";
                 return;
             }
         }
@@ -481,6 +585,12 @@
             await DbContext.SaveChangesAsync();
             await LoadData();
             CloseModal();
+
+            ShowToast(
+                isEditMode ? "Supplier updated successfully!" : "Supplier created successfully!",
+                "bg-green-600",
+                "fas fa-check"
+            );
         }
         catch (Exception ex)
         {
@@ -499,13 +609,29 @@
 
         try
         {
+            // Soft delete: change status to "deleted"
             supplier.Status = "deleted";
             await DbContext.SaveChangesAsync();
             await LoadData();
+            ShowToast($"Supplier {supplier.Name} has been deleted successfully", "bg-green-600", "fas fa-check");
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+            ShowToast($"Error deleting supplier: {ex.Message}", "bg-red-600", "fas fa-times");
         }
+    }
+
+    private void ShowToast(string message, string cssClass, string icon)
+    {
+        toastMessage = message;
+        toastClass = cssClass;
+        toastIcon = icon;
+        showToast = true;
+
+        Task.Delay(3000).ContinueWith(_ =>
+        {
+            showToast = false;
+            InvokeAsync(StateHasChanged);
+        });
     }
 }

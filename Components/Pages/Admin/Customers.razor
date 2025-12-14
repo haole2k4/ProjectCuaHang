@@ -85,6 +85,45 @@
     </Card>
 </div>
 
+<!-- Filter Section -->
+<Card class="!bg-white shadow-md mb-4">
+    <CardBody>
+        <div class="grid grid-cols-4 gap-4">
+            <div>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">Search</label>
+                <TextEdit Text="@searchTerm"
+                          TextChanged="@OnSearchChanged"
+                          Placeholder="Name, email, phone..."
+                          Autocomplete="Autocomplete.Off"
+                          class="!bg-white !text-gray-900 !border-2 !border-gray-300" />
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">Role</label>
+                <Select TValue="string" SelectedValue="@filterRole" SelectedValueChanged="@OnRoleChanged" class="!bg-white !text-gray-900 !border-2 !border-gray-300">
+                    <SelectItem Value="@("")">All Roles</SelectItem>
+                    <SelectItem Value="@("Customer")">Customer</SelectItem>
+                    <SelectItem Value="@("Admin")">Admin</SelectItem>
+                    <SelectItem Value="@("SalesStaff")">Sales Staff</SelectItem>
+                    <SelectItem Value="@("WarehouseStaff")">Warehouse Staff</SelectItem>
+                </Select>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">Status</label>
+                <Select TValue="string" SelectedValue="@filterStatus" SelectedValueChanged="@OnStatusChanged" class="!bg-white !text-gray-900 !border-2 !border-gray-300">
+                    <SelectItem Value="@("")">All Status</SelectItem>
+                    <SelectItem Value="@("active")">Active</SelectItem>
+                    <SelectItem Value="@("inactive")">Inactive</SelectItem>
+                </Select>
+            </div>
+            <div class="flex items-end">
+                <Button Color="Color.Light" Clicked="ClearFilters" class="w-full !border-2 !border-gray-400">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Redo" class="mr-2" /> Clear Filters
+                </Button>
+            </div>
+        </div>
+    </CardBody>
+</Card>
+
 <!-- Customers Table -->
 <Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
     <CardBody Padding="Padding.Is0">
@@ -207,6 +246,27 @@
     </CardBody>
 </Card>
 
+<!-- Toast Notification -->
+@if (showToast)
+{
+    <div class="fixed bottom-6 right-6 z-50 animate-slide-up">
+        <div class="@toastClass text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md">
+            <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <i class="@toastIcon text-lg"></i>
+                </div>
+            </div>
+            <div class="flex-1">
+                <p class="font-semibold">@toastMessage</p>
+            </div>
+            <button @onclick="() => showToast = false"
+                    class="flex-shrink-0 text-white/80 hover:text-white transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+}
+
 <!-- Custom Confirm Dialog -->
 <Modal @ref="confirmModal">
     <ModalContent Centered Size="ModalSize.Default">
@@ -248,10 +308,18 @@
                 <Field>
                     <FieldLabel class="!text-gray-900 !font-bold">Full Name *</FieldLabel>
                     <TextEdit @bind-Text="@customerForm.Name" Placeholder="Enter customer name" class="!bg-white !text-gray-900 !border-2 !border-gray-300" />
+                    @if (validationErrors.ContainsKey("Name"))
+                    {
+                        <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Name"]</p>
+                    }
                 </Field>
                 <Field>
                     <FieldLabel class="!text-gray-900 !font-bold">Email *</FieldLabel>
                     <TextEdit @bind-Text="@customerForm.Email" Role="TextRole.Email" Placeholder="Enter email" ReadOnly="@isEditMode" class="!bg-white !text-gray-900 !border-2 !border-gray-300" />
+                    @if (validationErrors.ContainsKey("Email"))
+                    {
+                        <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Email"]</p>
+                    }
                 </Field>
             </div>
             @if (!isEditMode)
@@ -259,12 +327,20 @@
                 <Field class="mt-3">
                     <FieldLabel class="!text-gray-900 !font-bold">Password *</FieldLabel>
                     <TextEdit @bind-Text="@customerForm.Password" Role="TextRole.Password" Placeholder="Enter password (min 6 characters)" class="!bg-white !text-gray-900 !border-2 !border-gray-300" />
+                    @if (validationErrors.ContainsKey("Password"))
+                    {
+                        <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Password"]</p>
+                    }
                 </Field>
             }
             <div class="grid grid-cols-2 gap-4 mt-3">
                 <Field>
-                    <FieldLabel class="!text-gray-900 !font-bold">Phone</FieldLabel>
+                    <FieldLabel class="!text-gray-900 !font-bold">Phone *</FieldLabel>
                     <TextEdit @bind-Text="@customerForm.Phone" Placeholder="Enter phone number" class="!bg-white !text-gray-900 !border-2 !border-gray-300" />
+                    @if (validationErrors.ContainsKey("Phone"))
+                    {
+                        <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Phone"]</p>
+                    }
                 </Field>
                 <Field>
                     <FieldLabel class="!text-gray-900 !font-bold">Role *</FieldLabel>
@@ -297,6 +373,23 @@
     </ModalContent>
 </Modal>
 
+<style>
+    @@keyframes slide-up {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .animate-slide-up {
+        animation: slide-up 0.3s ease-out;
+    }
+</style>
+
 @code {
     private List<Customer>? allCustomers;
     private List<Customer>? customers;
@@ -306,7 +399,14 @@
     private bool isEditMode = false;
     private bool isSaving = false;
     private string? errorMessage;
+    private Dictionary<string, string> validationErrors = new();
     private CustomerFormModel customerForm = new();
+
+    // Toast notification
+    private bool showToast = false;
+    private string toastMessage = "";
+    private string toastClass = "";
+    private string toastIcon = "";
     
     // Confirm dialog
     private TaskCompletionSource<bool>? confirmTcs;
@@ -317,6 +417,12 @@
     private int currentPage = 1;
     private int pageSize = 10;
     private int totalItems = 0;
+
+    // Filters
+    private string searchTerm = string.Empty;
+    private string filterRole = string.Empty;
+    private string filterStatus = string.Empty;
+    private List<Customer>? filteredCustomers;
 
     protected override async Task OnInitializedAsync()
     {
@@ -340,9 +446,10 @@
     {
         allCustomers = await DbContext.Customers
             .Include(c => c.Orders)
+            .Where(c => c.Status != "deleted")  // Exclude soft deleted
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync();
-        
+
         // Load roles for all customers
         customerRoles.Clear();
         if (allCustomers != null)
@@ -360,26 +467,85 @@
                 }
             }
         }
-        
-        totalItems = allCustomers?.Count ?? 0;
+
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        if (allCustomers == null)
+        {
+            filteredCustomers = new List<Customer>();
+            totalItems = 0;
+            customers = new List<Customer>();
+            return;
+        }
+
+        filteredCustomers = allCustomers.Where(c =>
+        {
+            bool matchSearch = string.IsNullOrWhiteSpace(searchTerm) ||
+                c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (c.Email != null && c.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                (c.Phone != null && c.Phone.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+            bool matchRole = string.IsNullOrEmpty(filterRole) ||
+                GetCustomerRole(c.ApplicationUserId) == filterRole;
+
+            bool matchStatus = string.IsNullOrEmpty(filterStatus) || c.Status == filterStatus;
+
+            return matchSearch && matchRole && matchStatus;
+        }).ToList();
+
+        totalItems = filteredCustomers.Count;
         UpdatePagedData();
     }
 
     private void UpdatePagedData()
     {
-        if (allCustomers != null)
+        if (filteredCustomers != null)
         {
-            customers = allCustomers
+            customers = filteredCustomers
                 .Skip((currentPage - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
         }
     }
 
+    private void OnSearchChanged(string value)
+    {
+        searchTerm = value;
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void OnRoleChanged(string value)
+    {
+        filterRole = value;
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void OnStatusChanged(string value)
+    {
+        filterStatus = value;
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void ClearFilters()
+    {
+        searchTerm = string.Empty;
+        filterRole = string.Empty;
+        filterStatus = string.Empty;
+        currentPage = 1;
+        ApplyFilters();
+    }
+
     private void HandlePageChanged(int page)
     {
         currentPage = page;
         UpdatePagedData();
+        StateHasChanged();
     }
 
     private string GetCustomerRole(string? userId)
@@ -393,6 +559,7 @@
         isEditMode = false;
         customerForm = new CustomerFormModel { Role = "Customer", Status = "active" };
         errorMessage = null;
+        validationErrors.Clear();
         customerModal.Show();
     }
 
@@ -411,25 +578,56 @@
             Role = GetCustomerRole(customer.ApplicationUserId)
         };
         errorMessage = null;
+        validationErrors.Clear();
         customerModal.Show();
     }
 
     private async Task SaveCustomer()
     {
-        if (string.IsNullOrWhiteSpace(customerForm.Name) || string.IsNullOrWhiteSpace(customerForm.Email))
+        errorMessage = null;
+        validationErrors.Clear();
+        bool hasErrors = false;
+
+        if (string.IsNullOrWhiteSpace(customerForm.Name))
         {
-            errorMessage = "Name and Email are required.";
-            return;
+            validationErrors["Name"] = "Full name is required";
+            hasErrors = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(customerForm.Email))
+        {
+            validationErrors["Email"] = "Email is required";
+            hasErrors = true;
+        }
+        else if (!System.Text.RegularExpressions.Regex.IsMatch(customerForm.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        {
+            validationErrors["Email"] = "Email format is invalid";
+            hasErrors = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(customerForm.Phone))
+        {
+            validationErrors["Phone"] = "Phone number is required";
+            hasErrors = true;
+        }
+        else if (!System.Text.RegularExpressions.Regex.IsMatch(customerForm.Phone, @"^[0-9]{10,11}$"))
+        {
+            validationErrors["Phone"] = "Phone must be 10-11 digits";
+            hasErrors = true;
         }
 
         if (!isEditMode && string.IsNullOrWhiteSpace(customerForm.Password))
         {
-            errorMessage = "Password is required for new customers.";
+            validationErrors["Password"] = "Password is required";
+            hasErrors = true;
+        }
+
+        if (hasErrors)
+        {
             return;
         }
 
         isSaving = true;
-        errorMessage = null;
 
         try
         {
@@ -510,6 +708,12 @@
 
             await LoadData();
             customerModal.Hide();
+
+            ShowToast(
+                isEditMode ? "Customer updated successfully!" : "Customer created successfully!",
+                "bg-green-600",
+                "fas fa-check"
+            );
         }
         catch (Exception ex)
         {
@@ -558,29 +762,31 @@
     private async Task DeleteCustomer(Customer customer)
     {
         var confirmed = await ShowConfirmDialog(
-            "Are you sure you want to delete this?",
-            $"This will delete the customer record for {customer.Name}. Once deleted can not be rolled back. Do you want to proceed?"
+            "Delete Customer",
+            $"Are you sure you want to delete {customer.Name}? This customer will be marked as deleted."
         );
         if (!confirmed) return;
 
-        // Delete Identity user if exists
-        if (!string.IsNullOrEmpty(customer.ApplicationUserId))
+        try
         {
-            var user = await UserManager.FindByIdAsync(customer.ApplicationUserId);
-            if (user != null)
-            {
-                await UserManager.DeleteAsync(user);
-            }
-        }
+            // Soft delete: change status to "deleted"
+            customer.Status = "deleted";
+            await DbContext.SaveChangesAsync();
+            await LoadData();
 
-        DbContext.Customers.Remove(customer);
-        await DbContext.SaveChangesAsync();
-        await LoadData();
+            ShowToast($"Customer {customer.Name} has been deleted successfully", "bg-green-600", "fas fa-check");
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"Error deleting customer: {ex.Message}", "bg-red-600", "fas fa-times");
+        }
     }
 
     private void CloseModal()
     {
         customerModal.Hide();
+        errorMessage = null;
+        validationErrors.Clear();
     }
 
     private async Task<bool> ShowConfirmDialog(string title, string message)
@@ -609,5 +815,19 @@
         public string Role { get; set; } = "Customer";
         public string Status { get; set; } = "active";
         public string? ApplicationUserId { get; set; }
+    }
+
+    private void ShowToast(string message, string cssClass, string icon)
+    {
+        toastMessage = message;
+        toastClass = cssClass;
+        toastIcon = icon;
+        showToast = true;
+
+        Task.Delay(3000).ContinueWith(_ =>
+        {
+            showToast = false;
+            InvokeAsync(StateHasChanged);
+        });
     }
 }

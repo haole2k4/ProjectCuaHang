@@ -327,8 +327,8 @@
             <div class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-bold text-gray-900 mb-2">Promo Code *</label>
-                        <TextEdit @bind-Text="currentPromotion.PromoCode" Placeholder="e.g., SUMMER2024" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2 uppercase" />
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Promo Code *@if (isEditMode) { <span class="text-gray-500 text-xs">(readonly)</span> }</label>
+                        <TextEdit @bind-Text="currentPromotion.PromoCode" Placeholder="e.g., SUMMER2024" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2 uppercase" Disabled="@isEditMode" />
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Apply Type *</label>
@@ -360,18 +360,68 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-sm font-bold text-gray-900 mb-2">Start Date *</label>
-                        <DateEdit TValue="DateTime" @bind-Date="currentPromotion.StartDate" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Start Date *@if (isEditMode) { <span class="text-gray-500 text-xs">(readonly)</span> }</label>
+                        <DateEdit TValue="DateTime" Date="currentPromotion.StartDate" DateChanged="OnPromotionStartDateChanged" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" Disabled="@isEditMode" />
+                        @if (!string.IsNullOrEmpty(dateErrorMessage))
+                        {
+                            <p class="text-red-600 text-sm mt-1 font-semibold">@dateErrorMessage</p>
+                        }
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">End Date *</label>
-                        <DateEdit TValue="DateTime" @bind-Date="currentPromotion.EndDate" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
+                        <DateEdit TValue="DateTime" Date="currentPromotion.EndDate" DateChanged="OnPromotionEndDateChanged" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-gray-900 mb-2">Usage Limit (0 = unlimited)</label>
-                        <NumericEdit TValue="int" @bind-Value="currentPromotion.UsageLimit" Placeholder="0" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Usage Limit (0 = unlimited)@if (isEditMode) { <span class="text-gray-500 text-xs">(readonly)</span> }</label>
+                        <NumericEdit TValue="int" @bind-Value="currentPromotion.UsageLimit" Placeholder="0" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" Disabled="@isEditMode" />
                     </div>
                 </div>
+
+                @* Product Selection for "Specific Product" - Single Select *@
+                @if (currentPromotion.ApplyType == "product")
+                {
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Select Product * <span class="text-gray-500 text-xs">(Discount applies to this specific product)</span></label>
+                        <Select TValue="int?" SelectedValue="@(currentPromotion.ProductIds.FirstOrDefault() == 0 ? (int?)null : currentPromotion.ProductIds.FirstOrDefault())"
+                                SelectedValueChanged="@OnSingleProductChanged"
+                                class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
+                            <SelectItem Value="@((int?)null)">-- Select a product --</SelectItem>
+                            @if (allProducts != null)
+                            {
+                                @foreach (var product in allProducts)
+                                {
+                                    <SelectItem Value="@product.ProductId">@product.ProductName - $@product.Price</SelectItem>
+                                }
+                            }
+                        </Select>
+                    </div>
+                }
+
+                @* Product Selection for "Combo" - Multiple Select *@
+                @if (currentPromotion.ApplyType == "combo")
+                {
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Select Combo Products * <span class="text-gray-500 text-xs">(Customer must buy ALL selected products to get discount)</span></label>
+                        <select multiple class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2 rounded p-2" style="min-height: 150px;" @onchange="OnProductSelectionChanged">
+                            @if (allProducts != null)
+                            {
+                                @foreach (var product in allProducts)
+                                {
+                                    <option value="@product.ProductId" selected="@currentPromotion.ProductIds.Contains(product.ProductId)">
+                                        @product.ProductName - $@product.Price
+                                    </option>
+                                }
+                            }
+                        </select>
+                        <p class="text-gray-600 text-sm mt-1">Hold Ctrl (Windows) or Cmd (Mac) to select multiple products</p>
+                        @if (currentPromotion.ProductIds.Any())
+                        {
+                            <div class="mt-2">
+                                <span class="text-sm font-semibold text-green-600">Selected: @currentPromotion.ProductIds.Count product(s)</span>
+                            </div>
+                        }
+                    </div>
+                }
 
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Description</label>
@@ -406,6 +456,7 @@
 @code {
     private List<Promotion>? allPromotions;
     private List<Promotion>? promotions;
+    private List<Product>? allProducts;
     private Modal promotionModal = null!;
     private bool isEditMode = false;
     private bool isSaving = false;
@@ -432,7 +483,16 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
+        await LoadProducts();
         await SearchPromotions();
+    }
+
+    private async Task LoadProducts()
+    {
+        allProducts = await DbContext.Products
+            .Where(p => p.Status == "active")
+            .OrderBy(p => p.ProductName)
+            .ToListAsync();
     }
 
     private async Task LoadData()
@@ -594,21 +654,32 @@
         isEditMode = false;
         currentPromotion = new CreatePromotionDto
         {
-            StartDate = DateTime.Now,
-            EndDate = DateTime.Now.AddDays(30),
+            StartDate = DateTime.Today,
+            EndDate = DateTime.Today.AddDays(1),
             Status = "active",
             DiscountType = "percent",
             ApplyType = "order",
-            UsageLimit = 0,
+            UsageLimit = 100,
             MinOrderAmount = 0
         };
         errorMessage = null;
         promotionModal.Show();
     }
 
-    private void OpenEditModal(Promotion promotion)
+    private async Task OpenEditModal(Promotion promotion)
     {
         isEditMode = true;
+
+        // Load product IDs if this is a product-specific or combo promotion
+        var productIds = new List<int>();
+        if (promotion.ApplyType == "product" || promotion.ApplyType == "combo")
+        {
+            productIds = await DbContext.PromotionProducts
+                .Where(pp => pp.PromoId == promotion.PromoId)
+                .Select(pp => pp.ProductId)
+                .ToListAsync();
+        }
+
         currentPromotion = new CreatePromotionDto
         {
             PromoId = promotion.PromoId,
@@ -621,7 +692,8 @@
             EndDate = promotion.EndDate,
             UsageLimit = promotion.UsageLimit,
             Description = promotion.Description,
-            Status = promotion.Status
+            Status = promotion.Status,
+            ProductIds = productIds
         };
         errorMessage = null;
         promotionModal.Show();
@@ -643,15 +715,66 @@
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(currentPromotion.DiscountType))
+        {
+            errorMessage = "Discount type is required";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentPromotion.ApplyType))
+        {
+            errorMessage = "Apply type is required";
+            return;
+        }
+
         if (currentPromotion.DiscountValue <= 0)
         {
             errorMessage = "Discount value must be greater than 0";
             return;
         }
 
+        if (!isEditMode && currentPromotion.UsageLimit <= 0)
+        {
+            errorMessage = "Usage limit must be greater than 0";
+            return;
+        }
+
+        if (currentPromotion.StartDate == default(DateTime))
+        {
+            errorMessage = "Start date is required";
+            return;
+        }
+
+        if (currentPromotion.EndDate == default(DateTime))
+        {
+            errorMessage = "End date is required";
+            return;
+        }
+
         if (currentPromotion.StartDate >= currentPromotion.EndDate)
         {
             errorMessage = "End date must be after start date";
+            return;
+        }
+
+        // Check if date validation failed
+        if (!string.IsNullOrEmpty(dateErrorMessage))
+        {
+            errorMessage = dateErrorMessage;
+            return;
+        }
+
+        // Validate product selection for "product" apply type (single product)
+        if (currentPromotion.ApplyType == "product" && (currentPromotion.ProductIds == null || !currentPromotion.ProductIds.Any()))
+        {
+            errorMessage = "Please select a product for product-specific promotion";
+            return;
+        }
+
+        // Validate product selection for "combo" apply type (multiple products)
+        if (currentPromotion.ApplyType == "combo" && (currentPromotion.ProductIds == null || currentPromotion.ProductIds.Count < 2))
+        {
+            errorMessage = "Please select at least 2 products for combo promotion";
             return;
         }
 
@@ -727,4 +850,48 @@
         "combo" => "Combo",
         _ => applyType
     };
+
+    private void OnPromotionStartDateChanged(DateTime value)
+    {
+        currentPromotion.StartDate = value;
+        ValidateDateRange();
+    }
+
+    private void OnPromotionEndDateChanged(DateTime value)
+    {
+        currentPromotion.EndDate = value;
+        ValidateDateRange();
+    }
+
+    private void ValidateDateRange()
+    {
+        dateErrorMessage = null;
+
+        if (currentPromotion.StartDate >= currentPromotion.EndDate)
+        {
+            dateErrorMessage = "End date must be after start date";
+        }
+    }
+
+    private void OnSingleProductChanged(int? productId)
+    {
+        if (productId.HasValue)
+        {
+            currentPromotion.ProductIds = new List<int> { productId.Value };
+        }
+        else
+        {
+            currentPromotion.ProductIds = new List<int>();
+        }
+        StateHasChanged();
+    }
+
+    private void OnProductSelectionChanged(ChangeEventArgs e)
+    {
+        if (e.Value is string[] selectedValues)
+        {
+            currentPromotion.ProductIds = selectedValues.Select(int.Parse).ToList();
+        }
+        StateHasChanged();
+    }
 }
