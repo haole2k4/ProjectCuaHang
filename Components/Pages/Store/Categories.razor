@@ -12,22 +12,22 @@
 
 <PageTitle>Categories</PageTitle>
 
-<div class="mb-8">
-    <Heading Size="HeadingSize.Is2" class="mb-2 text-gray-900">
-        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="mr-2 text-blue-600" /> Categories
+<div class="mb-8 text-center">
+    <Heading Size="HeadingSize.Is1" class="mb-3 !text-gray-900 !font-bold !text-5xl">
+        Categories
     </Heading>
-    <p class="text-gray-600">Browse products by category</p>
+    <p class="!text-gray-600 text-lg">Browse products by category</p>
 
     @if (categories != null && categories.Any())
     {
-        <div class="mt-4 flex gap-4">
+        <div class="mt-4 flex gap-4 justify-center">
             <div class="bg-blue-50 px-4 py-2 rounded-lg">
-                <span class="text-blue-600 font-bold text-lg">@categories.Count</span>
-                <span class="text-gray-600 text-sm ml-1">Categories</span>
+                <span class="!text-blue-600 !font-bold text-lg">@categories.Count</span>
+                <span class="!text-gray-600 text-sm ml-1">Categories</span>
             </div>
             <div class="bg-green-50 px-4 py-2 rounded-lg">
-                <span class="text-green-600 font-bold text-lg">@categories.Sum(c => c.Products.Count(p => p.Status == "active"))</span>
-                <span class="text-gray-600 text-sm ml-1">Total Products</span>
+                <span class="!text-green-600 !font-bold text-lg">@categories.Sum(c => c.Products.Count(p => p.Status == "active"))</span>
+                <span class="!text-gray-600 text-sm ml-1">Total Products</span>
             </div>
         </div>
     }
