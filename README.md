@@ -46,9 +46,19 @@ Dự án được xây dựng trên nền tảng .NET và các thư viện hiệ
     * Nhấn **F5** hoặc nút **Run** (https/http) trên thanh công cụ.
 
 ### 3. Tài khoản mặc định (Seed Data)
-Nếu database được khởi tạo mới, hệ thống sẽ tạo một tài khoản Admin mặc định:
-* **Email:** `admin@estore.com`
-* **Password:** `Admin123!`
+Nếu database được khởi tạo mới, hệ thống sẽ tạo các tài khoản mặc định:
+
+* **Admin (Quản trị viên):**
+    * **Email:** `admin@estore.com`
+    * **Password:** `Admin123!`
+
+* **Sales Staff (Nhân viên bán hàng):**
+    * **Email:** `sales@estore.com`
+    * **Password:** `Sales123!`
+
+* **Warehouse Staff (Nhân viên kho):**
+    * **Email:** `warehouse@estore.com`
+    * **Password:** `Warehouse123!`
 
 ## 📖 Hướng dẫn xem Database (SQLite)
 

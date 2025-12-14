@@ -3,7 +3,7 @@ namespace StoreManagementAPI.DTOs
     public class CreateOrderDto
     {
         public int? CustomerId { get; set; }
-        public int? UserId { get; set; }
+        public string? UserId { get; set; }
         public string? PromoCode { get; set; }
         public List<OrderItemDto> Items { get; set; } = new();
     }
@@ -19,7 +19,7 @@ namespace StoreManagementAPI.DTOs
         public int OrderId { get; set; }
         public int? CustomerId { get; set; }
         public string? CustomerName { get; set; }
-        public int? UserId { get; set; }
+        public string? UserId { get; set; }
         public string? UserName { get; set; }
         public DateTime OrderDate { get; set; }
         public string Status { get; set; } = string.Empty;

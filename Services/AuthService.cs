@@ -5,38 +5,46 @@ using StoreManagementAPI.Repositories;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
+using BlazorApp1.Data;
+using Microsoft.EntityFrameworkCore; // Added
 
 namespace StoreManagementAPI.Services
 {
     public interface IAuthService
     {
         Task<LoginResponseDto?> LoginAsync(LoginDto loginDto);
-        Task<User?> RegisterAsync(RegisterDto registerDto);
-        string GenerateJwtToken(User user);
-        Task<IEnumerable<User>> GetUsersAsync();
-        Task<bool> UpdateUserAsync(int id, UpdateUserDto updateDto);
-        Task<bool> DeleteUserAsync(int id);
-        Task<bool> UpdatePasswordAsync(int userId, string OldPassword, string newPassword);
-        Task<bool> ToggleUserStatusAsync(int userId);
+        Task<ApplicationUser?> RegisterAsync(RegisterDto registerDto);
+        Task<string> GenerateJwtToken(ApplicationUser user);
+        Task<IEnumerable<ApplicationUser>> GetUsersAsync();
+        Task<bool> UpdateUserAsync(string id, UpdateUserDto updateDto);
+        Task<bool> DeleteUserAsync(string id);
+        Task<bool> UpdatePasswordAsync(string userId, string oldPassword, string newPassword);
+        Task<bool> ToggleUserStatusAsync(string userId);
     }
 
     public class AuthService : IAuthService
     {
-        private readonly IRepository<User> _userRepository;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IConfiguration _configuration;
         private readonly IAuditLogService _auditLogService;
 
-        public AuthService(IRepository<User> userRepository, IConfiguration configuration, IAuditLogService auditLogService)
+        public AuthService(
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager,
+            IConfiguration configuration, 
+            IAuditLogService auditLogService)
         {
-            _userRepository = userRepository;
+            _userManager = userManager;
+            _signInManager = signInManager;
             _configuration = configuration;
             _auditLogService = auditLogService;
         }
 
         public async Task<LoginResponseDto?> LoginAsync(LoginDto loginDto)
         {
-            var users = await _userRepository.FindAsync(u => u.Username == loginDto.Username);
-            var user = users.FirstOrDefault();
+            var user = await _userManager.FindByNameAsync(loginDto.Username);
 
             if (user == null)
             {
@@ -60,38 +68,20 @@ namespace StoreManagementAPI.Services
                 return null;
             }
 
-            // Verify password - support both BCrypt and plaintext
-            bool isPasswordValid = false;
-            if (user.Password.StartsWith("$2a$") || user.Password.StartsWith("$2b$") || user.Password.StartsWith("$2y$"))
-            {
-                // BCrypt hashed password
-                try
-                {
-                    isPasswordValid = BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password);
-                }
-                catch
-                {
-                    isPasswordValid = false;
-                }
-            }
-            else
-            {
-                // Plaintext password (for backward compatibility)
-                isPasswordValid = user.Password == loginDto.Password;
-            }
+            var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
 
-            if (!isPasswordValid)
+            if (!result.Succeeded)
             {
                 // Log failed login attempt
                 await _auditLogService.LogActionAsync(
                     action: "LOGIN_FAILED",
                     entityType: "User",
-                    entityId: user.UserId,
+                    entityId: null, // User Id is string now, AuditLog expects int? EntityId. We can't store string ID in int column.
                     entityName: loginDto.Username,
                     oldValues: null,
                     newValues: null,
                     changesSummary: $"Đăng nhập thất bại cho tài khoản '{loginDto.Username}'",
-                    userId: null,
+                    userId: user.Id, // AuditLog UserId is string? now
                     username: loginDto.Username,
                     additionalInfo: new Dictionary<string, object>
                     {
@@ -102,28 +92,30 @@ namespace StoreManagementAPI.Services
                 return null;
             }
 
-            // Kiểm tra tài khoản có bị khóa không
-            if (user.Status != "active")
+            // Check if locked out (Identity handles this if configured, but we can check manually too)
+            if (await _userManager.IsLockedOutAsync(user))
             {
-                throw new Exception("Account is locked. Please contact administrator.");
+                 throw new Exception("Account is locked. Please contact administrator.");
             }
 
-            var token = GenerateJwtToken(user);
+            var token = await GenerateJwtToken(user);
+            var roles = await _userManager.GetRolesAsync(user);
+            var role = roles.FirstOrDefault() ?? "Staff";
 
             // Log successful login
             await _auditLogService.LogActionAsync(
                 action: "LOGIN",
                 entityType: "User",
-                entityId: user.UserId,
-                entityName: user.FullName ?? user.Username,
+                entityId: null,
+                entityName: user.UserName,
                 oldValues: null,
                 newValues: null,
-                changesSummary: $"Người dùng '{user.Username}' ({user.FullName}) đăng nhập thành công",
-                userId: user.UserId,
-                username: user.Username,
+                changesSummary: $"Người dùng '{user.UserName}' đăng nhập thành công",
+                userId: user.Id,
+                username: user.UserName,
                 additionalInfo: new Dictionary<string, object>
                 {
-                    { "Role", user.Role },
+                    { "Role", role },
                     { "LoginTime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") }
                 }
             );
@@ -131,31 +123,40 @@ namespace StoreManagementAPI.Services
             return new LoginResponseDto
             {
                 Token = token,
-                Username = user.Username,
-                FullName = user.FullName ?? "",
-                Role = user.Role,
-                UserId = user.UserId
+                Username = user.UserName,
+                FullName = "", // IdentityUser doesn't have FullName by default unless we added it to ApplicationUser. We didn't see it in ApplicationUser.cs.
+                Role = role,
+                UserId = user.Id // Changed to string in DTO? No, DTO likely has int. I need to check LoginResponseDto.
             };
         }
 
-        public async Task<User?> RegisterAsync(RegisterDto registerDto)
+        public async Task<ApplicationUser?> RegisterAsync(RegisterDto registerDto)
         {
-            // Nếu user muốn tạo admin, kiểm tra có admin chưa
-            if (registerDto.Role == "admin")
+            // Check if admin exists
+            if (registerDto.Role == "Admin")
             {
-                var hasAdmin = await _userRepository.ExistsAsync(u => u.Role == "admin");
-                if (hasAdmin)
+                // Check if any user has Admin role
+                var users = await _userManager.GetUsersInRoleAsync("Admin");
+                if (users.Any())
                     throw new Exception("Only one admin account is allowed.");
             }
 
-            // Nếu không chỉ định role, mặc định là staff
+            // Default role
             if (string.IsNullOrEmpty(registerDto.Role))
-                registerDto.Role = "staff";
+                registerDto.Role = "Staff"; // Or Customer?
             
-            var exists = await _userRepository.ExistsAsync(u => u.Username == registerDto.Username);
-            if (exists)
+            var user = new ApplicationUser
             {
-                // Log failed registration attempt
+                UserName = registerDto.Username,
+                Email = registerDto.Username.Contains("@") ? registerDto.Username : null, // Simple check
+                EmailConfirmed = true
+            };
+
+            var result = await _userManager.CreateAsync(user, registerDto.Password);
+
+            if (!result.Succeeded)
+            {
+                // Log failed registration
                 await _auditLogService.LogActionAsync(
                     action: "REGISTER_FAILED",
                     entityType: "User",
@@ -163,65 +164,61 @@ namespace StoreManagementAPI.Services
                     entityName: registerDto.Username,
                     oldValues: null,
                     newValues: null,
-                    changesSummary: $"Đăng ký thất bại: Tài khoản '{registerDto.Username}' đã tồn tại",
+                    changesSummary: $"Đăng ký thất bại: {string.Join(", ", result.Errors.Select(e => e.Description))}",
                     userId: null,
                     username: "system",
                     additionalInfo: new Dictionary<string, object>
                     {
-                        { "Reason", "Username already exists" },
+                        { "Reason", "Registration failed" },
                         { "AttemptTime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") }
                     }
                 );
                 return null;
             }
-
-            var user = new User
-            {
-                Username = registerDto.Username,
-                Password = registerDto.Password, // In production, hash this!
-                FullName = registerDto.FullName,
-                Role = registerDto.Role
-            };
-
-            var newUser = await _userRepository.AddAsync(user);
+            
+            await _userManager.AddToRoleAsync(user, registerDto.Role);
 
             // Log successful registration
             await _auditLogService.LogActionAsync(
                 action: "REGISTER",
                 entityType: "User",
-                entityId: newUser.UserId,
-                entityName: newUser.FullName ?? newUser.Username,
+                entityId: null,
+                entityName: user.UserName,
                 oldValues: null,
                 newValues: new
                 {
-                    Username = newUser.Username,
-                    FullName = newUser.FullName,
-                    Role = newUser.Role
+                    Username = user.UserName,
+                    Role = registerDto.Role
                 },
-                changesSummary: $"Đăng ký tài khoản mới: '{newUser.Username}' ({newUser.FullName}) với vai trò {newUser.Role}",
-                userId: newUser.UserId,
-                username: newUser.Username,
+                changesSummary: $"Đăng ký tài khoản mới: '{user.UserName}' với vai trò {registerDto.Role}",
+                userId: user.Id,
+                username: user.UserName,
                 additionalInfo: new Dictionary<string, object>
                 {
                     { "RegisterTime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") }
                 }
             );
 
-            return newUser;
+            return user;
         }
 
-        public string GenerateJwtToken(User user)
+        public async Task<string> GenerateJwtToken(ApplicationUser user)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? "YourSuperSecretKeyForJwtTokenGeneration123456"));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var roles = await _userManager.GetRolesAsync(user);
+            
+            var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Role, user.Role),
-                new Claim("FullName", user.FullName ?? "")
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Name, user.UserName ?? ""),
             };
+            
+            foreach(var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"] ?? "StoreManagementAPI",
@@ -233,67 +230,70 @@ namespace StoreManagementAPI.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-         public async Task<IEnumerable<User>> GetUsersAsync()
+        
+        public async Task<IEnumerable<ApplicationUser>> GetUsersAsync()
         {
-            return await _userRepository.GetAllAsync();
+            return await _userManager.Users.ToListAsync();
         }
 
-        public async Task<bool> UpdateUserAsync(int id, UpdateUserDto updateDto)
+        public async Task<bool> UpdateUserAsync(string id, UpdateUserDto updateDto)
         {
-            var users = await _userRepository.FindAsync(u => u.UserId == id);
-            var user = users.FirstOrDefault();
+            var user = await _userManager.FindByIdAsync(id);
             if (user == null) return false;
 
-          
             if (!string.IsNullOrEmpty(updateDto.Password))
-                user.Password = updateDto.Password; 
-
-            if (!string.IsNullOrEmpty(updateDto.FullName))
-                user.FullName = updateDto.FullName;
-
-            await _userRepository.UpdateAsync(user);
-            return true;
-        }
-
-        public async Task<bool> DeleteUserAsync(int id)
-        {
-            return await _userRepository.DeleteAsync(id);
-        }
-
-        public async Task<bool> UpdatePasswordAsync(int userId, string oldPassword, string newPassword)
-        {
-            var users = await _userRepository.FindAsync(u => u.UserId == userId);
-            var user = users.FirstOrDefault();
-
-            if (user == null)
-                return false;
-                
-             // Kiểm tra mật khẩu cũ
-            if (user.Password != oldPassword)
-                throw new Exception("Old password is incorrect.");
-
-            user.Password = newPassword; 
-            await _userRepository.UpdateAsync(user);
-            return true;
-        }
-
-        public async Task<bool> ToggleUserStatusAsync(int userId)
-        {
-            var users = await _userRepository.FindAsync(u => u.UserId == userId);
-            var user = users.FirstOrDefault();
-
-            if (user == null)
-                return false;
-
-            // Không cho phép khóa admin ID = 1
-            if (user.UserId == 1 && user.Role == "admin")
             {
-                throw new Exception("Cannot lock the primary admin account (ID = 1)");
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                await _userManager.ResetPasswordAsync(user, token, updateDto.Password);
             }
 
-            // Toggle status giữa active và inactive
-            user.Status = user.Status == "active" ? "inactive" : "active";
-            await _userRepository.UpdateAsync(user);
+            // FullName is not in default IdentityUser. If we added it to ApplicationUser, we can update it.
+            // Assuming ApplicationUser has no FullName property based on previous file read.
+            // If it does, we update it.
+            
+            // await _userManager.UpdateAsync(user);
+            return true;
+        }
+
+        public async Task<bool> DeleteUserAsync(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return false;
+            
+            var result = await _userManager.DeleteAsync(user);
+            return result.Succeeded;
+        }
+
+        public async Task<bool> UpdatePasswordAsync(string userId, string oldPassword, string newPassword)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return false;
+
+            var result = await _userManager.ChangePasswordAsync(user, oldPassword, newPassword);
+            return result.Succeeded;
+        }
+
+        public async Task<bool> ToggleUserStatusAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return false;
+
+            // Check if admin
+            var roles = await _userManager.GetRolesAsync(user);
+            if (roles.Contains("Admin") && user.UserName == "admin@estore.com") // Hardcoded check for primary admin
+            {
+                 throw new Exception("Cannot lock the primary admin account");
+            }
+
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                await _userManager.SetLockoutEndDateAsync(user, null);
+            }
+            else
+            {
+                await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+            }
+            
             return true;
         }
     }

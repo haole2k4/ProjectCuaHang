@@ -3,7 +3,7 @@ namespace StoreManagementAPI.DTOs
     public class AuditLogDto
     {
         public int AuditId { get; set; }
-        public int? UserId { get; set; }
+        public string? UserId { get; set; }
         public string? Username { get; set; }
         public string Action { get; set; } = string.Empty;
         public string EntityType { get; set; } = string.Empty;
@@ -18,7 +18,7 @@ namespace StoreManagementAPI.DTOs
 
     public class AuditLogFilterDto
     {
-        public int? UserId { get; set; }
+        public string? UserId { get; set; }
         public string? Username { get; set; }
         public string? Action { get; set; }
         public string? EntityType { get; set; }

@@ -3,6 +3,8 @@ using StoreManagementAPI.Data;
 using StoreManagementAPI.DTOs;
 using StoreManagementAPI.Models;
 using StoreManagementAPI.Repositories;
+using Microsoft.AspNetCore.Identity;
+using BlazorApp1.Data;
 
 namespace StoreManagementAPI.Services
 {
@@ -35,39 +37,36 @@ namespace StoreManagementAPI.Services
         private readonly StoreDbContext _context;
         private readonly IAuditLogService _auditLogService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public ProductService(
             IRepository<Product> productRepository,
             IRepository<Inventory> inventoryRepository,
             StoreDbContext context,
             IAuditLogService auditLogService,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            UserManager<ApplicationUser> userManager)
         {
             _productRepository = productRepository;
             _inventoryRepository = inventoryRepository;
             _context = context;
             _auditLogService = auditLogService;
             _httpContextAccessor = httpContextAccessor;
+            _userManager = userManager;
         }
 
-        private (int? userId, string? username) GetAuditInfo()
+        private (string? userId, string? username) GetAuditInfo()
         {
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext == null)
-                return (1, "admin"); // Default to admin user (id=1)
+                return (null, "system");
 
             var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var usernameClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
 
-            int? userId = null;
-            if (int.TryParse(userIdClaim, out int parsedUserId))
-                userId = parsedUserId;
+            var username = !string.IsNullOrEmpty(usernameClaim) ? usernameClaim : "system";
 
-            // Nếu không có username từ authentication, dùng "admin" làm mặc định
-            var username = !string.IsNullOrEmpty(usernameClaim) ? usernameClaim : "admin";
-            var finalUserId = userId ?? 1; // Default to user id = 1 (admin)
-
-            return (finalUserId, username);
+            return (userIdClaim, username);
         }
 
         public async Task<IEnumerable<ProductDto>> GetAllProductsAsync()
@@ -753,14 +752,30 @@ namespace StoreManagementAPI.Services
             var purchaseItems = await _context.PurchaseItems
                 .Include(pi => pi.PurchaseOrder)
                     .ThenInclude(po => po.Supplier)
-                .Include(pi => pi.PurchaseOrder)
-                    .ThenInclude(po => po.User)
                 .Where(pi => pi.ProductId == productId)
                 .OrderByDescending(pi => pi.PurchaseOrder.PurchaseDate)
                 .ToListAsync();
 
+            // Fetch users for purchase orders
+            var purchaseUserIds = purchaseItems.Select(pi => pi.PurchaseOrder.UserId).Distinct().ToList();
+            var purchaseUserMap = new Dictionary<string, string>();
+            foreach(var uid in purchaseUserIds)
+            {
+                if (!string.IsNullOrEmpty(uid))
+                {
+                    var user = await _userManager.FindByIdAsync(uid);
+                    if (user != null) purchaseUserMap[uid] = user.UserName ?? "Unknown";
+                }
+            }
+
             foreach (var item in purchaseItems)
             {
+                string? userName = null;
+                if (!string.IsNullOrEmpty(item.PurchaseOrder.UserId) && purchaseUserMap.ContainsKey(item.PurchaseOrder.UserId))
+                {
+                    userName = purchaseUserMap[item.PurchaseOrder.UserId];
+                }
+
                 history.Add(new ProductHistoryDto
                 {
                     Id = item.PurchaseOrder.PurchaseId,
@@ -770,7 +785,7 @@ namespace StoreManagementAPI.Services
                     UnitPrice = item.CostPrice,
                     TotalAmount = item.Subtotal,
                     ReferenceNumber = $"PN{item.PurchaseOrder.PurchaseId:D6}",
-                    UserName = item.PurchaseOrder.User?.FullName,
+                    UserName = userName,
                     SupplierName = item.PurchaseOrder.Supplier?.Name,
                     Notes = null
                 });
@@ -786,14 +801,31 @@ namespace StoreManagementAPI.Services
             var orderIds = orderItems.Where(oi => oi.Order != null).Select(oi => oi.Order!.OrderId).Distinct().ToList();
             var orders = await _context.Orders
                 .Include(o => o.Customer)
-                .Include(o => o.User)
                 .Where(o => orderIds.Contains(o.OrderId))
                 .ToDictionaryAsync(o => o.OrderId);
+
+            // Fetch users for orders
+            var orderUserIds = orders.Values.Where(o => !string.IsNullOrEmpty(o.UserId)).Select(o => o.UserId).Distinct().ToList();
+            var orderUserMap = new Dictionary<string, string>();
+            foreach(var uid in orderUserIds)
+            {
+                if (!string.IsNullOrEmpty(uid))
+                {
+                    var user = await _userManager.FindByIdAsync(uid);
+                    if (user != null) orderUserMap[uid] = user.UserName ?? "Unknown";
+                }
+            }
 
             foreach (var item in orderItems)
             {
                 if (item.Order == null || !orders.ContainsKey(item.Order.OrderId)) continue;
                 var order = orders[item.Order.OrderId];
+                
+                string? userName = null;
+                if (!string.IsNullOrEmpty(order.UserId) && orderUserMap.ContainsKey(order.UserId))
+                {
+                    userName = orderUserMap[order.UserId];
+                }
 
                 history.Add(new ProductHistoryDto
                 {
@@ -804,7 +836,7 @@ namespace StoreManagementAPI.Services
                     UnitPrice = item.Price,
                     TotalAmount = item.Subtotal,
                     ReferenceNumber = $"DH{order.OrderId:D6}",
-                    UserName = order.User?.FullName,
+                    UserName = userName,
                     CustomerName = order.Customer?.Name,
                     Notes = null
                 });

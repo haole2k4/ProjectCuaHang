@@ -1,6 +1,6 @@
 @page "/admin/orders"
-@attribute [StreamRendering(true)]
-@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin, SalesStaff")]
 
 @using StoreManagementAPI.Data
 @using StoreManagementAPI.Models

@@ -1,5 +1,6 @@
 @page "/admin/promotions"
 @rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin, SalesStaff")]
 
 @using StoreManagementAPI.Data
 @using StoreManagementAPI.Models

@@ -1,5 +1,6 @@
 @page "/admin/customers"
 @rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
 
 @using StoreManagementAPI.Data
 @using StoreManagementAPI.Models

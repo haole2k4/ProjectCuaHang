@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using StoreManagementAPI.Data;
 using StoreManagementAPI.DTOs;
 using StoreManagementAPI.Models;
+using Microsoft.AspNetCore.Identity;
+using BlazorApp1.Data;
 
 namespace StoreManagementAPI.Services
 {
@@ -18,10 +20,12 @@ namespace StoreManagementAPI.Services
     public class WarehouseService : IWarehouseService
     {
         private readonly StoreDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public WarehouseService(StoreDbContext context)
+        public WarehouseService(StoreDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         public async Task<List<WarehouseDto>> GetAllWarehouses()
@@ -100,7 +104,6 @@ namespace StoreManagementAPI.Services
                     .ThenInclude(pi => pi.Product)
                 .Include(po => po.Warehouse)
                 .Include(po => po.Supplier)
-                .Include(po => po.User)
                 .Where(po => po.Status == "completed")
                 .AsQueryable();
 
@@ -114,6 +117,18 @@ namespace StoreManagementAPI.Services
                 purchaseQuery = purchaseQuery.Where(po => po.PurchaseDate <= filter.ToDate.Value);
 
             var purchaseOrders = await purchaseQuery.ToListAsync();
+
+            // Fetch users for purchase orders
+            var purchaseUserIds = purchaseOrders.Select(po => po.UserId).Distinct().ToList();
+            var purchaseUserMap = new Dictionary<string, string>();
+            foreach(var uid in purchaseUserIds)
+            {
+                if (!string.IsNullOrEmpty(uid))
+                {
+                    var user = await _userManager.FindByIdAsync(uid);
+                    if (user != null) purchaseUserMap[uid] = user.UserName ?? "Unknown";
+                }
+            }
 
             foreach (var po in purchaseOrders)
             {
@@ -135,7 +150,7 @@ namespace StoreManagementAPI.Services
                         WarehouseId = po.WarehouseId,
                         WarehouseName = po.Warehouse?.WarehouseName,
                         SupplierName = po.Supplier?.Name,
-                        Username = po.User?.Username,
+                        Username = (!string.IsNullOrEmpty(po.UserId) && purchaseUserMap.ContainsKey(po.UserId)) ? purchaseUserMap[po.UserId] : null,
                         Status = po.Status,
                         Notes = $"Nhập hàng từ {po.Supplier?.Name}"
                     });
@@ -149,7 +164,6 @@ namespace StoreManagementAPI.Services
                     .Include(o => o.OrderItems)
                         .ThenInclude(oi => oi.Product)
                     .Include(o => o.Customer)
-                    .Include(o => o.User)
                     .Where(o => o.Status != "canceled")
                     .AsQueryable();
 
@@ -160,6 +174,18 @@ namespace StoreManagementAPI.Services
                     orderQuery = orderQuery.Where(o => o.OrderDate <= filter.ToDate.Value);
 
                 var orders = await orderQuery.ToListAsync();
+
+                // Fetch users for orders
+                var orderUserIds = orders.Select(o => o.UserId).Distinct().ToList();
+                var orderUserMap = new Dictionary<string, string>();
+                foreach(var uid in orderUserIds)
+                {
+                    if (!string.IsNullOrEmpty(uid))
+                    {
+                        var user = await _userManager.FindByIdAsync(uid);
+                        if (user != null) orderUserMap[uid] = user.UserName ?? "Unknown";
+                    }
+                }
 
                 foreach (var order in orders)
                 {
@@ -189,7 +215,7 @@ namespace StoreManagementAPI.Services
                             WarehouseId = inventory?.WarehouseId,
                             WarehouseName = inventory?.Warehouse?.WarehouseName,
                             CustomerName = order.Customer?.Name,
-                            Username = order.User?.Username,
+                            Username = (!string.IsNullOrEmpty(order.UserId) && orderUserMap.ContainsKey(order.UserId)) ? orderUserMap[order.UserId] : null,
                             Status = order.Status,
                             Notes = $"Bán hàng cho {order.Customer?.Name}"
                         });

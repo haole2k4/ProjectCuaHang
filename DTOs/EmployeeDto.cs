@@ -7,7 +7,7 @@ namespace StoreManagementAPI.DTOs
         public string Phone { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string EmployeeType { get; set; } = "sales"; // sales, warehouse
-        public int? UserId { get; set; }
+        public string? UserId { get; set; }
         public string? Username { get; set; }        public string? PlaintextPassword { get; set; }        public string Status { get; set; } = "active";
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

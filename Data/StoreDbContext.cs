@@ -9,7 +9,6 @@ namespace StoreManagementAPI.Data
         {
         }
 
-        public DbSet<User> Users { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<Category> Categories { get; set; }
@@ -32,18 +31,6 @@ namespace StoreManagementAPI.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configure User entity
-            modelBuilder.Entity<User>(entity =>
-            {
-                entity.ToTable("users");
-                entity.HasKey(e => e.UserId);
-                entity.Property(e => e.Username).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Password).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.FullName).HasMaxLength(100);
-                entity.Property(e => e.Role).HasMaxLength(10).HasDefaultValue("staff");
-                entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("active");
-            });
-
             // Configure AuditLog entity
             modelBuilder.Entity<AuditLog>(entity =>
             {
@@ -53,11 +40,6 @@ namespace StoreManagementAPI.Data
                 entity.Property(e => e.EntityType).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.EntityName).HasMaxLength(255);
                 entity.Property(e => e.Username).HasMaxLength(50);
-
-                entity.HasOne(e => e.User)
-                    .WithMany()
-                    .HasForeignKey(e => e.UserId)
-                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Configure Product entity
@@ -178,11 +160,6 @@ namespace StoreManagementAPI.Data
                 entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.EmployeeType).HasMaxLength(20).HasDefaultValue("sales");
                 entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("active");
-                
-                entity.HasOne(e => e.User)
-                    .WithMany()
-                    .HasForeignKey(e => e.UserId)
-                    .OnDelete(DeleteBehavior.SetNull);
             });
         }
     }

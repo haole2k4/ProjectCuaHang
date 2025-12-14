@@ -8,6 +8,8 @@ namespace StoreManagementAPI.DTOs
         public decimal MonthExpenses { get; set; }
         public decimal MonthProfit { get; set; }
         public decimal YearRevenue { get; set; }
+        public decimal IncomeGrowth { get; set; } // Added
+        public decimal ExpenseGrowth { get; set; } // Added
         public int TodayOrders { get; set; }
         public int MonthOrders { get; set; }
         public int TotalProducts { get; set; }

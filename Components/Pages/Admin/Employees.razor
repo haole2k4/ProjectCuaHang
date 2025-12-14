@@ -1,5 +1,6 @@
 @page "/admin/employees"
 @rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
 
 @using StoreManagementAPI.DTOs
 @using StoreManagementAPI.Services

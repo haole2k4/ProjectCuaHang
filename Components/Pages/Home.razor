@@ -65,7 +65,7 @@
             @foreach (var product in featuredProducts)
             {
                 <div class="product-card-modern">
-                    <div class="product-image-wrapper" @onclick="() => ViewProduct(product.ProductId)">
+                    <div class="product-image-wrapper" @onclick="() => ViewProductDetail(product.ProductName)">
                         @if (!string.IsNullOrEmpty(product.ImageUrl))
                         {
                             <img src="@product.ImageUrl" alt="@product.ProductName" class="product-image" />
@@ -91,7 +91,7 @@
                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tag" class="text-xs" />
                             @(product.CategoryName ?? "Chưa phân loại")
                         </div>
-                        <h3 class="product-name" @onclick="() => ViewProduct(product.ProductId)">
+                        <h3 class="product-name" @onclick="() => ViewProductDetail(product.ProductName)">
                             @product.ProductName
                         </h3>
                         @if (!string.IsNullOrEmpty(product.Description))
@@ -106,7 +106,7 @@
                                     <span class="product-stock">SL: @product.StockQuantity</span>
                                 }
                             </div>
-                            <Button Color="Color.Primary" Size="Size.Small" Clicked="() => ViewProduct(product.ProductId)" Class="!bg-blue-600 !text-white hover:!bg-blue-700">
+                            <Button Color="Color.Primary" Size="Size.Small" Clicked="() => ViewProductDetail(product.ProductName)" Class="!bg-blue-600 !text-white hover:!bg-blue-700">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Eye" class="mr-1" /> Xem
                             </Button>
                         </div>
@@ -214,13 +214,9 @@
         }
     }
 
-    private void ViewProduct(int productId)
+    private void ViewProductDetail(string productName)
     {
-        var product = featuredProducts?.FirstOrDefault(p => p.ProductId == productId);
-        if (product != null && product.CategoryId.HasValue)
-        {
-            var encodedName = Uri.EscapeDataString(product.ProductName);
-            NavigationManager.NavigateTo($"/products/{encodedName}");
-        }
+        var encodedName = Uri.EscapeDataString(productName);
+        NavigationManager.NavigateTo($"/products/{encodedName}");
     }
 }
