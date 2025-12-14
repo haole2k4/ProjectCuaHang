@@ -124,7 +124,7 @@
                                     </div>
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">
-                                    <span class="text-gray-900">@order.OrderDate.ToString("MMM dd, yyyy")</span>
+                                    <span class="text-gray-900">@order.OrderDate.ToString("dd/MM/yyyy")</span>
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">
                                     @{
@@ -141,7 +141,7 @@
                                         @order.Status
                                     </span>
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4 text-right">
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <span class="font-bold text-gray-900">$@order.TotalAmount.ToString("N2")</span>
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-right">

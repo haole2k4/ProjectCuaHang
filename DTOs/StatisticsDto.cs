@@ -5,6 +5,8 @@ namespace StoreManagementAPI.DTOs
     {
         public decimal TodayRevenue { get; set; }
         public decimal MonthRevenue { get; set; }
+        public decimal MonthExpenses { get; set; }
+        public decimal MonthProfit { get; set; }
         public decimal YearRevenue { get; set; }
         public int TodayOrders { get; set; }
         public int MonthOrders { get; set; }

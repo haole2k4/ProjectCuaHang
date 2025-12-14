@@ -11,8 +11,8 @@
 <PageTitle>E-Store - Trang Chủ</PageTitle>
 
 <!-- Hero Section -->
-<div class="hero-banner">
-    <div class="hero-overlay">
+<div class="hero-banner" style="background-image: url('https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80');">
+    <div class="hero-overlay" style="background: rgba(0, 0, 0, 0.6);">
         <div class="hero-content">
             <div class="hero-badge">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Star" /> Chất Lượng Hàng Đầu
@@ -20,7 +20,7 @@
             <h1 class="hero-title">
                 Chào Mừng Đến E-Store
             </h1>
-            <p class="hero-subtitle">Khám phá hàng nghìn sản phẩm chất lượng với giá tốt nhất</p>
+            <p class="hero-subtitle text-white">Khám phá hàng nghìn sản phẩm chất lượng với giá tốt nhất</p>
             <div class="hero-actions">
                 <Button Color="Color.Primary" Size="Size.Large" To="/store" Type="ButtonType.Link">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" class="mr-2" /> Mua Sắm Ngay
@@ -160,22 +160,22 @@
 </div>
 
 <!-- Call to Action -->
-<div class="cta-section">
-    <div class="cta-content">
-        <h2 class="cta-title">Sẵn Sàng Mua Sắm?</h2>
-        <p class="cta-subtitle">Khám phá bộ sưu tập đa dạng và tìm sản phẩm hoàn hảo cho bạn</p>
-        <div class="cta-actions">
+<div class="py-16 px-4">
+    <div class="max-w-5xl mx-auto bg-white rounded-3xl shadow-2xl p-12 text-center border border-gray-100">
+        <h2 class="text-4xl font-bold text-gray-900 mb-4">Sẵn Sàng Mua Sắm?</h2>
+        <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">Khám phá bộ sưu tập đa dạng và tìm sản phẩm hoàn hảo cho bạn</p>
+        <div class="flex flex-wrap justify-center gap-4">
             <AuthorizeView>
                 <Authorized>
-                    <Button Color="Color.Light" Size="Size.Large" To="/store/orders" Type="ButtonType.Link">
+                    <Button Color="Color.Primary" Size="Size.Large" To="/store/orders" Type="ButtonType.Link" Class="!bg-blue-600 hover:!bg-blue-700 !text-white shadow-lg hover:shadow-xl transition-all px-8 py-3 rounded-xl font-bold">
                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> Đơn Hàng Của Tôi
                     </Button>
                 </Authorized>
                 <NotAuthorized>
-                    <Button Color="Color.Light" Size="Size.Large" To="/Account/Login" Type="ButtonType.Link">
+                    <Button Color="Color.Primary" Size="Size.Large" To="/Account/Login" Type="ButtonType.Link" Class="!bg-blue-600 hover:!bg-blue-700 !text-white shadow-lg hover:shadow-xl transition-all px-8 py-3 rounded-xl font-bold">
                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignInAlt" class="mr-2" /> Đăng Nhập
                     </Button>
-                    <Button Color="Color.Secondary" Size="Size.Large" To="/Account/Register" Type="ButtonType.Link">
+                    <Button Color="Color.Light" Size="Size.Large" To="/Account/Register" Type="ButtonType.Link" Class="!bg-white !text-gray-700 border-2 !border-gray-200 hover:!bg-gray-50 hover:!border-gray-300 shadow-md hover:shadow-lg transition-all px-8 py-3 rounded-xl font-bold">
                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.UserPlus" class="mr-2" /> Đăng Ký
                     </Button>
                 </NotAuthorized>

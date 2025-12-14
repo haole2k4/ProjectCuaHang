@@ -33,6 +33,7 @@ namespace StoreManagementAPI.Services
             // Get all orders with related data
             var allOrders = await _context.Orders
                 .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
                 .Include(o => o.Payments)
                 .Where(o => o.Status != "cancelled")
                 .ToListAsync();
@@ -44,6 +45,10 @@ namespace StoreManagementAPI.Services
             // Month statistics
             var monthOrders = allOrders.Where(o => o.OrderDate >= monthStart).ToList();
             var monthRevenue = monthOrders.Sum(o => o.TotalAmount);
+            var monthExpenses = monthOrders
+                .SelectMany(o => o.OrderItems)
+                .Sum(oi => (oi.Product?.CostPrice ?? 0) * oi.Quantity);
+            var monthProfit = monthRevenue - monthExpenses;
 
             // Year statistics
             var yearOrders = allOrders.Where(o => o.OrderDate >= yearStart).ToList();
@@ -126,6 +131,8 @@ namespace StoreManagementAPI.Services
             {
                 TodayRevenue = todayRevenue,
                 MonthRevenue = monthRevenue,
+                MonthExpenses = monthExpenses,
+                MonthProfit = monthProfit,
                 YearRevenue = yearRevenue,
                 TodayOrders = todayOrders.Count,
                 MonthOrders = monthOrders.Count,

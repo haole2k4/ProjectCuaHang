@@ -1,5 +1,6 @@
 @page "/store/categories"
 @layout StoreLayout
+@rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
 @using StoreManagementAPI.Data
@@ -11,20 +12,40 @@
 
 <PageTitle>Categories</PageTitle>
 
-<Heading Size="HeadingSize.Is2" class="mb-6">
-    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="mr-2" /> Categories
-</Heading>
+<div class="mb-8">
+    <Heading Size="HeadingSize.Is2" class="mb-2 text-gray-900">
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="mr-2 text-blue-600" /> Categories
+    </Heading>
+    <p class="text-gray-600">Browse products by category</p>
+
+    @if (categories != null && categories.Any())
+    {
+        <div class="mt-4 flex gap-4">
+            <div class="bg-blue-50 px-4 py-2 rounded-lg">
+                <span class="text-blue-600 font-bold text-lg">@categories.Count</span>
+                <span class="text-gray-600 text-sm ml-1">Categories</span>
+            </div>
+            <div class="bg-green-50 px-4 py-2 rounded-lg">
+                <span class="text-green-600 font-bold text-lg">@categories.Sum(c => c.Products.Count(p => p.Status == "active"))</span>
+                <span class="text-gray-600 text-sm ml-1">Total Products</span>
+            </div>
+        </div>
+    }
+</div>
 
 @if (isLoading)
 {
-    <div class="loading-spinner">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    <div class="flex flex-col items-center justify-center py-20">
+        <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mb-4"></div>
+        <p class="text-gray-600 font-medium">Loading categories...</p>
     </div>
 }
 else if (categories == null || !categories.Any())
 {
-    <div class="empty-state bg-white rounded-lg shadow-lg p-12">
-        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="text-6xl text-gray-400 mb-4" />
+    <div class="empty-state bg-white rounded-xl shadow-lg p-12 text-center">
+        <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="text-4xl text-gray-400" />
+        </div>
         <Heading Size="HeadingSize.Is4" class="mb-2">No categories found</Heading>
         <Paragraph TextColor="TextColor.Muted">No product categories are available at the moment.</Paragraph>
     </div>
@@ -34,20 +55,27 @@ else
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @foreach (var category in categories)
         {
-            <Card class="category-card card-shadow hover:card-shadow-lg transition-all" @onclick="() => NavigateToCategory(category.CategoryId)">
-                <CardBody class="text-center py-10">
-                    <div class="text-primary text-5xl mb-4">
-                        <Icon Name="@GetCategoryIcon(category.CategoryName)" />
+            <div class="group">
+                <Card class="category-card card-shadow hover:card-shadow-lg transition-all cursor-pointer overflow-hidden" @onclick="() => NavigateToCategory(category.CategoryId)">
+                    <CardBody class="text-center py-10">
+                        <div class="text-primary text-5xl mb-4">
+                            <Icon Name="@GetCategoryIcon(category.CategoryName)" />
+                        </div>
+                        <CardTitle Size="5" class="font-semibold mb-3">@category.CategoryName</CardTitle>
+                        <div class="flex items-center justify-center gap-2">
+                            <Badge Color="Color.Primary" Pill class="px-3 py-2 text-sm font-medium">
+                                @category.Products.Count(p => p.Status == "active") Products
+                            </Badge>
+                        </div>
+                    </CardBody>
+                    <div class="bg-blue-600 text-white text-center py-3 group-hover:bg-blue-700 transition-all">
+                        <div class="flex items-center justify-center gap-2 font-medium">
+                            <span>Browse Products</span>
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowRight" />
+                        </div>
                     </div>
-                    <CardTitle Size="5" class="font-semibold mb-2">@category.CategoryName</CardTitle>
-                    <Paragraph TextColor="TextColor.Muted">
-                        @category.Products.Count(p => p.Status == "active") Products
-                    </Paragraph>
-                </CardBody>
-                <CardFooter Background="Background.Primary" TextColor="TextColor.White" class="text-center cursor-pointer hover:bg-blue-600 transition">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowRight" class="mr-2" /> Browse
-                </CardFooter>
-            </Card>
+                </Card>
+            </div>
         }
     </div>
 }
@@ -59,17 +87,28 @@ else
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
-        categories = await DbContext.Categories
-            .Include(c => c.Products)
-            .Where(c => c.Status == "active")
-            .OrderBy(c => c.CategoryName)
-            .ToListAsync();
-        isLoading = false;
+        try
+        {
+            categories = await DbContext.Categories
+                .Include(c => c.Products)
+                .Where(c => c.Status == "active")
+                .OrderBy(c => c.CategoryName)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading categories: {ex.Message}");
+            categories = new List<Category>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     private void NavigateToCategory(int categoryId)
     {
-        NavigationManager.NavigateTo($"/store?category={categoryId}");
+        NavigationManager.NavigateTo($"/store/category/{categoryId}");
     }
 
     private object GetCategoryIcon(string categoryName)
@@ -87,6 +126,8 @@ else
             var n when n.Contains("toy") || n.Contains("game") => "fa-gamepad",
             var n when n.Contains("music") => "fa-music",
             var n when n.Contains("phone") || n.Contains("mobile") => "fa-mobile-alt",
+            var n when n.Contains("drink") => "fa-glass-martini",
+            var n when n.Contains("figure") => "fa-user-astronaut",
             _ => "fa-th-large"
         };
     }
