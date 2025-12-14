@@ -146,6 +146,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 // Register Statistics service for admin dashboard
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();

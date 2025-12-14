@@ -3,11 +3,14 @@
 
 @using StoreManagementAPI.Data
 @using StoreManagementAPI.Models
+@using StoreManagementAPI.DTOs
+@using StoreManagementAPI.Services
 @using Microsoft.EntityFrameworkCore
 @using Blazorise
 
 @inject StoreDbContext DbContext
 @inject NavigationManager NavigationManager
+@inject IOrderService OrderService
 
 <PageTitle>Orders - Admin</PageTitle>
 
@@ -84,6 +87,106 @@
         </CardBody>
     </Card>
 </div>
+
+<!-- Advanced Search Panel -->
+<Card class="!bg-white shadow-md border border-gray-200 rounded-xl overflow-hidden mb-6">
+    <CardBody>
+        <div class="flex items-center justify-between mb-4">
+            <Heading Size="HeadingSize.Is5" class="text-gray-900 font-bold mb-0">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="mr-2" />
+                Search & Filter Orders
+            </Heading>
+            <Button Color="Color.Light" Size="Size.Small" Clicked="ClearFilters" class="!border !border-gray-300">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Redo" class="mr-1" /> Clear
+            </Button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Search Term -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Order ID / Customer</label>
+                <TextEdit Text="@searchCriteria.SearchTerm"
+                          TextChanged="@OnSearchTextChanged"
+                          Placeholder="Search..."
+                          class="w-full !border-gray-300" />
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <Select TValue="string?"
+                        SelectedValue="searchCriteria.Status"
+                        SelectedValueChanged="@OnStatusChanged"
+                        class="w-full !border-gray-300">
+                    <SelectItem Value="@((string?)null)">All Status</SelectItem>
+                    <SelectItem Value="@("pending")">Pending</SelectItem>
+                    <SelectItem Value="@("completed")">Completed</SelectItem>
+                    <SelectItem Value="@("paid")">Paid</SelectItem>
+                    <SelectItem Value="@("cancelled")">Cancelled</SelectItem>
+                </Select>
+            </div>
+
+            <!-- Amount Range -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Amount Range</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <NumericEdit TValue="decimal?"
+                                 Value="searchCriteria.MinAmount"
+                                 ValueChanged="@OnMinAmountChanged"
+                                 Placeholder="Min"
+                                 class="w-full !border-gray-300"
+                                 Decimals="0" />
+                    <NumericEdit TValue="decimal?"
+                                 Value="searchCriteria.MaxAmount"
+                                 ValueChanged="@OnMaxAmountChanged"
+                                 Placeholder="Max"
+                                 class="w-full !border-gray-300"
+                                 Decimals="0" />
+                </div>
+                @if (!string.IsNullOrEmpty(amountErrorMessage))
+                {
+                    <div class="mt-2 text-red-600 text-sm font-semibold">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationTriangle" class="mr-1" />
+                        @amountErrorMessage
+                    </div>
+                }
+            </div>
+
+            <!-- Date Range -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Date Range</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <DateEdit TValue="DateTime?"
+                              Date="searchCriteria.StartDate"
+                              DateChanged="@OnStartDateChanged"
+                              Placeholder="Start"
+                              class="w-full !border-gray-300" />
+                    <DateEdit TValue="DateTime?"
+                              Date="searchCriteria.EndDate"
+                              DateChanged="@OnEndDateChanged"
+                              Placeholder="End"
+                              class="w-full !border-gray-300" />
+                </div>
+                @if (!string.IsNullOrEmpty(dateErrorMessage))
+                {
+                    <div class="mt-2 text-red-600 text-sm font-semibold">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationTriangle" class="mr-1" />
+                        @dateErrorMessage
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (searchResult != null)
+        {
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <span class="text-gray-600">
+                    Found <span class="font-bold text-blue-600">@searchResult.TotalCount</span> orders
+                </span>
+            </div>
+        }
+    </CardBody>
+</Card>
 
 <!-- Orders Table -->
 <Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
@@ -474,15 +577,28 @@
     private int confirmOrderId;
     private bool showDetailsModal;
     private Order? selectedOrder;
+    private string? amountErrorMessage;
+    private string? dateErrorMessage;
 
     // Pagination
     private int currentPage = 1;
     private int pageSize = 10;
     private int totalItems = 0;
 
+    // Search & Filter
+    private OrderSearchDto searchCriteria = new OrderSearchDto
+    {
+        PageNumber = 1,
+        PageSize = 10,
+        SortBy = "OrderDate",
+        SortDirection = "desc"
+    };
+    private OrderSearchResultDto? searchResult;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadOrders();
+        await SearchOrders();
     }
 
     private async Task LoadOrders()
@@ -496,6 +612,32 @@
         UpdatePagedData();
     }
 
+    private async Task SearchOrders()
+    {
+        try
+        {
+            searchCriteria.PageNumber = currentPage;
+            searchCriteria.PageSize = pageSize;
+
+            searchResult = await OrderService.SearchOrdersAdvancedAsync(searchCriteria);
+
+            // Convert OrderResponseDto to Order for compatibility
+            allOrders = await DbContext.Orders
+                .Include(o => o.Customer)
+                .Where(o => searchResult.Orders.Select(x => x.OrderId).Contains(o.OrderId))
+                .ToListAsync();
+
+            orders = allOrders;
+            totalItems = searchResult.TotalCount;
+
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"Error searching orders: {ex.Message}", "bg-red-600", "fas fa-times");
+        }
+    }
+
     private void UpdatePagedData()
     {
         if (allOrders != null)
@@ -507,10 +649,108 @@
         }
     }
 
-    private void HandlePageChanged(int page)
+    private async Task HandlePageChanged(int page)
     {
         currentPage = page;
-        UpdatePagedData();
+        await SearchOrders();
+    }
+
+    private async Task ClearFilters()
+    {
+        searchCriteria = new OrderSearchDto
+        {
+            PageNumber = 1,
+            PageSize = pageSize,
+            SortBy = "OrderDate",
+            SortDirection = "desc"
+        };
+        amountErrorMessage = null;
+        dateErrorMessage = null;
+        currentPage = 1;
+        await SearchOrders();
+    }
+
+    // Auto-search event handlers
+    private async Task OnSearchTextChanged(string value)
+    {
+        searchCriteria.SearchTerm = value;
+        currentPage = 1;
+        await SearchOrders();
+    }
+
+    private async Task OnStatusChanged(string? value)
+    {
+        searchCriteria.Status = value;
+        currentPage = 1;
+        await SearchOrders();
+    }
+
+    private async Task OnMinAmountChanged(decimal? value)
+    {
+        searchCriteria.MinAmount = value;
+        
+        // Validate: MinAmount should not be greater than MaxAmount
+        if (value.HasValue && searchCriteria.MaxAmount.HasValue && value.Value > searchCriteria.MaxAmount.Value)
+        {
+            amountErrorMessage = $"Min amount ({value:N0}) cannot be greater than max amount ({searchCriteria.MaxAmount:N0})";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        
+        amountErrorMessage = null;
+        currentPage = 1;
+        await SearchOrders();
+    }
+
+    private async Task OnMaxAmountChanged(decimal? value)
+    {
+        searchCriteria.MaxAmount = value;
+        
+        // Validate: MaxAmount should not be less than MinAmount
+        if (value.HasValue && searchCriteria.MinAmount.HasValue && value.Value < searchCriteria.MinAmount.Value)
+        {
+            amountErrorMessage = $"Max amount ({value:N0}) cannot be less than min amount ({searchCriteria.MinAmount:N0})";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        
+        amountErrorMessage = null;
+        currentPage = 1;
+        await SearchOrders();
+    }
+
+    private async Task OnStartDateChanged(DateTime? value)
+    {
+        searchCriteria.StartDate = value;
+        
+        // Validate: StartDate should not be after EndDate
+        if (value.HasValue && searchCriteria.EndDate.HasValue && value.Value > searchCriteria.EndDate.Value)
+        {
+            dateErrorMessage = $"Start date cannot be after end date";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        
+        dateErrorMessage = null;
+        currentPage = 1;
+        await SearchOrders();
+    }
+
+    private async Task OnEndDateChanged(DateTime? value)
+    {
+        searchCriteria.EndDate = value;
+        
+        // Validate: EndDate should not be before StartDate
+        if (value.HasValue && searchCriteria.StartDate.HasValue && value.Value < searchCriteria.StartDate.Value)
+        {
+            dateErrorMessage = $"End date cannot be before start date";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        
+        dateErrorMessage = null;
+        currentPage = 1;
+        await SearchOrders();
     }
 
     private async Task ViewOrder(int orderId)

@@ -12,6 +12,7 @@ namespace StoreManagementAPI.Services
         Task<bool> UpdatePromotionStatusAsync(int promoId);
         Task UpdateAllPromotionStatusesAsync();
         Task<bool> IncrementUsageCountAsync(int promoId);
+        Task<PromotionSearchResultDto> SearchPromotionsAdvancedAsync(PromotionSearchDto searchDto);
         Task<Promotion> CreatePromotionAsync(CreatePromotionDto dto);
         Task<Promotion> UpdatePromotionAsync(int promoId, CreatePromotionDto dto);
         Task<bool> DeletePromotionAsync(int promoId);
@@ -204,6 +205,135 @@ namespace StoreManagementAPI.Services
             promotion.Status = "deleted";
             await _promotionRepository.UpdateAsync(promotion);
             return true;
+        }
+
+        public async Task<PromotionSearchResultDto> SearchPromotionsAdvancedAsync(PromotionSearchDto searchDto)
+        {
+            // Validate and sanitize pagination parameters
+            var pageNumber = searchDto.PageNumber < 1 ? 1 : searchDto.PageNumber;
+            var pageSize = searchDto.PageSize < 1 ? 20 : searchDto.PageSize > 100 ? 100 : searchDto.PageSize;
+
+            // Validate and swap date range if needed
+            if (searchDto.StartDate.HasValue && searchDto.EndDate.HasValue && searchDto.StartDate.Value > searchDto.EndDate.Value)
+            {
+                var temp = searchDto.StartDate;
+                searchDto.StartDate = searchDto.EndDate;
+                searchDto.EndDate = temp;
+            }
+
+            // Start with base query
+            var query = _context.Promotions
+                .Include(p => p.PromotionProducts)
+                    .ThenInclude(pp => pp.Product)
+                .AsQueryable();
+
+            // Apply filters
+            // 1. Filter by search term (promo code or description)
+            if (!string.IsNullOrWhiteSpace(searchDto.SearchTerm))
+            {
+                var searchTerm = searchDto.SearchTerm.ToLower().Trim();
+                query = query.Where(p =>
+                    p.PromoCode.ToLower().Contains(searchTerm) ||
+                    (p.Description != null && p.Description.ToLower().Contains(searchTerm)));
+            }
+
+            // 2. Filter by status (only if Status is not null or empty)
+            if (!string.IsNullOrWhiteSpace(searchDto.Status))
+            {
+                var status = searchDto.Status.ToLower().Trim();
+                query = query.Where(p => p.Status != null && p.Status.ToLower() == status);
+            }
+
+            // 3. Filter by discount type
+            if (!string.IsNullOrWhiteSpace(searchDto.DiscountType))
+            {
+                var discountType = searchDto.DiscountType.ToLower().Trim();
+                query = query.Where(p => p.DiscountType != null && p.DiscountType.ToLower() == discountType);
+            }
+
+            // 4. Filter by apply type
+            if (!string.IsNullOrWhiteSpace(searchDto.ApplyType))
+            {
+                var applyType = searchDto.ApplyType.ToLower().Trim();
+                query = query.Where(p => p.ApplyType != null && p.ApplyType.ToLower() == applyType);
+            }
+
+            // 5. Filter by date range
+            if (searchDto.StartDate.HasValue)
+            {
+                query = query.Where(p => p.EndDate >= searchDto.StartDate.Value);
+            }
+
+            if (searchDto.EndDate.HasValue)
+            {
+                query = query.Where(p => p.StartDate <= searchDto.EndDate.Value);
+            }
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply sorting
+            var sortBy = searchDto.SortBy?.ToLower() ?? "startdate";
+            var sortDirection = searchDto.SortDirection?.ToLower() ?? "desc";
+
+            query = sortBy switch
+            {
+                "promocode" => sortDirection == "desc"
+                    ? query.OrderByDescending(p => p.PromoCode)
+                    : query.OrderBy(p => p.PromoCode),
+                "discountvalue" => sortDirection == "desc"
+                    ? query.OrderByDescending(p => p.DiscountValue)
+                    : query.OrderBy(p => p.DiscountValue),
+                "enddate" => sortDirection == "desc"
+                    ? query.OrderByDescending(p => p.EndDate)
+                    : query.OrderBy(p => p.EndDate),
+                _ => sortDirection == "desc"
+                    ? query.OrderByDescending(p => p.StartDate)
+                    : query.OrderBy(p => p.StartDate)
+            };
+
+            // Apply pagination
+            var promotions = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Map to DTOs
+            var promotionDtos = promotions.Select(p => new PromotionDto
+            {
+                PromoId = p.PromoId,
+                PromoCode = p.PromoCode,
+                Description = p.Description,
+                DiscountType = p.DiscountType,
+                DiscountValue = p.DiscountValue,
+                StartDate = p.StartDate,
+                EndDate = p.EndDate,
+                MinOrderAmount = p.MinOrderAmount,
+                UsageLimit = p.UsageLimit,
+                UsedCount = p.UsedCount,
+                Status = p.Status,
+                ApplyType = p.ApplyType,
+                Products = p.PromotionProducts.Select(pp => new ProductSimpleDto
+                {
+                    ProductId = pp.ProductId,
+                    ProductName = pp.Product?.ProductName ?? "Unknown",
+                    Price = pp.Product?.Price ?? 0
+                }).ToList()
+            }).ToList();
+
+            // Calculate pagination metadata
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            return new PromotionSearchResultDto
+            {
+                Promotions = promotionDtos,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                HasPreviousPage = pageNumber > 1,
+                HasNextPage = pageNumber < totalPages
+            };
         }
     }
 }
