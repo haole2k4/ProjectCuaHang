@@ -1,63 +1,102 @@
 ﻿@page "/Account/Manage/Passkeys"
+@layout BlazorApp1.Components.Layout.StoreLayout
 
 @using BlazorApp1.Data
 @using Microsoft.AspNetCore.Identity
 @using System.ComponentModel.DataAnnotations
 @using System.Buffers.Text
+@using Blazorise
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Manage your passkeys</PageTitle>
+<PageTitle>Manage Passkeys</PageTitle>
 
-<h3>Manage your passkeys</h3>
+<div class="max-w-4xl mx-auto py-8 px-4">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Fingerprint" class="text-blue-600" />
+            Manage Passkeys
+        </h2>
+        <p class="text-gray-600 mt-1">Secure your account with passkeys for passwordless sign-in.</p>
+    </div>
 
-<StatusMessage />
+    <StatusMessage />
 
-@if (currentPasskeys is { Count: > 0 })
-{
-    <table class="table">
-        <tbody>
-            @foreach (var passkey in currentPasskeys)
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6">
+            @if (currentPasskeys is { Count: > 0 })
             {
-                <tr>
-                    <td>@(passkey.Name ?? "Unnamed passkey")</td>
-                    <td>
-                        @{
-                            var credentialId = Base64Url.EncodeToString(passkey.CredentialId);
-                        }
-                        <form @formname="@($"update-passkey-{credentialId}")" @onsubmit="UpdatePasskey" method="post">
-                            <AntiforgeryToken />
-                            <div>
-                                <input type="hidden" name="CredentialId" value="@credentialId" />
-                                <button type="submit" name="Action" value="rename" class="btn btn-primary" title="Rename this passkey">Rename</button>
-                                <button type="submit" name="Action" value="delete" class="btn btn-danger" title="Remove this passkey from your account">Delete</button>
+                <div class="space-y-4">
+                    @foreach (var passkey in currentPasskeys)
+                    {
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Key" />
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">@(passkey.Name ?? "Unnamed passkey")</h4>
+                                    <span class="text-xs text-gray-500">Passkey ID: @(Base64Url.EncodeToString(passkey.CredentialId).Substring(0, 8))...</span>
+                                </div>
                             </div>
-                        </form>
-                    </td>
-                </tr>
+                            
+                            @{
+                                var credentialId = Base64Url.EncodeToString(passkey.CredentialId);
+                            }
+                            <form @formname="@($"update-passkey-{credentialId}")" @onsubmit="UpdatePasskey" method="post" class="flex gap-2">
+                                <AntiforgeryToken />
+                                <input type="hidden" name="CredentialId" value="@credentialId" />
+                                <button type="submit" name="Action" value="rename" class="text-blue-600 hover:text-blue-700 font-medium text-sm px-3 py-1.5 hover:bg-blue-50 rounded transition border border-transparent hover:border-blue-200">
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" class="mr-1" /> Rename
+                                </button>
+                                <button type="submit" name="Action" value="delete" class="text-red-600 hover:text-red-700 font-medium text-sm px-3 py-1.5 hover:bg-red-50 rounded transition border border-transparent hover:border-red-200">
+                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Trash" class="mr-1" /> Delete
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
             }
-        </tbody>
-    </table>
-}
-else
-{
-    <p>No passkeys are registered.</p>
-}
-
-<form @formname="add-passkey" @onsubmit="AddPasskey" method="post">
-    <AntiforgeryToken />
-    @if (currentPasskeys is { Count: >= MaxPasskeyCount })
-    {
-        <p class="text-danger">You have reached the maximum number of allowed passkeys. Please delete one before adding a new one.</p>
-    }
-    else
-    {
-        <PasskeySubmit Operation="PasskeyOperation.Create" Name="Input" class="btn btn-primary">Add a new passkey</PasskeySubmit>
-    }
-
-</form>
+            else
+            {
+                <div class="text-center py-12">
+                    <div class="w-16 h-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Fingerprint" class="text-3xl" />
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900">No passkeys configured</h3>
+                    <p class="text-gray-500 mt-1">Add a passkey to sign in without a password.</p>
+                </div>
+            }
+        </div>
+        
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <form @formname="add-passkey" @onsubmit="AddPasskey" method="post">
+                <AntiforgeryToken />
+                @if (currentPasskeys is { Count: >= MaxPasskeyCount })
+                {
+                    <div class="text-red-600 text-sm flex items-center gap-2">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationCircle" />
+                        You have reached the maximum number of allowed passkeys.
+                    </div>
+                }
+                else
+                {
+                    <PasskeySubmit Operation="PasskeyOperation.Create" Name="Input" class="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition shadow-sm">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" /> Add New Passkey
+                    </PasskeySubmit>
+                }
+            </form>
+        </div>
+    </div>
+    
+    <div class="mt-6">
+        <a href="/store/profile" class="inline-flex items-center text-gray-600 hover:text-blue-600 font-medium transition no-underline">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowLeft" class="mr-2" /> Back to Profile
+        </a>
+    </div>
+</div>
 
 @code {
     private const int MaxPasskeyCount = 100;

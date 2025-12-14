@@ -135,6 +135,7 @@ else
                 <Table class="mb-0 w-full">
                     <TableHeader>
                         <TableRow class="bg-white border-b-2 border-gray-200">
+                            <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">ID</TableHeaderCell>
                             <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Product</TableHeaderCell>
                             <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Warehouse</TableHeaderCell>
                             <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Current Stock</TableHeaderCell>
@@ -148,6 +149,9 @@ else
                             @foreach (var item in lowStockItems)
                             {
                                 <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
+                                    <TableRowCell class="px-6 py-4 text-center">
+                                        <span class="text-gray-600 font-medium">#@item.ProductId</span>
+                                    </TableRowCell>
                                     <TableRowCell class="px-6 py-4 text-center">
                                         <div class="flex items-center gap-3">
                                             <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -176,7 +180,7 @@ else
                                     <TableRowCell class="px-6 py-4 text-center">
                                         <span class="font-bold text-gray-900">$@item.Price.ToString("N2")</span>
                                     </TableRowCell>
-                                    <TableRowCell class="px-6 py-4 text-right">
+                                    <TableRowCell class="px-6 py-4 text-center">
                                         <Button Color="Color.Primary" Size="Size.Small" Clicked="() => OpenRestockModal(item)" class="!bg-blue-600 hover:!bg-blue-700 !text-white shadow-sm">
                                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-1" /> Restock
                                         </Button>
@@ -187,7 +191,7 @@ else
                         else
                         {
                             <TableRow class="bg-white">
-                                <TableRowCell ColumnSpan="5" class="text-center py-12">
+                                <TableRowCell ColumnSpan="6" class="text-center py-12">
                                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="text-green-500 text-4xl mb-3" />
                                     <p class="text-gray-600 font-medium">All products are well stocked!</p>
                                 </TableRowCell>

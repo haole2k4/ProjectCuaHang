@@ -47,8 +47,34 @@ Dự án được xây dựng trên nền tảng .NET và các thư viện hiệ
 
 ### 3. Tài khoản mặc định (Seed Data)
 Nếu database được khởi tạo mới, hệ thống sẽ tạo một tài khoản Admin mặc định:
-* **Username:** `admin`
-* **Password:** `admin123`
+* **Email:** `admin@estore.com`
+* **Password:** `Admin123!`
+
+## 📖 Hướng dẫn xem Database (SQLite)
+
+Dự án sử dụng 2 file database SQLite nằm trong thư mục gốc của dự án:
+1.  **`store.db`**: Chứa dữ liệu nghiệp vụ (Sản phẩm, Đơn hàng, Khách hàng, v.v.).
+2.  **`app.db`**: Chứa dữ liệu Identity (User, Role, Claim, Token).
+
+Để xem và quản lý dữ liệu trong các file này, bạn có thể sử dụng các công cụ sau:
+
+### 1. DB Browser for SQLite (Khuyên dùng)
+Đây là công cụ miễn phí, nhẹ và dễ sử dụng.
+*   **Tải về:** [https://sqlitebrowser.org/dl/](https://sqlitebrowser.org/dl/)
+*   **Cách dùng:**
+    1.  Mở phần mềm **DB Browser for SQLite**.
+    2.  Chọn **Open Database**.
+    3.  Trỏ đến file `store.db` hoặc `app.db` trong thư mục dự án.
+    4.  Chuyển sang tab **Browse Data** để xem dữ liệu các bảng.
+
+### 2. DBeaver Community
+Công cụ quản lý database đa năng, hỗ trợ nhiều loại DB bao gồm SQLite.
+*   **Tải về:** [https://dbeaver.io/download/](https://dbeaver.io/download/)
+*   **Cách dùng:** Tạo kết nối mới -> Chọn SQLite -> Trỏ đến file `.db`.
+
+### 3. Extension trong Visual Studio / VS Code
+*   **Visual Studio:** Cài đặt extension **SQLite/SQL Server Compact Toolbox**.
+*   **VS Code:** Cài đặt extension **SQLite** (alexcvzz) hoặc **SQLite Viewer**.
 
 ## 🔗 Tổng hợp các Route (Đường dẫn)
 
@@ -69,8 +95,8 @@ Dưới đây là danh sách các trang và đường dẫn truy cập trong h�
 ### 🔐 Authentication (Tài khoản)
 | Chức năng | Route | Mô tả |
 | :--- | :--- | :--- |
-| **Đăng nhập** | `/login` hoặc `/Account/Login` | Đăng nhập hệ thống (Local hoặc External). |
-| **Đăng xuất** | `/logout` | Đăng xuất khỏi hệ thống. |
+| **Đăng nhập** | `/Account/Login` | Đăng nhập hệ thống. |
+| **Đăng xuất** | `/Account/Logout` | Đăng xuất khỏi hệ thống. |
 | **Đăng ký** | `/Account/Register` | Tạo tài khoản mới. |
 | **Quên mật khẩu** | `/Account/ForgotPassword` | Yêu cầu đặt lại mật khẩu. |
 | **Xác thực Email** | `/Account/ConfirmEmail` | Link xác thực email. |

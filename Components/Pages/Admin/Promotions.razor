@@ -92,6 +92,7 @@
             <Table class="mb-0 w-full">
                 <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
+                        <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">ID</TableHeaderCell>
                         <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Code</TableHeaderCell>
                         <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Type</TableHeaderCell>
                         <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Discount</TableHeaderCell>
@@ -108,6 +109,9 @@
                         @foreach (var promo in promotions)
                         {
                             <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
+                                <TableRowCell class="px-4 py-3 text-center">
+                                    <span class="text-gray-600 font-medium">#@promo.PromoId</span>
+                                </TableRowCell>
                                 <TableRowCell class="px-4 py-3 text-center">
                                     <div class="flex items-center gap-2 justify-center">
                                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tag" class="text-purple-500" />
@@ -182,7 +186,7 @@
                     else
                     {
                         <TableRow class="bg-white">
-                            <TableRowCell ColumnSpan="8" class="text-center py-12">
+                            <TableRowCell ColumnSpan="9" class="text-center py-12">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Percent" class="text-gray-400 text-4xl mb-3" />
                                 <p class="text-gray-600 font-medium">No promotions found</p>
                             </TableRowCell>

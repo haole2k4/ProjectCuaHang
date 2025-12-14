@@ -34,6 +34,7 @@
             <Table class="mb-0 w-full">
                 <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">ID</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Image</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Product</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Category</TableHeaderCell>
@@ -50,7 +51,10 @@
                         {
                             <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
                                 <TableRowCell class="px-6 py-4 text-center">
-                                    <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm">
+                                    <span class="text-gray-600 font-medium">#@product.ProductId</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden shadow-sm mx-auto">
                                         @if (!string.IsNullOrEmpty(product.ImageUrl))
                                         {
                                             <img src="@product.ImageUrl" alt="@product.ProductName" class="w-full h-full object-cover" />
@@ -90,8 +94,8 @@
                                         </span>
                                     }
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4 text-right">
-                                    <Buttons class="gap-2 justify-end">
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <Buttons class="gap-2 justify-center">
                                         <Button Color="Color.Light" Size="Size.Small" Clicked="() => OpenEditModal(product)" class="!border-2 !border-gray-300 hover:!bg-gray-200 !text-gray-900 shadow-sm">
                                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
                                         </Button>

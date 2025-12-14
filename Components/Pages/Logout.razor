@@ -3,9 +3,11 @@
 
 @using Microsoft.AspNetCore.Identity
 @using BlazorApp1.Data
+@using Microsoft.AspNetCore.Components.Authorization
 
 @inject NavigationManager NavigationManager
 @inject SignInManager<ApplicationUser> SignInManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Logout</PageTitle>
 
@@ -32,6 +34,11 @@
 @code {
     protected override async Task OnInitializedAsync()
     {
-        await SignInManager.SignOutAsync();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            // Redirect to server endpoint to clear cookies reliably
+            NavigationManager.NavigateTo("/api/auth/logout", forceLoad: true);
+        }
     }
 }
