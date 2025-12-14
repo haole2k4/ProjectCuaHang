@@ -78,6 +78,7 @@
             <Table class="mb-0 w-full">
                 <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">ID</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Category Name</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Products Count</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
@@ -90,6 +91,9 @@
                         @foreach (var category in categories)
                         {
                             <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <span class="text-gray-600 font-medium">#@category.CategoryId</span>
+                                </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">
                                     <div class="flex items-center gap-3">
                                         <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shadow-sm">
@@ -116,8 +120,8 @@
                                         </span>
                                     }
                                 </TableRowCell>
-                                <TableRowCell class="px-6 py-4 text-right">
-                                    <Buttons class="gap-2 justify-end">
+                                <TableRowCell class="px-6 py-4 text-center">
+                                    <Buttons class="gap-2 justify-center">
                                         <Button Color="Color.Light" Size="Size.Small" Clicked="() => OpenEditModal(category)" class="!border-2 !border-gray-300 hover:!bg-gray-200 !text-gray-900 shadow-sm">
                                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Edit" />
                                         </Button>
@@ -132,7 +136,7 @@
                     else
                     {
                         <TableRow class="bg-white">
-                            <TableRowCell ColumnSpan="4" class="text-center py-12">
+                            <TableRowCell ColumnSpan="5" class="text-center py-12">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Tags" class="text-gray-400 text-4xl mb-3" />
                                 <p class="text-gray-600 font-medium">No categories found</p>
                             </TableRowCell>

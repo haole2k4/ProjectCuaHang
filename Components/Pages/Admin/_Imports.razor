@@ -1,4 +1,6 @@
 @using Blazorise
 @using Blazorise.Components
 @using BlazorApp1.Components.Shared
+@using Microsoft.AspNetCore.Authorization
 @layout BlazorApp1.Components.Layout.AdminLayout
+@attribute [Authorize(Roles = "Admin")]

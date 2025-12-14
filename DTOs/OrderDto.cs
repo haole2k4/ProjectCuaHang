@@ -52,4 +52,74 @@ namespace StoreManagementAPI.DTOs
         public decimal Amount { get; set; }
         public string PaymentMethod { get; set; } = "cash";
     }
+
+    /// <summary>
+    /// DTO for advanced order search with multiple criteria
+    /// </summary>
+    public class OrderSearchDto
+    {
+        /// <summary>
+        /// Search by order ID or customer name
+        /// </summary>
+        public string? SearchTerm { get; set; }
+
+        /// <summary>
+        /// Filter by status (pending, completed, cancelled, etc.)
+        /// </summary>
+        public string? Status { get; set; }
+
+        /// <summary>
+        /// Minimum total amount filter
+        /// </summary>
+        public decimal? MinAmount { get; set; }
+
+        /// <summary>
+        /// Maximum total amount filter
+        /// </summary>
+        public decimal? MaxAmount { get; set; }
+
+        /// <summary>
+        /// Start date filter
+        /// </summary>
+        public DateTime? StartDate { get; set; }
+
+        /// <summary>
+        /// End date filter
+        /// </summary>
+        public DateTime? EndDate { get; set; }
+
+        /// <summary>
+        /// Page number for pagination (default: 1)
+        /// </summary>
+        public int PageNumber { get; set; } = 1;
+
+        /// <summary>
+        /// Page size for pagination (default: 20, max: 100)
+        /// </summary>
+        public int PageSize { get; set; } = 20;
+
+        /// <summary>
+        /// Sort by field (OrderDate, TotalAmount, Status)
+        /// </summary>
+        public string? SortBy { get; set; } = "OrderDate";
+
+        /// <summary>
+        /// Sort direction (asc, desc)
+        /// </summary>
+        public string? SortDirection { get; set; } = "desc";
+    }
+
+    /// <summary>
+    /// Response for paginated order search
+    /// </summary>
+    public class OrderSearchResultDto
+    {
+        public IEnumerable<OrderResponseDto> Orders { get; set; } = new List<OrderResponseDto>();
+        public int TotalCount { get; set; }
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages { get; set; }
+        public bool HasPreviousPage { get; set; }
+        public bool HasNextPage { get; set; }
+    }
 }

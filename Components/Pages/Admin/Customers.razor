@@ -91,6 +91,7 @@
             <Table class="mb-0 w-full">
                 <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">ID</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Customer</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Email</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Phone</TableHeaderCell>
@@ -107,13 +108,16 @@
                         {
                             <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
                                 <TableRowCell class="px-6 py-4 text-center">
+                                    <span class="text-gray-600 font-medium">#@customer.CustomerId</span>
+                                </TableRowCell>
+                                <TableRowCell class="px-6 py-4 text-center">
                                     <div class="flex items-center justify-center gap-3">
                                         <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
                                             @(customer.Name?.Substring(0, 1).ToUpper() ?? "C")
                                         </div>
                                         <div class="text-left">
                                             <div class="font-bold text-gray-900">@customer.Name</div>
-                                            <div class="text-gray-600 text-sm">Since @customer.CreatedAt.ToString("MMM yyyy")</div>
+                                            <div class="text-gray-600 text-sm">Since @customer.CreatedAt.ToString("dd/MM/yyyy")</div>
                                         </div>
                                     </div>
                                 </TableRowCell>
@@ -175,7 +179,7 @@
                     else
                     {
                         <TableRow class="bg-white">
-                            <TableRowCell ColumnSpan="7" class="text-center py-12">
+                            <TableRowCell ColumnSpan="8" class="text-center py-12">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Users" class="text-gray-400 text-4xl mb-3" />
                                 <p class="text-gray-600 font-medium">No customers found</p>
                             </TableRowCell>

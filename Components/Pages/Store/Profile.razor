@@ -12,11 +12,13 @@
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
 @using BlazorApp1.Data
+@using BlazorApp1.Services
 
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject StoreDbContext DbContext
 @inject NavigationManager NavigationManager
 @inject UserManager<ApplicationUser> UserManager
+@inject ToastService ToastService
 
 <PageTitle>My Profile</PageTitle>
 
@@ -65,7 +67,10 @@
                                            Class="@GetTabClass(ProfileTab.Password)">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Key" class="mr-2" /> Change Password
                             </ListGroupItem>
-                            <ListGroupItem To="/store" Type="ButtonType.Link">
+                            <ListGroupItem Clicked='() => NavigationManager.NavigateTo("/Account/Manage/Passkeys")' Class="cursor-pointer hover:bg-gray-50">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Fingerprint" class="mr-2" /> Passkeys
+                            </ListGroupItem>
+                            <ListGroupItem Clicked='() => NavigationManager.NavigateTo("/store")' Class="cursor-pointer hover:bg-gray-50">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" class="mr-2" /> Back to Store
                             </ListGroupItem>
                         </ListGroup>
@@ -82,13 +87,6 @@
                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" class="mr-2" /> Personal Information
                         </CardHeader>
                         <CardBody>
-                            @if (successMessage != null)
-                            {
-                                <Alert Color="Color.Success" Visible="true" class="mb-4">
-                                    <AlertMessage>@successMessage</AlertMessage>
-                                    <CloseButton Clicked="() => successMessage = null" />
-                                </Alert>
-                            }
                             @if (errorMessage != null)
                             {
                                 <Alert Color="Color.Danger" Visible="true" class="mb-4">
@@ -197,13 +195,6 @@
                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Key" class="mr-2" /> Change Password
                         </CardHeader>
                         <CardBody>
-                            @if (successMessage != null)
-                            {
-                                <Alert Color="Color.Success" Visible="true" class="mb-4">
-                                    <AlertMessage>@successMessage</AlertMessage>
-                                    <CloseButton Clicked="() => successMessage = null" />
-                                </Alert>
-                            }
                             @if (errorMessage != null)
                             {
                                 <Alert Color="Color.Danger" Visible="true" class="mb-4">
@@ -269,7 +260,6 @@
     private Validations? passwordValidationsRef;
     private ProfileModel profileModel = new();
     private PasswordChangeModel passwordModel = new();
-    private string? successMessage;
     private string? errorMessage;
     private string? userId;
 
@@ -335,7 +325,6 @@
             return;
 
         isSaving = true;
-        successMessage = null;
         errorMessage = null;
 
         try
@@ -348,12 +337,13 @@
                 customer.Address = profileModel.Address;
 
                 await DbContext.SaveChangesAsync();
-                successMessage = "Profile updated successfully!";
+                ToastService.ShowSuccess("Profile updated successfully!", "Success");
             }
         }
         catch (Exception ex)
         {
             errorMessage = "Failed to update profile. Please try again.";
+            ToastService.ShowError("Failed to update profile.", "Error");
         }
         finally
         {
@@ -387,7 +377,6 @@
         }
 
         isChangingPassword = true;
-        successMessage = null;
         errorMessage = null;
 
         try
@@ -400,13 +389,14 @@
                     var result = await UserManager.ChangePasswordAsync(user, passwordModel.CurrentPassword, passwordModel.NewPassword);
                     if (result.Succeeded)
                     {
-                        successMessage = "Password changed successfully!";
+                        ToastService.ShowSuccess("Password changed successfully!", "Success");
                         passwordModel = new PasswordChangeModel();
                         await InvokeAsync(StateHasChanged);
                     }
                     else
                     {
                         errorMessage = string.Join(", ", result.Errors.Select(e => e.Description));
+                        ToastService.ShowError(errorMessage, "Error");
                     }
                 }
                 else
@@ -418,6 +408,7 @@
         catch (Exception ex)
         {
             errorMessage = "Failed to change password. Please check your current password and try again.";
+            ToastService.ShowError("Failed to change password.", "Error");
         }
         finally
         {

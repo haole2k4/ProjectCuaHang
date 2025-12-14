@@ -21,14 +21,6 @@
             </a>
         </div>
 
-        <!-- Search -->
-        <div class="px-4 py-4">
-            <div class="relative">
-                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                <input type="text" placeholder="Search..." class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none transition text-gray-900 placeholder-gray-500" />
-            </div>
-        </div>
-
         <!-- Navigation -->
         <nav class="flex-1 px-4 py-2 overflow-y-auto">
             <div class="space-y-1">
@@ -78,20 +70,6 @@
                 </NavLink>
             </div>
         </nav>
-
-        <!-- Bottom Links -->
-        <div class="px-4 py-4 border-t border-gray-200">
-            <div class="space-y-1">
-                <a href="/" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" />
-                    <span>View Store</span>
-                </a>
-                <NavLink href="/admin/settings" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-all no-underline font-medium" ActiveClass="!bg-blue-50 !text-blue-600">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Cog" />
-                    <span>Settings</span>
-                </NavLink>
-            </div>
-        </div>
     </aside>
 
     <!-- Main Content -->
@@ -120,30 +98,6 @@
 
                 <!-- Right: Actions -->
                 <div class="flex items-center gap-4">
-                    <!-- Period Selector -->
-                    <div class="relative group">
-                        <button class="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg transition text-sm border border-gray-200 shadow-sm">
-                            This month <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronDown" class="text-xs" />
-                        </button>
-                        <div class="absolute right-0 w-40 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block z-50 border border-gray-100">
-                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">Today</a>
-                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">This week</a>
-                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">This month</a>
-                            <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 text-sm transition">This year</a>
-                        </div>
-                    </div>
-
-                    <!-- Move Money Button -->
-                    <button class="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-lg transition text-sm font-medium shadow-sm">
-                        Move money
-                    </button>
-
-                    <!-- Notifications -->
-                    <button class="relative bg-white hover:bg-gray-50 text-gray-700 p-2.5 rounded-lg transition border border-gray-200 shadow-sm">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Bell" />
-                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold">3</span>
-                    </button>
-
                     <!-- User Dropdown -->
                     <AuthorizeView>
                         <Authorized>
@@ -156,14 +110,11 @@
                                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChevronDown" class="text-xs text-gray-500" />
                                 </button>
                                 <div class="absolute right-0 w-48 bg-white rounded-lg shadow-xl py-2 hidden group-hover:block z-50 border border-gray-100">
-                                    <a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 text-sm transition">
-                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChartLine" /> Admin Dashboard
-                                    </a>
-                                    <a href="/store/orders" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 text-sm transition">
-                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" /> My Orders
+                                    <a href="/" class="flex items-center gap-3 px-4 py-2.5 text-gray-700 hover:bg-gray-50 text-sm transition">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Store" /> View Store
                                     </a>
                                     <hr class="my-1 border-gray-100" />
-                                    <a href="/auth/logout" class="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 text-sm transition">
+                                    <a href="/Account/Logout" class="flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 text-sm transition">
                                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SignOutAlt" /> Logout
                                     </a>
                                 </div>

@@ -59,7 +59,25 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
-// Add Cookie Authentication for Admin login (legacy system)
+// Configure Identity for ApplicationUser with proper authentication schemes
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+        options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 6;
+    })
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddSignInManager()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+
+// Remove legacy Cookie Authentication
+/*
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
@@ -72,6 +90,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     });
+*/
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=app.db";
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -102,23 +121,6 @@ builder.Services.AddSession(options =>
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-// Configure Identity for ApplicationUser with proper authentication schemes
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-    {
-        options.SignIn.RequireConfirmedAccount = false;
-        options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
-        options.Password.RequireDigit = false;
-        options.Password.RequireLowercase = false;
-        options.Password.RequireUppercase = false;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequiredLength = 6;
-    })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();
-
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
 // Register Repository and Services for custom authentication
 builder.Services.AddScoped<IRepository<User>, Repository<User>>();
@@ -156,18 +158,16 @@ builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 // Register Toast notification service
 builder.Services.AddScoped<ToastService>();
 
-// Register HttpContextAccessor for audit logging
-builder.Services.AddHttpContextAccessor();
-
 var app = builder.Build();
 
 // Apply migrations and seed data
 using (var scope = app.Services.CreateScope())
 {
-    var storeContext = scope.ServiceProvider.GetRequiredService<StoreDbContext>();
+    var services = scope.ServiceProvider;
+    var storeContext = services.GetRequiredService<StoreDbContext>();
     storeContext.Database.Migrate();
 
-    // Seed default admin user if not exists
+    // Seed default admin user if not exists (Legacy Store User)
     if (!storeContext.Users.Any(u => u.Username == "admin"))
     {
         storeContext.Users.Add(new User
@@ -180,6 +180,45 @@ using (var scope = app.Services.CreateScope())
             CreatedAt = DateTime.Now
         });
         storeContext.SaveChanges();
+    }
+
+    // Seed Identity Admin User (App User)
+    try
+    {
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+        if (!await roleManager.RoleExistsAsync("Admin"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("Admin"));
+        }
+
+        if (!await roleManager.RoleExistsAsync("Customer"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("Customer"));
+        }
+
+        var adminEmail = "admin@estore.com";
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+        if (adminUser == null)
+        {
+            adminUser = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true
+            };
+            var result = await userManager.CreateAsync(adminUser, "Admin123!");
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(adminUser, "Admin");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the database.");
     }
 
     // Seed sample categories if not exists
@@ -258,5 +297,12 @@ app.MapGet("/auth/logout", async (HttpContext context) =>
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+// Add API endpoint for reliable logout in Blazor Server
+app.MapGet("/api/auth/logout", async (SignInManager<ApplicationUser> signInManager) =>
+{
+    await signInManager.SignOutAsync();
+    return Results.Redirect("/logout");
+});
 
 app.Run();
