@@ -10,6 +10,7 @@ namespace StoreManagementAPI.Services
     {
         Task<IEnumerable<ProductDto>> GetAllProductsAsync();
         Task<IEnumerable<ProductDto>> SearchProductsAsync(string searchTerm);
+        Task<ProductSearchResultDto> SearchProductsAdvancedAsync(ProductSearchDto searchDto);
         Task<ProductDto?> GetProductByIdAsync(int id);
         Task<ProductDto?> GetProductByBarcodeAsync(string barcode);
         Task<ProductDto> CreateProductAsync(CreateProductDto dto);
@@ -136,6 +137,121 @@ namespace StoreManagementAPI.Services
                 StockQuantity = p.Inventories?.Sum(i => i.Quantity) ?? 0,
                 HasOrders = p.OrderItems != null && p.OrderItems.Any()
             });
+        }
+
+        public async Task<ProductSearchResultDto> SearchProductsAdvancedAsync(ProductSearchDto searchDto)
+        {
+            // Validate and sanitize pagination parameters
+            var pageNumber = searchDto.PageNumber < 1 ? 1 : searchDto.PageNumber;
+            var pageSize = searchDto.PageSize < 1 ? 20 : searchDto.PageSize > 100 ? 100 : searchDto.PageSize;
+
+            // Validate and swap price range if needed
+            if (searchDto.MinPrice.HasValue && searchDto.MaxPrice.HasValue && searchDto.MinPrice.Value > searchDto.MaxPrice.Value)
+            {
+                var temp = searchDto.MinPrice;
+                searchDto.MinPrice = searchDto.MaxPrice;
+                searchDto.MaxPrice = temp;
+            }
+
+            // Start with base query
+            var query = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Supplier)
+                .Include(p => p.Inventories)
+                .Include(p => p.OrderItems)
+                .AsQueryable();
+
+            // Apply filters
+            // 1. Filter by product name (contains)
+            if (!string.IsNullOrWhiteSpace(searchDto.Name))
+            {
+                var searchTerm = searchDto.Name.ToLower().Trim();
+                query = query.Where(p => p.ProductName.ToLower().Contains(searchTerm));
+            }
+
+            // 2. Filter by category (only if CategoryId has value and > 0)
+            if (searchDto.CategoryId.HasValue && searchDto.CategoryId.Value > 0)
+            {
+                query = query.Where(p => p.CategoryId == searchDto.CategoryId.Value);
+            }
+
+            // 3. Filter by status (only if Status is not null or empty)
+            if (!string.IsNullOrWhiteSpace(searchDto.Status))
+            {
+                var status = searchDto.Status.ToLower().Trim();
+                query = query.Where(p => p.Status != null && p.Status.ToLower() == status);
+            }
+
+            // 4. Filter by price range
+            if (searchDto.MinPrice.HasValue && searchDto.MinPrice.Value > 0)
+            {
+                query = query.Where(p => p.Price >= searchDto.MinPrice.Value);
+            }
+
+            if (searchDto.MaxPrice.HasValue && searchDto.MaxPrice.Value > 0)
+            {
+                query = query.Where(p => p.Price <= searchDto.MaxPrice.Value);
+            }
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply sorting
+            var sortBy = searchDto.SortBy?.ToLower() ?? "productname";
+            var sortDirection = searchDto.SortDirection?.ToLower() ?? "asc";
+
+            query = sortBy switch
+            {
+                "price" => sortDirection == "desc"
+                    ? query.OrderByDescending(p => p.Price)
+                    : query.OrderBy(p => p.Price),
+                "createdat" => sortDirection == "desc"
+                    ? query.OrderByDescending(p => p.CreatedAt)
+                    : query.OrderBy(p => p.CreatedAt),
+                _ => sortDirection == "desc"
+                    ? query.OrderByDescending(p => p.ProductName)
+                    : query.OrderBy(p => p.ProductName)
+            };
+
+            // Apply pagination
+            var products = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Map to DTOs
+            var productDtos = products.Select(p => new ProductDto
+            {
+                ProductId = p.ProductId,
+                CategoryId = p.CategoryId,
+                CategoryName = p.Category?.CategoryName,
+                SupplierId = p.SupplierId,
+                SupplierName = p.Supplier?.Name,
+                ProductName = p.ProductName,
+                Barcode = p.Barcode,
+                Price = p.Price,
+                CostPrice = p.CostPrice,
+                Unit = p.Unit,
+                Status = p.Status,
+                Description = p.Description,
+                ImageUrl = p.ImageUrl,
+                StockQuantity = p.Inventories?.Sum(i => i.Quantity) ?? 0,
+                HasOrders = p.OrderItems != null && p.OrderItems.Any()
+            }).ToList();
+
+            // Calculate pagination metadata
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            return new ProductSearchResultDto
+            {
+                Products = productDtos,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                HasPreviousPage = pageNumber > 1,
+                HasNextPage = pageNumber < totalPages
+            };
         }
 
         public async Task<ProductDto?> GetProductByIdAsync(int id)

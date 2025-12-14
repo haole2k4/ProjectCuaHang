@@ -72,4 +72,69 @@ namespace StoreManagementAPI.DTOs
         public string? CustomerName { get; set; } // Cho đơn bán
         public string? Notes { get; set; }
     }
+
+    /// <summary>
+    /// DTO for advanced product search with multiple criteria
+    /// </summary>
+    public class ProductSearchDto
+    {
+        /// <summary>
+        /// Search by product name (contains)
+        /// </summary>
+        public string? Name { get; set; }
+
+        /// <summary>
+        /// Filter by category ID
+        /// </summary>
+        public int? CategoryId { get; set; }
+
+        /// <summary>
+        /// Filter by status (active, inactive)
+        /// </summary>
+        public string? Status { get; set; }
+
+        /// <summary>
+        /// Minimum price filter
+        /// </summary>
+        public decimal? MinPrice { get; set; }
+
+        /// <summary>
+        /// Maximum price filter
+        /// </summary>
+        public decimal? MaxPrice { get; set; }
+
+        /// <summary>
+        /// Page number for pagination (default: 1)
+        /// </summary>
+        public int PageNumber { get; set; } = 1;
+
+        /// <summary>
+        /// Page size for pagination (default: 20, max: 100)
+        /// </summary>
+        public int PageSize { get; set; } = 20;
+
+        /// <summary>
+        /// Sort by field (ProductName, Price, CreatedAt)
+        /// </summary>
+        public string? SortBy { get; set; } = "ProductName";
+
+        /// <summary>
+        /// Sort direction (asc, desc)
+        /// </summary>
+        public string? SortDirection { get; set; } = "asc";
+    }
+
+    /// <summary>
+    /// Response for paginated product search
+    /// </summary>
+    public class ProductSearchResultDto
+    {
+        public IEnumerable<ProductDto> Products { get; set; } = new List<ProductDto>();
+        public int TotalCount { get; set; }
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages { get; set; }
+        public bool HasPreviousPage { get; set; }
+        public bool HasNextPage { get; set; }
+    }
 }

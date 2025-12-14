@@ -28,6 +28,125 @@
     </Button>
 </div>
 
+<!-- Advanced Search Panel -->
+<Card class="!bg-white shadow-md border border-gray-200 rounded-xl overflow-hidden mb-6">
+    <CardBody>
+        <div class="flex items-center justify-between mb-4">
+            <Heading Size="HeadingSize.Is5" class="text-gray-900 font-bold mb-0">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="mr-2" />
+                Search & Filter
+            </Heading>
+            <Button Color="Color.Light" Size="Size.Small" Clicked="ClearFilters" class="!border !border-gray-300">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Redo" class="mr-1" /> Clear
+            </Button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Product Name Search -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Product Name</label>
+                <TextEdit Text="@searchCriteria.Name"
+                          TextChanged="@OnSearchTextChanged"
+                          Placeholder="Search by name..."
+                          class="w-full !border-gray-300" />
+            </div>
+
+            <!-- Category Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Category</label>
+                <Select TValue="int?"
+                        SelectedValue="searchCriteria.CategoryId"
+                        SelectedValueChanged="@OnCategoryChanged"
+                        class="w-full !border-gray-300">
+                    <SelectItem Value="@((int?)null)">All Categories</SelectItem>
+                    @foreach (var category in categories)
+                    {
+                        <SelectItem Value="@category.CategoryId">@category.CategoryName</SelectItem>
+                    }
+                </Select>
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <Select TValue="string?"
+                        SelectedValue="searchCriteria.Status"
+                        SelectedValueChanged="@OnStatusChanged"
+                        class="w-full !border-gray-300">
+                    <SelectItem Value="@((string?)null)">All Status</SelectItem>
+                    <SelectItem Value="@("active")">Active</SelectItem>
+                    <SelectItem Value="@("inactive")">Inactive</SelectItem>
+                </Select>
+            </div>
+
+            <!-- Price Range -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Price Range</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <NumericEdit TValue="decimal?"
+                                 Value="searchCriteria.MinPrice"
+                                 ValueChanged="@OnMinPriceChanged"
+                                 Placeholder="Min"
+                                 class="w-full !border-gray-300"
+                                 Decimals="2" />
+                    <NumericEdit TValue="decimal?"
+                                 Value="searchCriteria.MaxPrice"
+                                 ValueChanged="@OnMaxPriceChanged"
+                                 Placeholder="Max"
+                                 class="w-full !border-gray-300"
+                                 Decimals="2" />
+                </div>
+                @if (!string.IsNullOrEmpty(priceErrorMessage))
+                {
+                    <div class="mt-2 text-red-600 text-sm font-semibold">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ExclamationTriangle" class="mr-1" />
+                        @priceErrorMessage
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Sort Options -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Sort By</label>
+                <Select TValue="string?"
+                        SelectedValue="searchCriteria.SortBy"
+                        SelectedValueChanged="@OnSortByChanged"
+                        class="w-full !border-gray-300">
+                    <SelectItem Value="@("ProductName")">Product Name</SelectItem>
+                    <SelectItem Value="@("Price")">Price</SelectItem>
+                    <SelectItem Value="@("CreatedAt")">Created Date</SelectItem>
+                </Select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Sort Direction</label>
+                <Select TValue="string?"
+                        SelectedValue="searchCriteria.SortDirection"
+                        SelectedValueChanged="@OnSortDirectionChanged"
+                        class="w-full !border-gray-300">
+                    <SelectItem Value="@("asc")">Ascending</SelectItem>
+                    <SelectItem Value="@("desc")">Descending</SelectItem>
+                </Select>
+            </div>
+        </div>
+
+        @if (searchResult != null)
+        {
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <p class="text-sm text-gray-600">
+                    Found <span class="font-bold text-blue-600">@searchResult.TotalCount</span> products
+                    @if (!string.IsNullOrEmpty(searchCriteria.Name) || searchCriteria.CategoryId.HasValue || !string.IsNullOrEmpty(searchCriteria.Status) || searchCriteria.MinPrice.HasValue || searchCriteria.MaxPrice.HasValue)
+                    {
+                        <span> matching your criteria</span>
+                    }
+                </p>
+            </div>
+        }
+    </CardBody>
+</Card>
+
 <Card class="!bg-white shadow-xl border border-gray-200 rounded-xl overflow-hidden">
     <CardBody Padding="Padding.Is0">
         <div class="overflow-x-auto">
@@ -209,13 +328,23 @@
 </Modal>
 
 @code {
-    private List<ProductDto>? allProducts;
     private List<ProductDto>? products;
     private List<Category> categories = new();
     private Modal productModal = null!;
     private bool isEditMode = false;
     private bool isSaving = false;
     private string? errorMessage;
+    private string? priceErrorMessage;
+
+    // Search & Filter
+    private ProductSearchDto searchCriteria = new ProductSearchDto
+    {
+        PageNumber = 1,
+        PageSize = 10,
+        SortBy = "ProductName",
+        SortDirection = "asc"
+    };
+    private ProductSearchResultDto? searchResult;
 
     // Pagination
     private int currentPage = 1;
@@ -238,38 +367,125 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadData();
+        await LoadCategories();
+        await SearchProducts();
     }
 
-    private async Task LoadData()
+    private async Task LoadCategories()
     {
-        var productDtos = await ProductService.GetAllProductsAsync();
-        allProducts = productDtos.ToList();
-        totalItems = allProducts.Count;
-        
-        UpdatePagedData();
-        
         categories = await DbContext.Categories
             .Where(c => c.Status == "active")
             .OrderBy(c => c.CategoryName)
             .ToListAsync();
     }
 
-    private void UpdatePagedData()
+    private async Task SearchProducts()
     {
-        if (allProducts == null) return;
-        
-        products = allProducts
-            .Skip((currentPage - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        try
+        {
+            searchCriteria.PageNumber = currentPage;
+            searchCriteria.PageSize = pageSize;
+
+            searchResult = await ProductService.SearchProductsAdvancedAsync(searchCriteria);
+
+            products = searchResult.Products.ToList();
+            totalItems = searchResult.TotalCount;
+
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error searching products: {ex.Message}";
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task HandlePageChanged(int page)
     {
         currentPage = page;
-        UpdatePagedData();
-        await InvokeAsync(StateHasChanged);
+        await SearchProducts();
+    }
+
+    private async Task ClearFilters()
+    {
+        searchCriteria = new ProductSearchDto
+        {
+            PageNumber = 1,
+            PageSize = pageSize,
+            SortBy = "ProductName",
+            SortDirection = "asc"
+        };
+        priceErrorMessage = null;
+        currentPage = 1;
+        await SearchProducts();
+    }
+
+    // Auto-search event handlers
+    private async Task OnSearchTextChanged(string value)
+    {
+        searchCriteria.Name = value;
+        currentPage = 1;
+        await SearchProducts();
+    }
+
+    private async Task OnCategoryChanged(int? value)
+    {
+        searchCriteria.CategoryId = value;
+        currentPage = 1;
+        await SearchProducts();
+    }
+
+    private async Task OnStatusChanged(string? value)
+    {
+        searchCriteria.Status = value;
+        currentPage = 1;
+        await SearchProducts();
+    }
+
+    private async Task OnMinPriceChanged(decimal? value)
+    {
+        searchCriteria.MinPrice = value;
+        
+        // Validate: MinPrice should not be greater than MaxPrice
+        if (value.HasValue && searchCriteria.MaxPrice.HasValue && value.Value > searchCriteria.MaxPrice.Value)
+        {
+            priceErrorMessage = $"Min price ({value:N0}) cannot be greater than max price ({searchCriteria.MaxPrice:N0})";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        
+        priceErrorMessage = null;
+        currentPage = 1;
+        await SearchProducts();
+    }
+
+    private async Task OnMaxPriceChanged(decimal? value)
+    {
+        searchCriteria.MaxPrice = value;
+        
+        // Validate: MaxPrice should not be less than MinPrice
+        if (value.HasValue && searchCriteria.MinPrice.HasValue && value.Value < searchCriteria.MinPrice.Value)
+        {
+            priceErrorMessage = $"Max price ({value:N0}) cannot be less than min price ({searchCriteria.MinPrice:N0})";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        
+        priceErrorMessage = null;
+        currentPage = 1;
+        await SearchProducts();
+    }
+
+    private async Task OnSortByChanged(string? value)
+    {
+        searchCriteria.SortBy = value;
+        await SearchProducts();
+    }
+
+    private async Task OnSortDirectionChanged(string? value)
+    {
+        searchCriteria.SortDirection = value;
+        await SearchProducts();
     }
 
     private void OpenAddModal()
@@ -352,7 +568,7 @@
                 await ProductService.CreateProductAsync(createDto);
             }
 
-            await LoadData();
+            await SearchProducts();
             CloseModal();
         }
         catch (Exception ex)
@@ -447,8 +663,8 @@
                 catch { }
             }
 
-            await LoadData();
-            
+            await SearchProducts();
+
             if (result.SoftDeleted)
             {
                 await JSRuntime.InvokeVoidAsync("alert", result.Message);
