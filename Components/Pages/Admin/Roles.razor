@@ -1,0 +1,122 @@
+@page "/admin/roles"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+
+@using Microsoft.AspNetCore.Identity
+@using BlazorApp1.Data
+@using Blazorise
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Authorization
+@inject RoleManager<IdentityRole> RoleManager
+@inject UserManager<ApplicationUser> UserManager
+
+<PageTitle>Roles - Admin</PageTitle>
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+            Roles & Permissions
+        </Heading>
+        <Paragraph class="text-gray-600 mb-0">Manage system roles and access control</Paragraph>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    @foreach (var role in roles)
+    {
+        <Card class="shadow-md border-0 !bg-white">
+            <CardBody class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center @GetRoleColorClass(role.Name)">
+                        <Icon Name="@GetRoleIcon(role.Name)" class="text-white text-xl" />
+                    </div>
+                    <Badge Color="Color.Light" class="text-gray-600">@GetUserCount(role.Name) Users</Badge>
+                </div>
+                <Heading Size="HeadingSize.Is4" class="text-gray-900 mb-2">@role.Name</Heading>
+                <Paragraph class="text-gray-500 text-sm mb-4">
+                    @GetRoleDescription(role.Name)
+                </Paragraph>
+                <div class="flex -space-x-2 overflow-hidden">
+                    @foreach (var user in GetUsersInRole(role.Name).Take(5))
+                    {
+                        <div class="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600" title="@user.UserName">
+                            @(user.UserName?.Substring(0, 1).ToUpper() ?? "U")
+                        </div>
+                    }
+                    @if (GetUserCount(role.Name) > 5)
+                    {
+                        <div class="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-500">
+                            +@(GetUserCount(role.Name) - 5)
+                        </div>
+                    }
+                </div>
+            </CardBody>
+        </Card>
+    }
+</div>
+
+@code {
+    private List<IdentityRole> roles = new();
+    private Dictionary<string, List<ApplicationUser>> usersInRoles = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        roles = await RoleManager.Roles.ToListAsync();
+        foreach(var role in roles)
+        {
+            if (!string.IsNullOrEmpty(role.Name))
+            {
+                var users = await UserManager.GetUsersInRoleAsync(role.Name);
+                usersInRoles[role.Name] = users.ToList();
+            }
+        }
+    }
+
+    private int GetUserCount(string? roleName)
+    {
+        if (string.IsNullOrEmpty(roleName)) return 0;
+        return usersInRoles.ContainsKey(roleName) ? usersInRoles[roleName].Count : 0;
+    }
+
+    private List<ApplicationUser> GetUsersInRole(string? roleName)
+    {
+        if (string.IsNullOrEmpty(roleName)) return new List<ApplicationUser>();
+        return usersInRoles.ContainsKey(roleName) ? usersInRoles[roleName] : new List<ApplicationUser>();
+    }
+
+    private string GetRoleColorClass(string? roleName)
+    {
+        return roleName switch
+        {
+            "Admin" => "bg-gradient-to-br from-purple-500 to-pink-500",
+            "SalesStaff" => "bg-gradient-to-br from-blue-500 to-cyan-500",
+            "WarehouseStaff" => "bg-gradient-to-br from-green-500 to-teal-500",
+            "Customer" => "bg-gradient-to-br from-orange-400 to-yellow-400",
+            _ => "bg-gray-500"
+        };
+    }
+
+    private object GetRoleIcon(string? roleName)
+    {
+        return roleName switch
+        {
+            "Admin" => Blazorise.Icons.FontAwesome.FontAwesomeIcons.Crown,
+            "SalesStaff" => Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart,
+            "WarehouseStaff" => Blazorise.Icons.FontAwesome.FontAwesomeIcons.Warehouse,
+            "Customer" => Blazorise.Icons.FontAwesome.FontAwesomeIcons.User,
+            _ => Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShieldAlt
+        };
+    }
+
+    private string GetRoleDescription(string? roleName)
+    {
+        return roleName switch
+        {
+            "Admin" => "Full access to all system resources and settings.",
+            "SalesStaff" => "Access to sales, orders, and product management.",
+            "WarehouseStaff" => "Access to inventory, warehouse, and supplier management.",
+            "Customer" => "Standard user access for shopping and order history.",
+            _ => "Standard system role."
+        };
+    }
+}

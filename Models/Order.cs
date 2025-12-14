@@ -14,7 +14,7 @@ namespace StoreManagementAPI.Models
         public int? CustomerId { get; set; }
 
         [Column("user_id")]
-        public int? UserId { get; set; }
+        public string? UserId { get; set; }
 
         [Column("promo_id")]
         public int? PromoId { get; set; }
@@ -43,9 +43,6 @@ namespace StoreManagementAPI.Models
         // Navigation properties
         [ForeignKey("CustomerId")]
         public virtual Customer? Customer { get; set; }
-
-        [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
 
         [ForeignKey("PromoId")]
         public virtual Promotion? Promotion { get; set; }

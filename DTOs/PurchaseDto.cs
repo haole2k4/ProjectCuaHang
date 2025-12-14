@@ -24,7 +24,7 @@ namespace StoreManagementAPI.DTOs
         public string? SupplierName { get; set; }
         public int WarehouseId { get; set; }
         public string? WarehouseName { get; set; }
-        public int UserId { get; set; }
+        public string UserId { get; set; }
         public string? UserName { get; set; }
         public string? Username { get; set; }
         public DateTime PurchaseDate { get; set; }

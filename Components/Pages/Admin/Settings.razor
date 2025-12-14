@@ -1,6 +1,8 @@
 @page "/admin/settings"
 @rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
 
+@using StoreManagementAPI.Data
 @using Blazorise
 
 <PageTitle>Settings - Admin</PageTitle>

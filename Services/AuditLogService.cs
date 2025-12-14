@@ -10,13 +10,13 @@ namespace StoreManagementAPI.Services
     {
         Task LogActionAsync(string action, string entityType, int? entityId, string? entityName, 
             object? oldValues, object? newValues, string? changesSummary, 
-            int? userId, string? username,
+            string? userId, string? username,
             Dictionary<string, object>? additionalInfo = null);
         
         Task<List<AuditLogDto>> GetLogsAsync(AuditLogFilterDto filter);
         Task<AuditLogDto?> GetLogByIdAsync(int auditId);
         Task<List<AuditLogDto>> GetLogsByEntityAsync(string entityType, int entityId);
-        Task<List<AuditLogDto>> GetLogsByUserAsync(int userId);
+        Task<List<AuditLogDto>> GetLogsByUserAsync(string userId);
         Task<AuditLogSummaryDto> GetSummaryAsync(DateTime? fromDate, DateTime? toDate);
     }
 
@@ -33,7 +33,7 @@ namespace StoreManagementAPI.Services
 
         public async Task LogActionAsync(string action, string entityType, int? entityId, string? entityName,
             object? oldValues, object? newValues, string? changesSummary,
-            int? userId, string? username,
+            string? userId, string? username,
             Dictionary<string, object>? additionalInfo = null)
         {
             try
@@ -75,8 +75,8 @@ namespace StoreManagementAPI.Services
         {
             var query = _context.AuditLogs.AsQueryable();
 
-            if (filter.UserId.HasValue)
-                query = query.Where(a => a.UserId == filter.UserId.Value);
+            if (!string.IsNullOrEmpty(filter.UserId))
+                query = query.Where(a => a.UserId == filter.UserId);
 
             if (!string.IsNullOrWhiteSpace(filter.Username))
                 query = query.Where(a => a.Username != null && a.Username.Contains(filter.Username));
@@ -169,7 +169,7 @@ namespace StoreManagementAPI.Services
             return logs;
         }
 
-        public async Task<List<AuditLogDto>> GetLogsByUserAsync(int userId)
+        public async Task<List<AuditLogDto>> GetLogsByUserAsync(string userId)
         {
             var logs = await _context.AuditLogs
                 .Where(a => a.UserId == userId)
@@ -210,7 +210,7 @@ namespace StoreManagementAPI.Services
             var summary = new AuditLogSummaryDto
             {
                 TotalLogs = logs.Count,
-                TotalUsers = logs.Where(a => a.UserId.HasValue).Select(a => a.UserId).Distinct().Count(),
+                TotalUsers = logs.Where(a => !string.IsNullOrEmpty(a.UserId)).Select(a => a.UserId).Distinct().Count(),
                 ActionCounts = logs.GroupBy(a => a.Action).ToDictionary(g => g.Key, g => g.Count()),
                 EntityTypeCounts = logs.GroupBy(a => a.EntityType).ToDictionary(g => g.Key, g => g.Count()),
                 RecentLogs = logs.OrderByDescending(a => a.CreatedAt).Take(10)

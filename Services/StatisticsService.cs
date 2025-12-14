@@ -11,6 +11,7 @@ namespace StoreManagementAPI.Services
         Task<SalesReportDto> GetSalesReportAsync(DateTime? startDate = null, DateTime? endDate = null);
         Task<InventoryStatisticsDto> GetInventoryStatisticsAsync(int lowStockThreshold = 10);
         Task<CustomerStatisticsDto> GetCustomerStatisticsAsync();
+        Task<List<TransactionDto>> GetRecentTransactionsAsync(int limit);
     }
 
     public class StatisticsService : IStatisticsService
@@ -49,6 +50,27 @@ namespace StoreManagementAPI.Services
                 .SelectMany(o => o.OrderItems)
                 .Sum(oi => (oi.Product?.CostPrice ?? 0) * oi.Quantity);
             var monthProfit = monthRevenue - monthExpenses;
+
+            // Calculate growth (comparing to previous month)
+            var prevMonthStart = monthStart.AddMonths(-1);
+            var prevMonthEnd = monthStart.AddDays(-1);
+            
+            var prevMonthOrders = allOrders
+                .Where(o => o.OrderDate >= prevMonthStart && o.OrderDate <= prevMonthEnd)
+                .ToList();
+                
+            var prevMonthRevenue = prevMonthOrders.Sum(o => o.TotalAmount);
+            var prevMonthExpenses = prevMonthOrders
+                .SelectMany(o => o.OrderItems)
+                .Sum(oi => (oi.Product?.CostPrice ?? 0) * oi.Quantity);
+
+            var incomeGrowth = prevMonthRevenue > 0 
+                ? ((monthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100 
+                : (monthRevenue > 0 ? 100 : 0);
+                
+            var expenseGrowth = prevMonthExpenses > 0 
+                ? ((monthExpenses - prevMonthExpenses) / prevMonthExpenses) * 100 
+                : (monthExpenses > 0 ? 100 : 0);
 
             // Year statistics
             var yearOrders = allOrders.Where(o => o.OrderDate >= yearStart).ToList();
@@ -105,7 +127,7 @@ namespace StoreManagementAPI.Services
                 .ToList();
 
             // Orders by status
-            var ordersByStatus = allOrders
+            var ordersByStatus = await _context.Orders
                 .GroupBy(o => o.Status)
                 .Select(g => new OrderStatusDto
                 {
@@ -113,7 +135,7 @@ namespace StoreManagementAPI.Services
                     Count = g.Count(),
                     TotalAmount = g.Sum(o => o.TotalAmount)
                 })
-                .ToList();
+                .ToListAsync();
 
             // Payment methods
             var paymentMethods = await _context.Payments
@@ -134,6 +156,8 @@ namespace StoreManagementAPI.Services
                 MonthExpenses = monthExpenses,
                 MonthProfit = monthProfit,
                 YearRevenue = yearRevenue,
+                IncomeGrowth = Math.Round(incomeGrowth, 1),
+                ExpenseGrowth = Math.Round(expenseGrowth, 1),
                 TodayOrders = todayOrders.Count,
                 MonthOrders = monthOrders.Count,
                 TotalProducts = totalProducts,
@@ -332,6 +356,51 @@ namespace StoreManagementAPI.Services
                 ActiveCustomers = activeCustomers,
                 TopCustomers = topCustomers
             };
+        }
+
+        public async Task<List<TransactionDto>> GetRecentTransactionsAsync(int limit)
+        {
+            // Get Sales (Orders)
+            var sales = await _context.Orders
+                .Include(o => o.Customer)
+                .OrderByDescending(o => o.OrderDate)
+                .Take(limit)
+                .Select(o => new TransactionDto
+                {
+                    Id = o.OrderId,
+                    ReferenceCode = $"ORD-{o.OrderId}",
+                    Type = "Sale",
+                    PartnerName = o.Customer != null ? o.Customer.Name : "Guest",
+                    Date = o.OrderDate,
+                    Amount = o.TotalAmount,
+                    Status = o.Status
+                })
+                .ToListAsync();
+
+            // Get Imports (PurchaseOrders)
+            var imports = await _context.PurchaseOrders
+                .Include(p => p.Supplier)
+                .OrderByDescending(p => p.PurchaseDate)
+                .Take(limit)
+                .Select(p => new TransactionDto
+                {
+                    Id = p.PurchaseId,
+                    ReferenceCode = $"PO-{p.PurchaseId}",
+                    Type = "Import",
+                    PartnerName = p.Supplier != null ? p.Supplier.Name : "Unknown Supplier",
+                    Date = p.PurchaseDate,
+                    Amount = p.TotalAmount,
+                    Status = p.Status
+                })
+                .ToListAsync();
+
+            // Merge and Sort
+            var transactions = sales.Concat(imports)
+                .OrderByDescending(t => t.Date)
+                .Take(limit)
+                .ToList();
+
+            return transactions;
         }
     }
 }

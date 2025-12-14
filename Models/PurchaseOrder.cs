@@ -16,7 +16,7 @@ namespace StoreManagementAPI.Models
 
         [Required]
         [Column("user_id")]
-        public int UserId { get; set; }
+        public string UserId { get; set; }
 
         [Column("warehouse_id")]
         public int? WarehouseId { get; set; }
@@ -34,9 +34,6 @@ namespace StoreManagementAPI.Models
         // Navigation properties
         [ForeignKey("SupplierId")]
         public virtual Supplier Supplier { get; set; } = null!;
-
-        [ForeignKey("UserId")]
-        public virtual User User { get; set; } = null!;
 
         [ForeignKey("WarehouseId")]
         public virtual Warehouse? Warehouse { get; set; }

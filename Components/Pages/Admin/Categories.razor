@@ -1,5 +1,6 @@
 @page "/admin/categories"
 @rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin, SalesStaff")]
 
 @using StoreManagementAPI.Data
 @using StoreManagementAPI.Models

@@ -133,7 +133,6 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // Register Repository and Services for custom authentication
-builder.Services.AddScoped<IRepository<User>, Repository<User>>();
 builder.Services.AddScoped<IRepository<AuditLog>, Repository<AuditLog>>();
 builder.Services.AddScoped<IRepository<Product>, Repository<Product>>();
 builder.Services.AddScoped<IRepository<Inventory>, Repository<Inventory>>();
@@ -179,20 +178,8 @@ using (var scope = app.Services.CreateScope())
     var storeContext = services.GetRequiredService<StoreDbContext>();
     storeContext.Database.Migrate();
 
-    // Seed default admin user if not exists (Legacy Store User)
-    if (!storeContext.Users.Any(u => u.Username == "admin"))
-    {
-        storeContext.Users.Add(new User
-        {
-            Username = "admin",
-            Password = "admin123",
-            FullName = "Administrator",
-            Role = "admin",
-            Status = "active",
-            CreatedAt = DateTime.Now
-        });
-        storeContext.SaveChanges();
-    }
+    var appContext = services.GetRequiredService<ApplicationDbContext>();
+    appContext.Database.Migrate();
 
     // Seed Identity Admin User (App User)
     try
@@ -210,6 +197,16 @@ using (var scope = app.Services.CreateScope())
             await roleManager.CreateAsync(new IdentityRole("Customer"));
         }
 
+        if (!await roleManager.RoleExistsAsync("SalesStaff"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("SalesStaff"));
+        }
+
+        if (!await roleManager.RoleExistsAsync("WarehouseStaff"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("WarehouseStaff"));
+        }
+
         var adminEmail = "admin@estore.com";
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
         if (adminUser == null)
@@ -225,6 +222,84 @@ using (var scope = app.Services.CreateScope())
             {
                 await userManager.AddToRoleAsync(adminUser, "Admin");
             }
+        }
+
+        // Seed Sales Staff User
+        var salesEmail = "sales@estore.com";
+        var salesUser = await userManager.FindByEmailAsync(salesEmail);
+        if (salesUser == null)
+        {
+            salesUser = new ApplicationUser
+            {
+                UserName = salesEmail,
+                Email = salesEmail,
+                EmailConfirmed = true
+            };
+            var result = await userManager.CreateAsync(salesUser, "Sales123!");
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(salesUser, "SalesStaff");
+            }
+        }
+
+        // Seed Warehouse Staff User
+        var warehouseEmail = "warehouse@estore.com";
+        var warehouseUser = await userManager.FindByEmailAsync(warehouseEmail);
+        if (warehouseUser == null)
+        {
+            warehouseUser = new ApplicationUser
+            {
+                UserName = warehouseEmail,
+                Email = warehouseEmail,
+                EmailConfirmed = true
+            };
+            var result = await userManager.CreateAsync(warehouseUser, "Warehouse123!");
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(warehouseUser, "WarehouseStaff");
+            }
+        }
+
+        // Seed employee accounts if not exists
+        if (!storeContext.Employees.Any())
+        {
+            // Create sales employee account
+            if (salesUser != null)
+            {
+                var salesEmployee = new Employee
+                {
+                    FullName = "Nguyễn Văn A",
+                    Phone = "0901234567",
+                    Email = salesEmail,
+                    EmployeeType = "sales",
+                    UserId = salesUser.Id,
+                    PlaintextPassword = "Sales123!",
+                    Status = "active",
+                    CreatedAt = DateTime.Now
+                };
+                storeContext.Employees.Add(salesEmployee);
+            }
+
+            // Create warehouse employee account
+            if (warehouseUser != null)
+            {
+                var warehouseEmployee = new Employee
+                {
+                    FullName = "Trần Thị B",
+                    Phone = "0907654321",
+                    Email = warehouseEmail,
+                    EmployeeType = "warehouse",
+                    UserId = warehouseUser.Id,
+                    PlaintextPassword = "Warehouse123!",
+                    Status = "active",
+                    CreatedAt = DateTime.Now
+                };
+                storeContext.Employees.Add(warehouseEmployee);
+            }
+
+            storeContext.SaveChanges();
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Employee accounts seeded successfully");
         }
     }
     catch (Exception ex)
@@ -258,75 +333,6 @@ using (var scope = app.Services.CreateScope())
             Status = "active"
         });
         storeContext.SaveChanges();
-    }
-
-    // Seed employee accounts if not exists
-    if (!storeContext.Employees.Any())
-    {
-        try
-        {
-            // Create sales employee account
-            var salesUser = new User
-            {
-                Username = "sales_user1@gmail.com",
-                Password = BCrypt.Net.BCrypt.HashPassword("Sales123!"),
-                FullName = "Nguyễn Văn A",
-                Role = "sales_staff",
-                Status = "active",
-                CreatedAt = DateTime.Now
-            };
-            storeContext.Users.Add(salesUser);
-            storeContext.SaveChanges();
-
-            var salesEmployee = new Employee
-            {
-                FullName = "Nguyễn Văn A",
-                Phone = "0901234567",
-                Email = "sales@estore.com",
-                EmployeeType = "sales",
-                UserId = salesUser.UserId,
-                PlaintextPassword = "Sales123!",
-                Status = "active",
-                CreatedAt = DateTime.Now
-            };
-            storeContext.Employees.Add(salesEmployee);
-
-            // Create warehouse employee account
-            var warehouseUser = new User
-            {
-                Username = "warehouse_user1@gmail.com",
-                Password = BCrypt.Net.BCrypt.HashPassword("Warehouse123!"),
-                FullName = "Trần Thị B",
-                Role = "warehouse_staff",
-                Status = "active",
-                CreatedAt = DateTime.Now
-            };
-            storeContext.Users.Add(warehouseUser);
-            storeContext.SaveChanges();
-
-            var warehouseEmployee = new Employee
-            {
-                FullName = "Trần Thị B",
-                Phone = "0907654321",
-                Email = "warehouse@estore.com",
-                EmployeeType = "warehouse",
-                UserId = warehouseUser.UserId,
-                PlaintextPassword = "Warehouse123!",
-                Status = "active",
-                CreatedAt = DateTime.Now
-            };
-            storeContext.Employees.Add(warehouseEmployee);
-
-            storeContext.SaveChanges();
-
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogInformation("Employee accounts seeded successfully");
-        }
-        catch (Exception ex)
-        {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "An error occurred while seeding employee accounts");
-        }
     }
 }
 

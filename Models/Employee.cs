@@ -30,7 +30,7 @@ namespace StoreManagementAPI.Models
         public string EmployeeType { get; set; } = "sales"; // sales (bán hàng), warehouse (nhập hàng)
 
         [Column("user_id")]
-        public int? UserId { get; set; }
+        public string? UserId { get; set; }
 
         [Column("plaintext_password")]
         [StringLength(255)]
@@ -45,9 +45,5 @@ namespace StoreManagementAPI.Models
 
         [Column("updated_at")]
         public DateTime? UpdatedAt { get; set; }
-
-        // Navigation properties
-        [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
     }
 }

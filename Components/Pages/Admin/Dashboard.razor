@@ -1,5 +1,6 @@
 @page "/admin/dashboard"
 @rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin, SalesStaff, WarehouseStaff")]
 
 @using StoreManagementAPI.Services
 @using StoreManagementAPI.DTOs
@@ -146,7 +147,9 @@
                                 </div>
                                 <div class="text-right">
                                     <span class="font-bold text-gray-900">$@statistics.MonthRevenue.ToString("N2")</span>
-                                    <span class="text-green-600 text-xs ml-2 font-bold">↑ 3%</span>
+                                    <span class="@(statistics.IncomeGrowth >= 0 ? "text-green-600" : "text-red-600") text-xs ml-2 font-bold">
+                                        @(statistics.IncomeGrowth >= 0 ? "↑" : "↓") @Math.Abs(statistics.IncomeGrowth)%
+                                    </span>
                                 </div>
                             </div>
                             <div class="flex justify-between items-center">
@@ -156,7 +159,9 @@
                                 </div>
                                 <div class="text-right">
                                     <span class="font-bold text-gray-900">$@statistics.MonthExpenses.ToString("N2")</span>
-                                    <span class="text-orange-600 text-xs ml-2 font-bold">↑ 1%</span>
+                                    <span class="@(statistics.ExpenseGrowth >= 0 ? "text-orange-600" : "text-green-600") text-xs ml-2 font-bold">
+                                        @(statistics.ExpenseGrowth >= 0 ? "↑" : "↓") @Math.Abs(statistics.ExpenseGrowth)%
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -240,11 +245,136 @@
             </Card>
         </div>
 
+        <!-- Order Status Distribution Chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <Card class="shadow-xl border border-gray-200 !bg-white rounded-2xl overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200 p-6">
+                    <h5 class="text-xl font-bold text-gray-900 mb-0">Order Status Distribution</h5>
+                </div>
+                <CardBody class="p-6 bg-white flex justify-center items-center">
+                    <div class="flex flex-col items-center w-full">
+                        <div class="relative w-64 h-64">
+                            @{
+                                var statusCounts = statistics.OrdersByStatus
+                                    .OrderByDescending(x => x.Count)
+                                    .ToList();
+                                
+                                var totalOrders = statusCounts?.Sum(x => x.Count) ?? 0;
+                                double currentAngle = 0;
+                                var colors = new Dictionary<string, string>
+                                {
+                                    { "pending", "#eab308" }, // Yellow
+                                    { "completed", "#3b82f6" }, // Blue
+                                    { "paid", "#3b82f6" }, // Blue
+                                    { "cancelled", "#ef4444" }, // Red
+                                    { "canceled", "#ef4444" }, // Red (alt)
+                                    { "processing", "#06b6d4" } // Cyan
+                                };
+                            }
+
+                            <svg viewBox="0 0 100 100" class="w-full h-full transform -rotate-90">
+                                @if (totalOrders > 0 && statusCounts != null)
+                                {
+                                    foreach (var item in statusCounts)
+                                    {
+                                        var percent = (double)item.Count / totalOrders;
+                                        var dashArray = (percent * 100).ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
+                                        var offset = (-currentAngle).ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
+                                        
+                                        <circle r="15.9155" cx="50" cy="50" fill="transparent"
+                                                stroke="@(colors.ContainsKey(item.Status.ToLower()) ? colors[item.Status.ToLower()] : "#9ca3af")"
+                                                stroke-width="32"
+                                                stroke-dasharray="@dashArray 100"
+                                                stroke-dashoffset="@offset" />
+                                        
+                                        currentAngle += percent * 100;
+                                    }
+                                }
+                                else
+                                {
+                                    <circle r="15.9155" cx="50" cy="50" fill="transparent" stroke="#e5e7eb" stroke-width="32" />
+                                }
+                            </svg>
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="flex flex-wrap justify-center gap-4 mt-6">
+                            @if (statusCounts != null)
+                            {
+                                foreach (var item in statusCounts)
+                                {
+                                     <div class="flex items-center gap-2">
+                                         <div class="w-3 h-3 rounded-full" style="background-color: @(colors.ContainsKey(item.Status.ToLower()) ? colors[item.Status.ToLower()] : "#9ca3af")"></div>
+                                         <span class="text-sm text-gray-600 capitalize font-medium">@item.Status: @item.Count</span>
+                                     </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </CardBody>
+            </Card>
+
+            <Card class="shadow-xl border border-gray-200 !bg-white rounded-2xl overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200 p-6">
+                    <h5 class="text-xl font-bold text-gray-900 mb-0">Status Details</h5>
+                </div>
+                <CardBody class="p-0 bg-white">
+                    <Table Hoverable class="mb-0">
+                        <TableHeader>
+                            <TableRow class="bg-gray-50">
+                                <TableHeaderCell class="text-gray-700 font-bold">Status</TableHeaderCell>
+                                <TableHeaderCell class="text-center text-gray-700 font-bold">Count</TableHeaderCell>
+                                <TableHeaderCell class="text-right text-gray-700 font-bold">Total Amount</TableHeaderCell>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            @{
+                                var statusDetails = statistics.OrdersByStatus
+                                    .OrderByDescending(x => x.Count)
+                                    .ToList();
+
+                                if (statusDetails != null && statusDetails.Any())
+                                {
+                                    foreach (var item in statusDetails)
+                                    {
+                                        var colorClass = item.Status.ToLower() switch
+                                        {
+                                            "pending" => "text-yellow-600 bg-yellow-50 border-yellow-200",
+                                            "completed" or "paid" => "text-blue-600 bg-blue-50 border-blue-200",
+                                            "cancelled" or "canceled" => "text-red-600 bg-red-50 border-red-200",
+                                            "processing" => "text-cyan-600 bg-cyan-50 border-cyan-200",
+                                            _ => "text-gray-600 bg-gray-50 border-gray-200"
+                                        };
+
+                                        <TableRow>
+                                            <TableRowCell>
+                                                <span class="px-3 py-1 rounded-full text-xs font-bold border @colorClass uppercase">
+                                                    @item.Status
+                                                </span>
+                                            </TableRowCell>
+                                            <TableRowCell class="text-center font-bold text-gray-900">@item.Count</TableRowCell>
+                                            <TableRowCell class="text-right font-bold text-gray-900">$@item.TotalAmount.ToString("N2")</TableRowCell>
+                                        </TableRow>
+                                    }
+                                }
+                                else
+                                {
+                                    <TableRow>
+                                        <TableRowCell ColumnSpan="3" class="text-center py-8 text-gray-500">No data available</TableRowCell>
+                                    </TableRow>
+                                }
+                            }
+                        </TableBody>
+                    </Table>
+                </CardBody>
+            </Card>
+        </div>
+
         <!-- Third Row: Chart and Top Products -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <!-- Spend Activity Chart -->
             <div class="lg:col-span-2">
-                <Card class="shadow-xl border border-gray-200 !bg-white rounded-2xl overflow-hidden">
+                <Card class="shadow-xl border border-gray-200 !bg-white rounded-2xl overflow-hidden h-full">
                     <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200 p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h5 class="text-xl font-bold text-gray-900 mb-0">Spend Activity</h5>
@@ -480,19 +610,14 @@
         <Card class="shadow-xl border border-gray-200 !bg-white rounded-2xl overflow-hidden">
             <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200 p-6">
                 <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-6">
-                        <span class="@GetTabClass("transactions")" @onclick='() => OnTransactionViewChange("transactions")'>
-                            Recent Transactions
-                        </span>
-                        <span class="@GetTabClass("transfers")" @onclick='() => OnTransactionViewChange("transfers")'>
-                            Recent Transfers
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="relative">
-                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm" />
-                            <input type="text" @bind="searchQuery" @bind:event="oninput" placeholder="Search transactions" class="pl-10 pr-4 py-2 bg-white border-2 border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none w-64 shadow-sm" />
-                        </div>
+                    <h5 class="text-xl font-bold text-gray-900 mb-0">Recent Transactions</h5>
+                    <div class="flex gap-3">
+                        <Button Color="Color.Primary" Size="Size.Small" To="/admin/orders" Type="ButtonType.Link" Class="!bg-blue-600 !text-white hover:!bg-blue-700 rounded-lg shadow-md px-4">
+                            View All Orders <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowRight" class="ml-2" />
+                        </Button>
+                        <Button Color="Color.Success" Size="Size.Small" To="/admin/purchase-orders" Type="ButtonType.Link" Class="!bg-green-600 !text-white hover:!bg-green-700 rounded-lg shadow-md px-4">
+                            View Purchase Orders <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowRight" class="ml-2" />
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -502,52 +627,63 @@
                         <TableHeader>
                             <TableRow class="bg-white border-b-2 border-gray-200">
                                 <TableHeaderCell class="px-6 py-4 text-left text-gray-900 font-bold text-sm uppercase tracking-wide">Date</TableHeaderCell>
-                                <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wide">Status</TableHeaderCell>
-                                <TableHeaderCell class="px-6 py-4 text-left text-gray-900 font-bold text-sm uppercase tracking-wide">
-                                    @(transactionView == "transactions" ? "Customer" : "Transfer To")
-                                </TableHeaderCell>
-                                <TableHeaderCell class="px-6 py-4 text-left text-gray-900 font-bold text-sm uppercase tracking-wide">
-                                    @(transactionView == "transactions" ? "Order ID" : "Reference")
-                                </TableHeaderCell>
+                                <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wide">Type</TableHeaderCell>
+                                <TableHeaderCell class="px-6 py-4 text-left text-gray-900 font-bold text-sm uppercase tracking-wide">Partner</TableHeaderCell>
+                                <TableHeaderCell class="px-6 py-4 text-left text-gray-900 font-bold text-sm uppercase tracking-wide">Reference</TableHeaderCell>
                                 <TableHeaderCell class="px-6 py-4 text-right text-gray-900 font-bold text-sm uppercase tracking-wide">Amount</TableHeaderCell>
+                                <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wide">Status</TableHeaderCell>
                             </TableRow>
                         </TableHeader>
                         <TableBody class="bg-white divide-y divide-gray-200">
-                            @if (FilteredOrders != null && FilteredOrders.Any())
+                            @if (recentTransactions != null && recentTransactions.Any())
                             {
-                                @foreach (var order in FilteredOrders.Take(10))
+                                @foreach (var transaction in recentTransactions)
                                 {
                                     <TableRow class="bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all">
                                         <TableRowCell class="px-6 py-4">
                                             <div>
-                                                <span class="text-gray-900 font-bold text-sm">@order.OrderDate.ToString("dd/MM/yyyy")</span>
-                                                <span class="text-gray-600 text-xs block mt-0.5 font-medium">@order.OrderDate.ToString("HH:mm")</span>
+                                                <span class="text-gray-900 font-bold text-sm">@transaction.Date.ToString("dd/MM/yyyy")</span>
+                                                <span class="text-gray-600 text-xs block mt-0.5 font-medium">@transaction.Date.ToString("HH:mm")</span>
                                             </div>
                                         </TableRowCell>
                                         <TableRowCell class="px-6 py-4 text-center">
-                                            <Badge Color="@GetStatusColor(order.Status)" class="px-3 py-1.5 rounded-full">
-                                                <span class="flex items-center gap-1.5 justify-center">
-                                                    <span class="w-2 h-2 rounded-full @GetStatusDotClass(order.Status)"></span>
-                                                    <span class="font-bold text-xs">@order.Status</span>
-                                                </span>
-                                            </Badge>
+                                            @if (transaction.Type == "Sale")
+                                            {
+                                                <Badge Color="Color.Success" class="px-3 py-1.5 rounded-full">Bán hàng</Badge>
+                                            }
+                                            else
+                                            {
+                                                <Badge Color="Color.Warning" class="px-3 py-1.5 rounded-full">Nhập kho</Badge>
+                                            }
                                         </TableRowCell>
                                         <TableRowCell class="px-6 py-4">
                                             <div class="flex items-center gap-3">
-                                                <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
-                                                    @(order.Customer?.Name?.Substring(0, 1).ToUpper() ?? "G")
+                                                <div class="w-9 h-9 bg-gradient-to-br @(transaction.Type == "Sale" ? "from-blue-500 to-purple-600" : "from-orange-500 to-red-600") rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
+                                                    @(transaction.PartnerName?.Substring(0, 1).ToUpper() ?? "?")
                                                 </div>
-                                                <span class="text-gray-900 font-bold text-sm">@(order.Customer?.Name ?? "Guest")</span>
+                                                <span class="text-gray-900 font-bold text-sm">@(transaction.PartnerName ?? "Unknown")</span>
                                             </div>
                                         </TableRowCell>
                                         <TableRowCell class="px-6 py-4">
-                                            <div>
-                                                <span class="text-gray-900 font-bold text-sm">#@order.OrderId</span>
-                                                <span class="text-gray-600 text-xs block mt-0.5 font-medium">****@order.OrderId.ToString().Substring(Math.Max(0, order.OrderId.ToString().Length - 4))</span>
-                                            </div>
+                                            <span class="text-gray-900 font-bold text-sm">@transaction.ReferenceCode</span>
                                         </TableRowCell>
                                         <TableRowCell class="px-6 py-4 text-right">
-                                            <span class="font-bold text-gray-900 text-sm">$@order.TotalAmount.ToString("N2")</span>
+                                            @if (transaction.Type == "Sale")
+                                            {
+                                                <span class="font-bold text-green-600 text-sm">+$@transaction.Amount.ToString("N2")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="font-bold text-red-600 text-sm">-$@transaction.Amount.ToString("N2")</span>
+                                            }
+                                        </TableRowCell>
+                                        <TableRowCell class="px-6 py-4 text-center">
+                                            <Badge Color="@GetStatusColor(transaction.Status)" class="px-3 py-1.5 rounded-full">
+                                                <span class="flex items-center gap-1.5 justify-center">
+                                                    <span class="w-2 h-2 rounded-full @GetStatusDotClass(transaction.Status)"></span>
+                                                    <span class="font-bold text-xs">@transaction.Status</span>
+                                                </span>
+                                            </Badge>
                                         </TableRowCell>
                                     </TableRow>
                                 }
@@ -555,9 +691,9 @@
                             else
                             {
                                 <TableRow class="bg-white">
-                                    <TableRowCell ColumnSpan="5" class="text-center py-12">
+                                    <TableRowCell ColumnSpan="6" class="text-center py-12">
                                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Inbox" class="text-4xl text-gray-300 mb-3" />
-                                        <p class="text-gray-600 font-medium">No @(transactionView) found</p>
+                                        <p class="text-gray-600 font-medium">No transactions found</p>
                                     </TableRowCell>
                                 </TableRow>
                             }
@@ -565,33 +701,16 @@
                     </Table>
                 </div>
             </CardBody>
-            <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-t border-gray-200 p-4">
-                <div class="flex justify-center">
-                    <Button Color="Color.Primary" Size="Size.Small" To="/admin/orders" Type="ButtonType.Link" Class="!bg-blue-600 !text-white hover:!bg-blue-700 rounded-lg shadow-md px-6">
-                        View All Orders <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowRight" class="ml-2" />
-                    </Button>
-                </div>
-            </div>
         </Card>
     }
 </div>
 
 @code {
     private DashboardStatisticsDto? statistics;
-    private List<Order>? recentOrders;
+    private List<TransactionDto>? recentTransactions;
     private bool isLoading = true;
     private string chartView = "revenue";
-    private string transactionView = "transactions";
     private bool showFiltersModal = false;
-    private string searchQuery = "";
-
-    private IEnumerable<Order> FilteredOrders => 
-        recentOrders?.Where(o => 
-            string.IsNullOrWhiteSpace(searchQuery) || 
-            (o.Customer?.Name?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ?? false) ||
-            o.OrderId.ToString().Contains(searchQuery) ||
-            o.Status.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)
-        ) ?? Enumerable.Empty<Order>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -605,13 +724,7 @@
         try
         {
             statistics = await StatisticsService.GetDashboardStatisticsAsync(30);
-            
-            recentOrders = await DbContext.Orders
-                .Include(o => o.Customer)
-                .Include(o => o.Payments)
-                .OrderByDescending(o => o.OrderDate)
-                .Take(10)
-                .ToListAsync();
+            recentTransactions = await StatisticsService.GetRecentTransactionsAsync(10);
         }
         catch (Exception ex)
         {
@@ -629,12 +742,6 @@
     private void OnChartViewChange(string view)
     {
         chartView = view;
-    }
-
-    private void OnTransactionViewChange(string view)
-    {
-        transactionView = view;
-        searchQuery = "";
     }
 
     private void ToggleFiltersModal()
@@ -660,14 +767,6 @@
         return chartView == view 
             ? "!bg-blue-600 !text-white shadow-md hover:!bg-blue-700 rounded-lg px-4 transition-all" 
             : "!bg-white !text-gray-900 !border-gray-300 hover:!bg-gray-100 rounded-lg px-4 transition-all";
-    }
-
-    private string GetTabClass(string tab)
-    {
-        var baseClass = "text-lg font-bold cursor-pointer pb-2 px-1 transition-all";
-        return transactionView == tab 
-            ? $"{baseClass} text-blue-600 border-b-4 border-blue-600" 
-            : $"{baseClass} text-gray-600 hover:text-gray-900 border-b-4 border-transparent";
     }
 
     private Color GetStatusColor(string status) => status.ToLower() switch

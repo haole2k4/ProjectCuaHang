@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using StoreManagementAPI.Data;
 using StoreManagementAPI.DTOs;
 using StoreManagementAPI.Models;
+using Microsoft.AspNetCore.Identity;
+using BlazorApp1.Data;
 
 namespace StoreManagementAPI.Services
 {
@@ -9,7 +11,7 @@ namespace StoreManagementAPI.Services
     {
         Task<List<PurchaseOrderResponseDto>> GetAllPurchaseOrders();
         Task<PurchaseOrderResponseDto?> GetPurchaseOrderById(int purchaseId);
-        Task<PurchaseOrderResponseDto> CreatePurchaseOrder(CreatePurchaseOrderDto dto, int userId);
+        Task<PurchaseOrderResponseDto> CreatePurchaseOrder(CreatePurchaseOrderDto dto, string userId);
         Task<PurchaseOrderResponseDto> UpdatePurchaseOrderStatus(int purchaseId, string status);
         Task<bool> DeletePurchaseOrder(int purchaseId);
     }
@@ -19,52 +21,70 @@ namespace StoreManagementAPI.Services
         private readonly StoreDbContext _context;
         private readonly IAuditLogService _auditLogService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public PurchaseOrderService(StoreDbContext context, IAuditLogService auditLogService, IHttpContextAccessor httpContextAccessor)
+        public PurchaseOrderService(
+            StoreDbContext context, 
+            IAuditLogService auditLogService, 
+            IHttpContextAccessor httpContextAccessor,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _auditLogService = auditLogService;
             _httpContextAccessor = httpContextAccessor;
+            _userManager = userManager;
         }
 
-        private (int? userId, string? username) GetAuditInfo()
+        private (string? userId, string? username) GetAuditInfo()
         {
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext == null)
-                return (1, "admin"); // Default to admin user (id=1)
+                return (null, "system");
 
             var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var usernameClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
 
-            int? userId = null;
-            if (int.TryParse(userIdClaim, out int parsedUserId))
-                userId = parsedUserId;
+            var username = !string.IsNullOrEmpty(usernameClaim) ? usernameClaim : "system";
 
-            var username = !string.IsNullOrEmpty(usernameClaim) ? usernameClaim : "admin";
-            var finalUserId = userId ?? 1; // Default to user id = 1 (admin)
-
-            return (finalUserId, username);
+            return (userIdClaim, username);
         }
 
         public async Task<List<PurchaseOrderResponseDto>> GetAllPurchaseOrders()
         {
             var purchaseOrders = await _context.PurchaseOrders
                 .Include(po => po.Supplier)
-                .Include(po => po.User)
                 .Include(po => po.Warehouse)
                 .Include(po => po.PurchaseItems)
                     .ThenInclude(pi => pi.Product)
                 .OrderByDescending(po => po.PurchaseDate)
                 .ToListAsync();
 
-            return purchaseOrders.Select(po => MapToResponseDto(po)).ToList();
+            // Fetch users
+            var userIds = purchaseOrders.Select(po => po.UserId).Distinct().ToList();
+            var userMap = new Dictionary<string, string>();
+            foreach(var uid in userIds)
+            {
+                if (!string.IsNullOrEmpty(uid))
+                {
+                    var user = await _userManager.FindByIdAsync(uid);
+                    if (user != null) userMap[uid] = user.UserName ?? "Unknown";
+                }
+            }
+
+            return purchaseOrders.Select(po => {
+                string? userName = null;
+                if (!string.IsNullOrEmpty(po.UserId) && userMap.ContainsKey(po.UserId))
+                {
+                    userName = userMap[po.UserId];
+                }
+                return MapToResponseDto(po, userName);
+            }).ToList();
         }
 
         public async Task<PurchaseOrderResponseDto?> GetPurchaseOrderById(int purchaseId)
         {
             var purchaseOrder = await _context.PurchaseOrders
                 .Include(po => po.Supplier)
-                .Include(po => po.User)
                 .Include(po => po.Warehouse)
                 .Include(po => po.PurchaseItems)
                     .ThenInclude(pi => pi.Product)
@@ -73,10 +93,17 @@ namespace StoreManagementAPI.Services
             if (purchaseOrder == null)
                 return null;
 
-            return MapToResponseDto(purchaseOrder);
+            string? userName = null;
+            if (!string.IsNullOrEmpty(purchaseOrder.UserId))
+            {
+                var user = await _userManager.FindByIdAsync(purchaseOrder.UserId);
+                userName = user?.UserName;
+            }
+
+            return MapToResponseDto(purchaseOrder, userName);
         }
 
-        public async Task<PurchaseOrderResponseDto> CreatePurchaseOrder(CreatePurchaseOrderDto dto, int userId)
+        public async Task<PurchaseOrderResponseDto> CreatePurchaseOrder(CreatePurchaseOrderDto dto, string userId)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -318,7 +345,7 @@ namespace StoreManagementAPI.Services
             return true;
         }
 
-        private PurchaseOrderResponseDto MapToResponseDto(PurchaseOrder po)
+        private PurchaseOrderResponseDto MapToResponseDto(PurchaseOrder po, string? userName = null)
         {
             return new PurchaseOrderResponseDto
             {
@@ -328,8 +355,8 @@ namespace StoreManagementAPI.Services
                 WarehouseId = po.WarehouseId ?? 0,
                 WarehouseName = po.Warehouse?.WarehouseName,
                 UserId = po.UserId,
-                UserName = po.User?.FullName,
-                Username = po.User?.Username,
+                UserName = userName,
+                Username = userName,
                 PurchaseDate = po.PurchaseDate,
                 TotalAmount = po.TotalAmount,
                 Status = po.Status,

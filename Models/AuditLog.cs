@@ -11,7 +11,7 @@ namespace StoreManagementAPI.Models
         public int AuditId { get; set; }
 
         [Column("user_id")]
-        public int? UserId { get; set; }
+        public string? UserId { get; set; }
 
         [Column("username")]
         [StringLength(50)]
@@ -48,9 +48,5 @@ namespace StoreManagementAPI.Models
 
         [Column("additional_info", TypeName = "text")]
         public string? AdditionalInfo { get; set; } // JSON string for extra information
-
-        // Navigation properties
-        [ForeignKey("UserId")]
-        public virtual User? User { get; set; }
     }
 }

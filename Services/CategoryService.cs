@@ -34,23 +34,18 @@ namespace StoreManagementAPI.Services
             _httpContextAccessor = httpContextAccessor;
         }
 
-        private (int? userId, string? username) GetAuditInfo()
+        private (string? userId, string? username) GetAuditInfo()
         {
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext == null)
-                return (1, "admin");
+                return (null, "admin");
 
             var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var usernameClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
 
-            int? userId = null;
-            if (int.TryParse(userIdClaim, out int parsedUserId))
-                userId = parsedUserId;
-
             var username = !string.IsNullOrEmpty(usernameClaim) ? usernameClaim : "admin";
-            var finalUserId = userId ?? 1;
 
-            return (finalUserId, username);
+            return (userIdClaim, username);
         }
 
         public async Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync()

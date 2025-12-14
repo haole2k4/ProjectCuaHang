@@ -4,6 +4,8 @@ using StoreManagementAPI.DTOs;
 using StoreManagementAPI.Models;
 using StoreManagementAPI.Repositories;
 using System.Text.Json;
+using Microsoft.AspNetCore.Identity;
+using BlazorApp1.Data;
 
 namespace StoreManagementAPI.Services
 {
@@ -27,6 +29,7 @@ namespace StoreManagementAPI.Services
         private readonly IRepository<Promotion> _promotionRepository;
         private readonly IAuditLogService _auditLogService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public OrderService(
             StoreDbContext context,
@@ -36,7 +39,8 @@ namespace StoreManagementAPI.Services
             IRepository<Inventory> inventoryRepository,
             IRepository<Promotion> promotionRepository,
             IAuditLogService auditLogService,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _orderRepository = orderRepository;
@@ -46,25 +50,21 @@ namespace StoreManagementAPI.Services
             _promotionRepository = promotionRepository;
             _auditLogService = auditLogService;
             _httpContextAccessor = httpContextAccessor;
+            _userManager = userManager;
         }
 
-        private (int? userId, string? username) GetAuditInfo()
+        private (string? userId, string? username) GetAuditInfo()
         {
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext == null)
-                return (1, "admin");
+                return (null, "system");
 
             var userIdClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             var usernameClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
 
-            int? userId = null;
-            if (int.TryParse(userIdClaim, out int parsedUserId))
-                userId = parsedUserId;
+            var username = !string.IsNullOrEmpty(usernameClaim) ? usernameClaim : "system";
 
-            var username = !string.IsNullOrEmpty(usernameClaim) ? usernameClaim : "admin";
-            var finalUserId = userId ?? 1;
-
-            return (finalUserId, username);
+            return (userIdClaim, username);
         }
 
         private string GetApplyTypeDescription(string? applyType)
@@ -83,29 +83,13 @@ namespace StoreManagementAPI.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Ensure userId exists in database, otherwise set to null
-                int? userId = null;
-                if (dto.UserId.HasValue)
-                {
-                    var userExists = await _context.Users.AnyAsync(u => u.UserId == dto.UserId.Value);
-                    if (userExists)
-                    {
-                        userId = dto.UserId.Value;
-                    }
-                }
-
-                // If still null, try to find a default user
-                if (!userId.HasValue)
-                {
-                    var defaultUser = await _context.Users.FirstOrDefaultAsync();
-                    userId = defaultUser?.UserId;
-                }
+                string? userId = dto.UserId;
 
                 // Create order
                 var order = new Order
                 {
                     CustomerId = dto.CustomerId,
-                    UserId = userId, // Can be null
+                    UserId = userId,
                     Status = "pending",
                     OrderDate = DateTime.Now
                 };
@@ -164,8 +148,6 @@ namespace StoreManagementAPI.Services
                 // Apply promotion if provided
                 if (!string.IsNullOrEmpty(dto.PromoCode))
                 {
-                    Console.WriteLine($"[DEBUG] Applying promotion: {dto.PromoCode}, TotalAmount: {totalAmount}");
-
                     var promotion = await _context.Promotions
                         .Include(p => p.PromotionProducts)
                         .FirstOrDefaultAsync(p =>
@@ -174,19 +156,14 @@ namespace StoreManagementAPI.Services
                             p.StartDate <= DateTime.Now &&
                             p.EndDate >= DateTime.Now);
 
-                    Console.WriteLine($"[DEBUG] Found promotion: {promotion?.PromoCode}, Status: {promotion?.Status}, MinOrderAmount: {promotion?.MinOrderAmount}");
-
                     if (promotion != null && totalAmount >= promotion.MinOrderAmount)
                     {
-                        Console.WriteLine($"[DEBUG] Promotion eligible, calculating discount...");
-
                         if (promotion.UsageLimit == 0 || promotion.UsedCount < promotion.UsageLimit)
                         {
                             decimal discount = 0;
 
                             if (promotion.ApplyType == "order")
                             {
-                                // Apply to entire order
                                 if (promotion.DiscountType == "percent")
                                 {
                                     discount = totalAmount * (promotion.DiscountValue / 100);
@@ -196,11 +173,10 @@ namespace StoreManagementAPI.Services
                                     discount = promotion.DiscountValue;
                                 }
                                 order.DiscountAmount = discount;
-                                order.TotalAmount = totalAmount - discount; // Trừ discount vào total
+                                order.TotalAmount = totalAmount - discount;
                             }
                             else if (promotion.ApplyType == "product")
                             {
-                                // Apply discount to specific products
                                 var applicableProductIds = promotion.PromotionProducts.Select(pp => pp.ProductId).ToList();
 
                                 foreach (var item in orderItems)
@@ -223,21 +199,17 @@ namespace StoreManagementAPI.Services
                                 }
 
                                 order.DiscountAmount = discount;
-                                // TotalAmount is already calculated from items (already discounted)
                                 order.TotalAmount = orderItems.Sum(i => i.Subtotal);
                             }
                             else if (promotion.ApplyType == "combo")
                             {
-                                // Apply discount to the total of applicable products
                                 var applicableProductIds = promotion.PromotionProducts.Select(pp => pp.ProductId).ToList();
 
-                                // Check if order has at least one product from the applicable list
                                 bool hasApplicableProduct = orderItems.Any(item =>
                                     item.ProductId.HasValue && applicableProductIds.Contains(item.ProductId.Value));
 
                                 if (hasApplicableProduct)
                                 {
-                                    // Calculate total applicable subtotal
                                     decimal applicableSubtotal = 0;
                                     foreach (var item in orderItems)
                                     {
@@ -247,7 +219,6 @@ namespace StoreManagementAPI.Services
                                         }
                                     }
 
-                                    // Apply discount to the applicable subtotal
                                     if (promotion.DiscountType == "percent")
                                     {
                                         discount = applicableSubtotal * (promotion.DiscountValue / 100);
@@ -257,10 +228,8 @@ namespace StoreManagementAPI.Services
                                         discount = promotion.DiscountValue;
                                     }
 
-                                    // Cap discount at applicable subtotal
                                     discount = Math.Min(discount, applicableSubtotal);
 
-                                    // Distribute discount proportionally to applicable items
                                     if (discount > 0)
                                     {
                                         foreach (var item in orderItems)
@@ -271,39 +240,22 @@ namespace StoreManagementAPI.Services
                                                 decimal itemDiscount = discount * proportion;
                                                 item.Subtotal -= itemDiscount;
                                             }
-                                            // Non-applicable items keep original subtotal (discount = 0)
                                         }
                                     }
                                 }
 
                                 order.DiscountAmount = discount;
-                                // TotalAmount is already calculated from items (already discounted)
                                 order.TotalAmount = orderItems.Sum(i => i.Subtotal);
                             }
 
                             order.PromoId = promotion.PromoId;
                             promotion.UsedCount++;
-
-                            Console.WriteLine($"[DEBUG] Applied discount: {discount}, New TotalAmount: {order.TotalAmount}, PromoId: {order.PromoId}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"[DEBUG] Promotion usage limit exceeded");
                         }
                     }
-                    else
-                    {
-                        Console.WriteLine($"[DEBUG] Promotion not eligible - TotalAmount: {totalAmount}, MinOrderAmount: {promotion?.MinOrderAmount}");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"[DEBUG] No promoCode provided");
                 }
 
                 var createdOrder = await _orderRepository.AddAsync(order);
 
-                // Add order items with order id
                 foreach (var item in orderItems)
                 {
                     item.OrderId = createdOrder.OrderId;
@@ -312,7 +264,6 @@ namespace StoreManagementAPI.Services
 
                 await _context.SaveChangesAsync();
 
-                // Log audit
                 var (auditUserId, auditUsername) = GetAuditInfo();
                 var itemsInfo = orderItems.Select(oi => new
                 {
@@ -363,7 +314,6 @@ namespace StoreManagementAPI.Services
         {
             var order = await _context.Orders
                 .Include(o => o.Customer)
-                .Include(o => o.User)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .Include(o => o.Payments)
@@ -373,9 +323,13 @@ namespace StoreManagementAPI.Services
             if (order == null) return null;
 
             var payment = order.Payments.FirstOrDefault();
-
-            // Debug log
-            Console.WriteLine($"Order {order.OrderId} PromoId: {order.PromoId}");
+            
+            string? userName = null;
+            if (!string.IsNullOrEmpty(order.UserId))
+            {
+                var user = await _userManager.FindByIdAsync(order.UserId);
+                userName = user?.UserName;
+            }
 
             return new OrderResponseDto
             {
@@ -383,12 +337,12 @@ namespace StoreManagementAPI.Services
                 CustomerId = order.CustomerId,
                 CustomerName = order.Customer?.Name,
                 UserId = order.UserId,
-                UserName = order.User?.FullName,
+                UserName = userName,
                 OrderDate = order.OrderDate,
                 Status = order.Status,
-                TotalAmount = order.TotalAmount + order.DiscountAmount, // Subtotal before discount
+                TotalAmount = order.TotalAmount + order.DiscountAmount,
                 DiscountAmount = order.DiscountAmount,
-                FinalAmount = order.TotalAmount, // TotalAmount is already final amount after discount
+                FinalAmount = order.TotalAmount,
                 PaymentMethod = payment?.PaymentMethod,
                 PaymentDate = payment?.PaymentDate,
                 PromoId = order.PromoId,
@@ -417,7 +371,6 @@ namespace StoreManagementAPI.Services
         {
             var orders = await _context.Orders
                 .Include(o => o.Customer)
-                .Include(o => o.User)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .Include(o => o.Payments)
@@ -425,18 +378,38 @@ namespace StoreManagementAPI.Services
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
 
+            // Fetch users for all orders efficiently? 
+            // For now, just fetch individually or skip username if not critical for list view.
+            // Or fetch all users and map.
+            
+            // Let's fetch all users to a dictionary for mapping
+            var userIds = orders.Where(o => !string.IsNullOrEmpty(o.UserId)).Select(o => o.UserId).Distinct().ToList();
+            var userMap = new Dictionary<string, string>();
+            
+            foreach(var uid in userIds)
+            {
+                if (uid != null)
+                {
+                    var user = await _userManager.FindByIdAsync(uid);
+                    if (user != null)
+                    {
+                        userMap[uid] = user.UserName ?? "Unknown";
+                    }
+                }
+            }
+
             return orders.Select(order => new OrderResponseDto
             {
                 OrderId = order.OrderId,
                 CustomerId = order.CustomerId,
                 CustomerName = order.Customer?.Name,
                 UserId = order.UserId,
-                UserName = order.User?.FullName,
+                UserName = (order.UserId != null && userMap.ContainsKey(order.UserId)) ? userMap[order.UserId] : null,
                 OrderDate = order.OrderDate,
                 Status = order.Status,
-                TotalAmount = order.TotalAmount + order.DiscountAmount, // Subtotal before discount
+                TotalAmount = order.TotalAmount + order.DiscountAmount,
                 DiscountAmount = order.DiscountAmount,
-                FinalAmount = order.TotalAmount, // TotalAmount is already final amount after discount
+                FinalAmount = order.TotalAmount,
                 PaymentMethod = order.Payments.FirstOrDefault()?.PaymentMethod,
                 PaymentDate = order.Payments.FirstOrDefault()?.PaymentDate,
                 PromoId = order.PromoId,
@@ -554,7 +527,6 @@ namespace StoreManagementAPI.Services
             // Start with base query
             var query = _context.Orders
                 .Include(o => o.Customer)
-                .Include(o => o.User)
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .Include(o => o.Payments)
@@ -629,6 +601,22 @@ namespace StoreManagementAPI.Services
                 .ToListAsync();
 
             // Map to DTOs
+            // Fetch users for mapping
+            var userIds = orders.Where(o => !string.IsNullOrEmpty(o.UserId)).Select(o => o.UserId).Distinct().ToList();
+            var userMap = new Dictionary<string, string>();
+            
+            foreach(var uid in userIds)
+            {
+                if (uid != null)
+                {
+                    var user = await _userManager.FindByIdAsync(uid);
+                    if (user != null)
+                    {
+                        userMap[uid] = user.UserName ?? "Unknown";
+                    }
+                }
+            }
+
             var orderDtos = orders.Select(order => {
                 var payment = order.Payments.FirstOrDefault();
 
@@ -638,7 +626,7 @@ namespace StoreManagementAPI.Services
                     CustomerId = order.CustomerId,
                     CustomerName = order.Customer?.Name,
                     UserId = order.UserId,
-                    UserName = order.User?.FullName,
+                    UserName = (order.UserId != null && userMap.ContainsKey(order.UserId)) ? userMap[order.UserId] : null,
                     OrderDate = order.OrderDate,
                     Status = order.Status,
                     TotalAmount = order.TotalAmount + order.DiscountAmount,
