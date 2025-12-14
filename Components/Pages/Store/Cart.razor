@@ -16,11 +16,12 @@
 <PageTitle>Shopping Cart</PageTitle>
 
 <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-  <Heading Size="HeadingSize.Is2">
-    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" class="mr-2" /> Shopping Cart
+  <Heading Size="HeadingSize.Is2" class="!text-blue-600 !font-bold">
+    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingCart" class="!mr-2" /> Shopping Cart
   </Heading>
-  <Button Color="Color.Primary" Outline To="/store" Type="ButtonType.Link">
-    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowLeft" class="mr-2" /> Continue Shopping
+  <Button Color="Color.Primary" Outline To="/store" Type="ButtonType.Link" 
+          class="!border-2 !border-blue-600 !text-blue-600 hover:!bg-blue-600 hover:!text-white !font-semibold">
+    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ArrowLeft" class="!mr-2" /> Continue Shopping
   </Button>
 </div>
 
@@ -99,8 +100,9 @@ else
           }
         </CardBody>
         <CardFooter Background="Background.Light">
-          <Button Color="Color.Danger" Outline Clicked="ClearCart">
-            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.TrashAlt" class="mr-2" /> Clear Cart
+          <Button Color="Color.Danger" Outline Clicked="ClearCart"
+                  class="!border-2 !border-red-600 !text-red-600 hover:!bg-red-600 hover:!text-white !font-semibold">
+            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.TrashAlt" class="!mr-2" /> Clear Cart
           </Button>
         </CardFooter>
       </Card>

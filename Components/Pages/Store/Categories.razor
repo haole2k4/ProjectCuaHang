@@ -56,18 +56,24 @@ else
         @foreach (var category in categories)
         {
             <div class="group">
-                <Card class="category-card card-shadow hover:card-shadow-lg transition-all cursor-pointer overflow-hidden" @onclick="() => NavigateToCategory(category.CategoryId)">
-                    <CardBody class="text-center py-10">
-                        <div class="text-primary text-5xl mb-4">
-                            <Icon Name="@GetCategoryIcon(category.CategoryName)" />
-                        </div>
-                        <CardTitle Size="5" class="font-semibold mb-3">@category.CategoryName</CardTitle>
-                        <div class="flex items-center justify-center gap-2">
-                            <Badge Color="Color.Primary" Pill class="px-3 py-2 text-sm font-medium">
-                                @category.Products.Count(p => p.Status == "active") Products
-                            </Badge>
-                        </div>
-                    </CardBody>
+                <Card class="category-card card-shadow hover:card-shadow-lg transition-all cursor-pointer overflow-hidden border-0" @onclick="() => NavigateToCategory(category.CategoryId)">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="@GetCategoryImage(category.CategoryName)" 
+                             alt="@category.CategoryName" 
+                             class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                        <CardBody class="absolute inset-0 flex flex-col items-center justify-center text-center z-10">
+                            <div class="text-white text-6xl mb-4 drop-shadow-2xl">
+                                <Icon Name="@GetCategoryIcon(category.CategoryName)" />
+                            </div>
+                            <CardTitle Size="3" class="font-bold mb-2 text-white drop-shadow-lg">@category.CategoryName</CardTitle>
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="text-white font-medium text-sm bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                                    @category.Products.Count(p => p.Status == "active") Products
+                                </span>
+                            </div>
+                        </CardBody>
+                    </div>
                     <div class="bg-blue-600 text-white text-center py-3 group-hover:bg-blue-700 transition-all">
                         <div class="flex items-center justify-center gap-2 font-medium">
                             <span>Browse Products</span>
@@ -121,7 +127,7 @@ else
             var n when n.Contains("food") || n.Contains("grocery") => "fa-shopping-basket",
             var n when n.Contains("book") => "fa-book",
             var n when n.Contains("sport") => "fa-running",
-            var n when n.Contains("home") || n.Contains("furniture") => "fa-home",
+            var n when n.Contains("home") || n.Contains("furniture") || n.Contains("garden") => "fa-home",
             var n when n.Contains("beauty") || n.Contains("health") => "fa-heart",
             var n when n.Contains("toy") || n.Contains("game") => "fa-gamepad",
             var n when n.Contains("music") => "fa-music",
@@ -129,6 +135,24 @@ else
             var n when n.Contains("drink") => "fa-glass-martini",
             var n when n.Contains("figure") => "fa-user-astronaut",
             _ => "fa-th-large"
+        };
+    }
+    
+    private string GetCategoryImage(string categoryName)
+    {
+        var name = categoryName.ToLower();
+        return name switch
+        {
+            var n when n.Contains("electronic") => "https://images.unsplash.com/photo-1498049794561-7780e7231661?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            var n when n.Contains("cloth") || n.Contains("fashion") => "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            var n when n.Contains("book") => "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            var n when n.Contains("sport") => "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            var n when n.Contains("home") || n.Contains("furniture") || n.Contains("garden") => "https://images.unsplash.com/photo-1484101403633-562f891dc89a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            var n when n.Contains("food") || n.Contains("grocery") => "https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            var n when n.Contains("beauty") || n.Contains("health") => "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            var n when n.Contains("toy") || n.Contains("game") => "https://images.unsplash.com/photo-1558060370-d644479cb6f7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            var n when n.Contains("music") => "https://images.unsplash.com/photo-1511379938547-c1f69419868d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            _ => "https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
         };
     }
 }

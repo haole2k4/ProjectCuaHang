@@ -1,5 +1,6 @@
 ﻿@page "/"
 @layout StoreLayout
+@rendermode InteractiveServer
 
 @using StoreManagementAPI.Services
 @using Blazorise
@@ -216,7 +217,7 @@
     private void ViewProduct(int productId)
     {
         var product = featuredProducts?.FirstOrDefault(p => p.ProductId == productId);
-        if (product != null)
+        if (product != null && product.CategoryId.HasValue)
         {
             var encodedName = Uri.EscapeDataString(product.ProductName);
             NavigationManager.NavigateTo($"/products/{encodedName}");

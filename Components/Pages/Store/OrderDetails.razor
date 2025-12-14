@@ -39,10 +39,10 @@ else
 {
     <div class="flex flex-wrap justify-between items-start mb-6 gap-4">
         <div>
-            <Heading Size="HeadingSize.Is3" class="text-2xl font-bold mb-3">
+            <Heading Size="HeadingSize.Is3" class="!text-blue-600 !font-bold !text-3xl mb-3">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="mr-2" /> Order #@order.OrderId
             </Heading>
-            <Paragraph class="mb-0 text-sm text-black">
+            <Paragraph class="mb-0 text-sm !text-gray-900 !font-medium">
                 Placed on @order.OrderDate.ToString("MMMM dd, yyyy 'at' hh:mm tt")
             </Paragraph>
         </div>
@@ -90,8 +90,8 @@ else
 
             <!-- Order Items -->
             <Card class="card-shadow">
-                <CardHeader class="text-base font-semibold">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="mr-2" /> Order Items
+                <CardHeader class="!text-gray-900 !font-bold !text-xl !bg-gray-50 !border-b-2 !border-gray-200">
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="mr-2 !text-blue-600" /> Order Items
                 </CardHeader>
                 <CardBody Padding="Padding.Is0">
                     <Table Striped Hoverable class="mb-0">
@@ -139,8 +139,8 @@ else
             @if (order.Payments.Any())
             {
                 <Card class="card-shadow">
-                    <CardHeader class="text-base font-semibold">
-                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CreditCard" class="mr-2" /> Payment Information
+                    <CardHeader class="!text-gray-900 !font-bold !text-xl !bg-gray-50">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CreditCard" class="mr-2 !text-blue-600" /> Payment Information
                     </CardHeader>
                     <CardBody>
                         @foreach (var payment in order.Payments)
