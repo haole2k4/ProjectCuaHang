@@ -184,7 +184,7 @@ else
             }
         </div>
 
-        <div class="lg:col-span-1 space-y-4">
+        @* <div class="lg:col-span-1 space-y-4">
             <!-- Order Summary -->
             <Card class="card-shadow" style="position: sticky; top: 80px; z-index: 10;">
                 <CardHeader Background="Background.Primary" TextColor="TextColor.White">
@@ -243,6 +243,85 @@ else
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.MapMarkerAlt" class="mr-1" /> @order.Customer.Address
                             </Paragraph>
                         }
+                    </CardBody>
+                </Card>
+            }
+        </div> *@
+        <div class="lg:col-span-1 space-y-4">
+            <Card class="!bg-white border border-gray-200 shadow-md rounded-xl overflow-hidden" style="position: sticky; top: 80px; z-index: 10;">
+                <CardHeader class="!bg-gray-50 border-b border-gray-200 py-3 px-4">
+                    <span class="text-gray-900 font-bold text-base">
+                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Calculator" class="mr-2 text-gray-500" /> Order Summary
+                    </span>
+                </CardHeader>
+                <CardBody class="p-5">
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm font-medium text-gray-600">
+                            <span>Subtotal</span>
+                            <span class="text-gray-900 font-bold">$@((order.TotalAmount + order.DiscountAmount).ToString("N2"))</span>
+                        </div>
+                        @if (order.DiscountAmount > 0)
+                        {
+                            <div class="flex justify-between text-sm font-medium text-green-600">
+                                <span>Discount</span>
+                                <span>-$@order.DiscountAmount.ToString("N2")</span>
+                            </div>
+                        }
+                        <div class="flex justify-between text-sm font-medium text-gray-600">
+                            <span>Shipping</span>
+                            <span class="text-green-600 font-bold">Free</span>
+                        </div>
+                        
+                        <Divider class="!my-3 !border-gray-200" />
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-lg font-bold text-gray-900">Total</span>
+                            <span class="text-xl font-bold text-blue-600">$@order.TotalAmount.ToString("N2")</span>
+                        </div>
+                    </div>
+                </CardBody>
+            </Card>
+
+            @if (order.Customer != null)
+            {
+                <Card class="!bg-white border border-gray-200 shadow-md rounded-xl overflow-hidden">
+                    <CardHeader class="!bg-gray-50 border-b border-gray-200 py-3 px-4">
+                        <span class="text-gray-900 font-bold text-base">
+                            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.User" class="mr-2 text-gray-500" /> Customer
+                        </span>
+                    </CardHeader>
+                    <CardBody class="p-5">
+                        <Paragraph class="font-bold mb-3 text-gray-900 text-lg">@order.Customer.Name</Paragraph>
+                        
+                        <div class="space-y-2">
+                            @if (!string.IsNullOrEmpty(order.Customer.Email))
+                            {
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <div class="w-8 flex-shrink-0">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Envelope" class="text-gray-400" />
+                                    </div>
+                                    <span class="truncate">@order.Customer.Email</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(order.Customer.Phone))
+                            {
+                                <div class="flex items-center text-sm text-gray-600">
+                                    <div class="w-8 flex-shrink-0">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Phone" class="text-gray-400" />
+                                    </div>
+                                    <span>@order.Customer.Phone</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(order.Customer.Address))
+                            {
+                                <div class="flex items-start text-sm text-gray-600">
+                                    <div class="w-8 flex-shrink-0 mt-0.5">
+                                        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.MapMarkerAlt" class="text-gray-400" />
+                                    </div>
+                                    <span>@order.Customer.Address</span>
+                                </div>
+                            }
+                        </div>
                     </CardBody>
                 </Card>
             }

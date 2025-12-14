@@ -191,7 +191,7 @@
     <CardBody Padding="Padding.Is0">
         <div class="overflow-x-auto">
             <Table class="mb-0 w-full">
-                <TableHeader>
+                @* <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
                         <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">ID</TableHeaderCell>
                         <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Code</TableHeaderCell>
@@ -203,13 +203,27 @@
                         <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
                         <TableHeaderCell class="px-4 py-3 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
                     </TableRow>
+                </TableHeader> *@
+                <TableHeader>
+                    <TableRow class="!bg-gray-100 border-b border-gray-200">
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-4 py-3 text-center font-bold text-sm uppercase tracking-wider">ID</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-4 py-3 text-center font-bold text-sm uppercase tracking-wider">Code</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-4 py-3 text-center font-bold text-sm uppercase tracking-wider">Type</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-4 py-3 text-center font-bold text-sm uppercase tracking-wider">Discount</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-4 py-3 text-center font-bold text-sm uppercase tracking-wider">Min Order</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-4 py-3 text-center font-bold text-sm uppercase tracking-wider">Usage</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-4 py-3 text-center font-bold text-sm uppercase tracking-wider">Valid Period</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-4 py-3 text-center font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-4 py-3 text-center font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
+                    </TableRow>
                 </TableHeader>
                 <TableBody class="bg-white divide-y divide-gray-200">
                     @if (promotions != null && promotions.Any())
                     {
                         @foreach (var promo in promotions)
                         {
-                            <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150">
+                            @* <TableRow class="bg-white hover:bg-gray-100 transition-colors duration-150"> *@
+                            <TableRow class="!bg-white hover:!bg-blue-50 transition-colors duration-150 border-b border-gray-100">
                                 <TableRowCell class="px-4 py-3 text-center">
                                     <span class="text-gray-600 font-medium">#@promo.PromoId</span>
                                 </TableRowCell>

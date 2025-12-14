@@ -45,7 +45,7 @@
     <CardBody Padding="Padding.Is0">
         <div class="overflow-x-auto">
             <Table class="mb-0 w-full">
-                <TableHeader>
+                @* <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">PO #</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Supplier</TableHeaderCell>
@@ -55,13 +55,25 @@
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
                     </TableRow>
+                </TableHeader> *@
+                <TableHeader>
+                    <TableRow class="!bg-gray-100 border-b border-gray-200">
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">PO #</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Supplier</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Warehouse</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Date</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Total Amount</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Status</TableHeaderCell>
+                        <TableHeaderCell class="!bg-gray-100 !text-gray-700 px-6 py-4 text-center font-bold text-sm uppercase tracking-wider">Actions</TableHeaderCell>
+                    </TableRow>
                 </TableHeader>
                 <TableBody class="bg-white divide-y divide-gray-200">
                     @if (purchaseOrders != null && purchaseOrders.Any())
                     {
                         @foreach (var po in purchaseOrders)
                         {
-                            <TableRow class="hover:bg-gray-50 transition-colors">
+                            @* <TableRow class="hover:bg-gray-50 transition-colors"> *@
+                            <TableRow class="!bg-white hover:!bg-blue-50 transition-colors duration-150 border-b border-gray-100">
                                 <TableRowCell class="px-6 py-4 text-center">
                                     <span class="font-bold text-blue-600">#PO-@po.PurchaseId</span>
                                 </TableRowCell>
