@@ -16,7 +16,7 @@
 
 <div class="flex justify-between items-center mb-6">
     <div>
-        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+        <Heading Size="HeadingSize.Is3" class="!text-gray-900 font-bold">
             Warehouses
         </Heading>
         <Paragraph class="text-gray-600 mb-0">Manage warehouse locations and inventory</Paragraph>
@@ -32,8 +32,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Total Warehouses</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-gray-900 mb-0">@warehouses?.Count</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Total Warehouses</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-gray-900 mb-0">@warehouses?.Count</Heading>
                 </div>
                 <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Warehouse" class="text-blue-600 text-xl" />
@@ -46,8 +46,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Active</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-green-600 mb-0">@warehouses?.Count(w => w.Status == "active")</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Active</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-green-600 mb-0">@warehouses?.Count(w => w.Status == "active")</Heading>
                 </div>
                 <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="text-green-600 text-xl" />
@@ -60,8 +60,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Total Items</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-purple-600 mb-0">@(warehouses?.Sum(w => w.TotalItems) ?? 0)</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Total Items</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-purple-600 mb-0">@(warehouses?.Sum(w => w.TotalItems) ?? 0)</Heading>
                 </div>
                 <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-purple-600 text-xl" />
@@ -74,8 +74,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Total Stock</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-orange-600 mb-0">@(warehouses?.Sum(w => w.TotalStock) ?? 0)</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Total Stock</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-orange-600 mb-0">@(warehouses?.Sum(w => w.TotalStock) ?? 0)</Heading>
                 </div>
                 <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.LayerGroup" class="text-orange-600 text-xl" />
@@ -195,24 +195,24 @@
 <Modal @ref="warehouseModal">
     <ModalContent Size="ModalSize.Large">
         <ModalHeader class="bg-white border-b border-gray-200">
-            <ModalTitle class="text-gray-900 font-bold">@(isEditMode ? "Edit Warehouse" : "Add New Warehouse")</ModalTitle>
+            <ModalTitle class="!text-blue-600 !font-bold !text-xl">@(isEditMode ? "Edit Warehouse" : "Add New Warehouse")</ModalTitle>
             <CloseButton Clicked="CloseModal" />
         </ModalHeader>
         <ModalBody class="bg-white">
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Warehouse Name *</label>
-                    <TextEdit @bind-Text="currentWarehouse.WarehouseName" Placeholder="Enter warehouse name" class="w-full !border-gray-300" />
+                    <TextEdit @bind-Text="currentWarehouse.WarehouseName" Placeholder="Enter warehouse name" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                 </div>
 
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Address *</label>
-                    <MemoEdit @bind-Text="currentWarehouse.Address" Rows="3" Placeholder="Enter warehouse address" class="w-full !border-gray-300" />
+                    <MemoEdit @bind-Text="currentWarehouse.Address" Rows="3" Placeholder="Enter warehouse address" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                 </div>
 
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Status</label>
-                    <Select TValue="string" @bind-SelectedValue="currentWarehouse.Status" class="w-full !border-gray-300">
+                    <Select TValue="string" @bind-SelectedValue="currentWarehouse.Status" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                         <SelectItem Value="@("active")">Active</SelectItem>
                         <SelectItem Value="@("inactive")">Inactive</SelectItem>
                     </Select>
@@ -239,7 +239,7 @@
 <Modal @ref="detailsModal">
     <ModalContent Size="ModalSize.ExtraLarge">
         <ModalHeader class="bg-white border-b border-gray-200">
-            <ModalTitle class="text-gray-900 font-bold">Warehouse Details: @selectedWarehouse?.WarehouseName</ModalTitle>
+            <ModalTitle class="!text-blue-600 !font-bold !text-xl">Warehouse Details: @selectedWarehouse?.WarehouseName</ModalTitle>
             <CloseButton Clicked="() => detailsModal.Hide()" />
         </ModalHeader>
         <ModalBody class="bg-white">

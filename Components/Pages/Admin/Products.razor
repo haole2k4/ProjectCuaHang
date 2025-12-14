@@ -18,7 +18,7 @@
 
 <div class="flex justify-between items-center mb-6">
     <div>
-        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+        <Heading Size="HeadingSize.Is3" class="!text-gray-900 font-bold">
             Products
         </Heading>
         <Paragraph class="text-gray-600 mb-0">Manage your product catalog</Paragraph>
@@ -32,11 +32,11 @@
 <Card class="!bg-white shadow-md border border-gray-200 rounded-xl overflow-hidden mb-6">
     <CardBody>
         <div class="flex items-center justify-between mb-4">
-            <Heading Size="HeadingSize.Is5" class="text-gray-900 font-bold mb-0">
+            <Heading Size="HeadingSize.Is5" class="!text-gray-900 !font-bold mb-0">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="mr-2" />
                 Search & Filter
             </Heading>
-            <Button Color="Color.Light" Size="Size.Small" Clicked="ClearFilters" class="!border !border-gray-300">
+            <Button Color="Color.Light" Size="Size.Small" Clicked="ClearFilters" class="!border-2 !border-gray-400 !text-gray-900 !bg-white hover:!bg-gray-100">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Redo" class="mr-1" /> Clear
             </Button>
         </div>
@@ -48,7 +48,7 @@
                 <TextEdit Text="@searchCriteria.Name"
                           TextChanged="@OnSearchTextChanged"
                           Placeholder="Search by name..."
-                          class="w-full !border-gray-300" />
+                          class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
             </div>
 
             <!-- Category Filter -->
@@ -57,7 +57,7 @@
                 <Select TValue="int?"
                         SelectedValue="searchCriteria.CategoryId"
                         SelectedValueChanged="@OnCategoryChanged"
-                        class="w-full !border-gray-300">
+                        class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                     <SelectItem Value="@((int?)null)">All Categories</SelectItem>
                     @foreach (var category in categories)
                     {
@@ -72,7 +72,7 @@
                 <Select TValue="string?"
                         SelectedValue="searchCriteria.Status"
                         SelectedValueChanged="@OnStatusChanged"
-                        class="w-full !border-gray-300">
+                        class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                     <SelectItem Value="@((string?)null)">All Status</SelectItem>
                     <SelectItem Value="@("active")">Active</SelectItem>
                     <SelectItem Value="@("inactive")">Inactive</SelectItem>
@@ -87,13 +87,13 @@
                                  Value="searchCriteria.MinPrice"
                                  ValueChanged="@OnMinPriceChanged"
                                  Placeholder="Min"
-                                 class="w-full !border-gray-300"
+                                 class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2"
                                  Decimals="2" />
                     <NumericEdit TValue="decimal?"
                                  Value="searchCriteria.MaxPrice"
                                  ValueChanged="@OnMaxPriceChanged"
                                  Placeholder="Max"
-                                 class="w-full !border-gray-300"
+                                 class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2"
                                  Decimals="2" />
                 </div>
                 @if (!string.IsNullOrEmpty(priceErrorMessage))
@@ -113,7 +113,7 @@
                 <Select TValue="string?"
                         SelectedValue="searchCriteria.SortBy"
                         SelectedValueChanged="@OnSortByChanged"
-                        class="w-full !border-gray-300">
+                        class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                     <SelectItem Value="@("ProductName")">Product Name</SelectItem>
                     <SelectItem Value="@("Price")">Price</SelectItem>
                     <SelectItem Value="@("CreatedAt")">Created Date</SelectItem>
@@ -125,7 +125,7 @@
                 <Select TValue="string?"
                         SelectedValue="searchCriteria.SortDirection"
                         SelectedValueChanged="@OnSortDirectionChanged"
-                        class="w-full !border-gray-300">
+                        class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                     <SelectItem Value="@("asc")">Ascending</SelectItem>
                     <SelectItem Value="@("desc")">Descending</SelectItem>
                 </Select>
@@ -262,7 +262,7 @@
 <Modal @ref="productModal">
     <ModalContent Size="ModalSize.Large">
         <ModalHeader class="bg-white border-b border-gray-200">
-            <ModalTitle class="text-gray-900 font-bold">@(isEditMode ? "Edit Product" : "Add New Product")</ModalTitle>
+            <ModalTitle class="!text-blue-600 !font-bold !text-xl">@(isEditMode ? "Edit Product" : "Add New Product")</ModalTitle>
             <CloseButton Clicked="CloseModal" />
         </ModalHeader>
         <ModalBody class="bg-white">
@@ -270,18 +270,18 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Product Name *</label>
-                        <TextEdit @bind-Text="currentProduct.ProductName" Placeholder="Enter product name" class="w-full !border-gray-300" />
+                        <TextEdit @bind-Text="currentProduct.ProductName" Placeholder="Enter product name" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Barcode</label>
-                        <TextEdit @bind-Text="currentProduct.Barcode" Placeholder="Auto-generated if empty" class="w-full !border-gray-300" />
+                        <TextEdit @bind-Text="currentProduct.Barcode" Placeholder="Auto-generated if empty" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Category</label>
-                        <Select TValue="int?" @bind-SelectedValue="currentProduct.CategoryId" class="w-full !border-gray-300">
+                        <Select TValue="int?" @bind-SelectedValue="currentProduct.CategoryId" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                             <SelectItem Value="@((int?)null)">Select Category</SelectItem>
                             @foreach (var category in categories)
                             {
@@ -291,17 +291,17 @@
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Price *</label>
-                        <NumericEdit TValue="decimal" @bind-Value="currentProduct.Price" Placeholder="0.00" class="w-full !border-gray-300" />
+                        <NumericEdit TValue="decimal" @bind-Value="currentProduct.Price" Placeholder="0.00" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Unit</label>
-                        <TextEdit @bind-Text="currentProduct.Unit" Placeholder="pcs" class="w-full !border-gray-300" />
+                        <TextEdit @bind-Text="currentProduct.Unit" Placeholder="pcs" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Description</label>
-                    <MemoEdit @bind-Text="currentProduct.Description" Rows="3" Placeholder="Enter product description" class="w-full !border-gray-300" />
+                    <MemoEdit @bind-Text="currentProduct.Description" Rows="3" Placeholder="Enter product description" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                 </div>
 
                 <div>

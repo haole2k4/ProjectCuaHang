@@ -17,7 +17,7 @@
 
 <div class="flex justify-between items-center mb-6">
     <div>
-        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+        <Heading Size="HeadingSize.Is3" class="!text-gray-900 font-bold">
             Purchase Orders
         </Heading>
         <Paragraph class="text-gray-600 mb-0">Manage inventory imports from suppliers</Paragraph>
@@ -130,7 +130,7 @@
 <Modal @ref="createModal">
     <ModalContent Size="ModalSize.ExtraLarge">
         <ModalHeader class="bg-white border-b border-gray-200">
-            <ModalTitle class="text-gray-900 font-bold">Tạo Phiếu Nhập Hàng</ModalTitle>
+            <ModalTitle class="!text-blue-600 !font-bold !text-xl">Tạo Phiếu Nhập Hàng</ModalTitle>
             <CloseButton Clicked="CloseCreateModal" />
         </ModalHeader>
         <ModalBody class="bg-white">
@@ -138,7 +138,7 @@
                 <!-- Nhà cung cấp -->
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Nhà cung cấp *</label>
-                    <Select TValue="int?" @bind-SelectedValue="selectedSupplierId" class="w-full !border-gray-300">
+                    <Select TValue="int?" @bind-SelectedValue="selectedSupplierId" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                         <SelectItem Value="@((int?)null)">-- Chọn nhà cung cấp --</SelectItem>
                         @if (suppliers != null)
                         {
@@ -153,7 +153,7 @@
                 <!-- Kho -->
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Kho nhập *</label>
-                    <Select TValue="int?" @bind-SelectedValue="selectedWarehouseId" class="w-full !border-gray-300">
+                    <Select TValue="int?" @bind-SelectedValue="selectedWarehouseId" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                         <SelectItem Value="@((int?)null)">-- Chọn kho --</SelectItem>
                         @if (warehouses != null)
                         {
@@ -171,7 +171,7 @@
 
                     <div class="grid grid-cols-12 gap-3 mb-3">
                         <div class="col-span-5">
-                            <Select TValue="int?" @bind-SelectedValue="selectedProductId" class="w-full !border-gray-300">
+                            <Select TValue="int?" @bind-SelectedValue="selectedProductId" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                                 <SelectItem Value="@((int?)null)">-- Chọn sản phẩm --</SelectItem>
                                 @if (products != null)
                                 {
@@ -183,10 +183,10 @@
                             </Select>
                         </div>
                         <div class="col-span-2">
-                            <NumericEdit TValue="int" @bind-Value="itemQuantity" Min="1" Placeholder="Số lượng" class="w-full !border-gray-300" />
+                            <NumericEdit TValue="int" @bind-Value="itemQuantity" Min="1" Placeholder="Số lượng" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                         </div>
                         <div class="col-span-3">
-                            <NumericEdit TValue="decimal" @bind-Value="itemCostPrice" Min="0" Step="1000" Placeholder="Giá nhập" class="w-full !border-gray-300" />
+                            <NumericEdit TValue="decimal" @bind-Value="itemCostPrice" Min="0" Step="1000" Placeholder="Giá nhập" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                         </div>
                         <div class="col-span-2">
                             <Button Color="Color.Primary" Clicked="AddItem" class="w-full !bg-blue-600 hover:!bg-blue-700 !text-white">
@@ -266,7 +266,7 @@
 <Modal @ref="detailsModal">
     <ModalContent Size="ModalSize.Large">
         <ModalHeader class="bg-white border-b border-gray-200">
-            <ModalTitle class="text-gray-900 font-bold">Chi tiết phiếu nhập #PO-@selectedPurchaseOrder?.PurchaseId</ModalTitle>
+            <ModalTitle class="!text-blue-600 !font-bold !text-xl">Chi tiết phiếu nhập #PO-@selectedPurchaseOrder?.PurchaseId</ModalTitle>
             <CloseButton Clicked="@(() => detailsModal.Hide())" />
         </ModalHeader>
         <ModalBody class="bg-white">

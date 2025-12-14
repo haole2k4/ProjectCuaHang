@@ -16,7 +16,7 @@
 
 <div class="flex justify-between items-center mb-6">
     <div>
-        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">Orders</Heading>
+        <Heading Size="HeadingSize.Is3" class="!text-gray-900 font-bold">Orders</Heading>
         <Paragraph class="text-gray-600 mb-0">Manage customer orders</Paragraph>
     </div>
     <div class="flex gap-3">
@@ -35,8 +35,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Total Orders</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-gray-900 mb-0">@orders?.Count</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Total Orders</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-gray-900 mb-0">@orders?.Count</Heading>
                 </div>
                 <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ShoppingBag" class="text-blue-600 text-xl" />
@@ -49,8 +49,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Pending</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-orange-600 mb-0">@orders?.Count(o => o.Status == "pending")</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Pending</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-orange-600 mb-0">@orders?.Count(o => o.Status == "pending")</Heading>
                 </div>
                 <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Clock" class="text-orange-600 text-xl" />
@@ -63,8 +63,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Completed</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-green-600 mb-0">@orders?.Count(o => o.Status == "completed" || o.Status == "paid")</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Completed</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-green-600 mb-0">@orders?.Count(o => o.Status == "completed" || o.Status == "paid")</Heading>
                 </div>
                 <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="text-green-600 text-xl" />
@@ -77,8 +77,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Revenue</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-gray-900 mb-0">$@(orders?.Sum(o => o.TotalAmount).ToString("N0") ?? "0")</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Revenue</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-gray-900 mb-0">$@(orders?.Sum(o => o.TotalAmount).ToString("N0") ?? "0")</Heading>
                 </div>
                 <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.DollarSign" class="text-purple-600 text-xl" />
@@ -92,11 +92,11 @@
 <Card class="!bg-white shadow-md border border-gray-200 rounded-xl overflow-hidden mb-6">
     <CardBody>
         <div class="flex items-center justify-between mb-4">
-            <Heading Size="HeadingSize.Is5" class="text-gray-900 font-bold mb-0">
+            <Heading Size="HeadingSize.Is5" class="!text-gray-900 !font-bold mb-0">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="mr-2" />
                 Search & Filter Orders
             </Heading>
-            <Button Color="Color.Light" Size="Size.Small" Clicked="ClearFilters" class="!border !border-gray-300">
+            <Button Color="Color.Light" Size="Size.Small" Clicked="ClearFilters" class="!border-2 !border-gray-400 !text-gray-900 !bg-white hover:!bg-gray-100">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Redo" class="mr-1" /> Clear
             </Button>
         </div>
@@ -108,7 +108,7 @@
                 <TextEdit Text="@searchCriteria.SearchTerm"
                           TextChanged="@OnSearchTextChanged"
                           Placeholder="Search..."
-                          class="w-full !border-gray-300" />
+                          class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
             </div>
 
             <!-- Status Filter -->
@@ -117,7 +117,7 @@
                 <Select TValue="string?"
                         SelectedValue="searchCriteria.Status"
                         SelectedValueChanged="@OnStatusChanged"
-                        class="w-full !border-gray-300">
+                        class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                     <SelectItem Value="@((string?)null)">All Status</SelectItem>
                     <SelectItem Value="@("pending")">Pending</SelectItem>
                     <SelectItem Value="@("processing")">Processing</SelectItem>
@@ -135,13 +135,13 @@
                                  Value="searchCriteria.MinAmount"
                                  ValueChanged="@OnMinAmountChanged"
                                  Placeholder="Min"
-                                 class="w-full !border-gray-300"
+                                 class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2"
                                  Decimals="0" />
                     <NumericEdit TValue="decimal?"
                                  Value="searchCriteria.MaxAmount"
                                  ValueChanged="@OnMaxAmountChanged"
                                  Placeholder="Max"
-                                 class="w-full !border-gray-300"
+                                 class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2"
                                  Decimals="0" />
                 </div>
                 @if (!string.IsNullOrEmpty(amountErrorMessage))
@@ -161,12 +161,12 @@
                               Date="searchCriteria.StartDate"
                               DateChanged="@OnStartDateChanged"
                               Placeholder="Start"
-                              class="w-full !border-gray-300" />
+                              class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     <DateEdit TValue="DateTime?"
                               Date="searchCriteria.EndDate"
                               DateChanged="@OnEndDateChanged"
                               Placeholder="End"
-                              class="w-full !border-gray-300" />
+                              class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                 </div>
                 @if (!string.IsNullOrEmpty(dateErrorMessage))
                 {

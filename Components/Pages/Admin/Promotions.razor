@@ -16,7 +16,7 @@
 
 <div class="flex justify-between items-center mb-6">
     <div>
-        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+        <Heading Size="HeadingSize.Is3" class="!text-gray-900 font-bold">
             Promotions
         </Heading>
         <Paragraph class="text-gray-600 mb-0">Manage discount codes and promotional campaigns</Paragraph>
@@ -32,8 +32,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Total Promotions</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-gray-900 mb-0">@promotions?.Count</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Total Promotions</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-gray-900 mb-0">@promotions?.Count</Heading>
                 </div>
                 <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Percent" class="text-purple-600 text-xl" />
@@ -46,8 +46,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Active</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-green-600 mb-0">@promotions?.Count(p => p.Status == "active" && p.EndDate >= DateTime.Now)</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Active</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-green-600 mb-0">@promotions?.Count(p => p.Status == "active" && p.EndDate >= DateTime.Now)</Heading>
                 </div>
                 <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="text-green-600 text-xl" />
@@ -60,8 +60,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Expired</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-red-600 mb-0">@promotions?.Count(p => p.EndDate < DateTime.Now)</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Expired</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-red-600 mb-0">@promotions?.Count(p => p.EndDate < DateTime.Now)</Heading>
                 </div>
                 <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CalendarTimes" class="text-red-600 text-xl" />
@@ -74,8 +74,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Total Usage</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-blue-600 mb-0">@promotions?.Sum(p => p.UsedCount)</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Total Usage</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-blue-600 mb-0">@promotions?.Sum(p => p.UsedCount)</Heading>
                 </div>
                 <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChartLine" class="text-blue-600 text-xl" />
@@ -89,11 +89,11 @@
 <Card class="!bg-white shadow-md border border-gray-200 rounded-xl overflow-hidden mb-6">
     <CardBody>
         <div class="flex items-center justify-between mb-4">
-            <Heading Size="HeadingSize.Is5" class="text-gray-900 font-bold mb-0">
+            <Heading Size="HeadingSize.Is5" class="!text-gray-900 !font-bold mb-0">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="mr-2" />
                 Search & Filter Promotions
             </Heading>
-            <Button Color="Color.Light" Size="Size.Small" Clicked="ClearFilters" class="!border !border-gray-300">
+            <Button Color="Color.Light" Size="Size.Small" Clicked="ClearFilters" class="!border-2 !border-gray-400 !text-gray-900 !bg-white hover:!bg-gray-100">
                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Redo" class="mr-1" /> Clear
             </Button>
         </div>
@@ -105,7 +105,7 @@
                 <TextEdit Text="@searchCriteria.SearchTerm"
                           TextChanged="@OnSearchTextChanged"
                           Placeholder="Search code..."
-                          class="w-full !border-gray-300" />
+                          class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
             </div>
 
             <!-- Status Filter -->
@@ -114,7 +114,7 @@
                 <Select TValue="string?"
                         SelectedValue="searchCriteria.Status"
                         SelectedValueChanged="@OnStatusChanged"
-                        class="w-full !border-gray-300">
+                        class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                     <SelectItem Value="@((string?)null)">All Status</SelectItem>
                     <SelectItem Value="@("active")">Active</SelectItem>
                     <SelectItem Value="@("inactive")">Inactive</SelectItem>
@@ -127,7 +127,7 @@
                 <Select TValue="string?"
                         SelectedValue="searchCriteria.DiscountType"
                         SelectedValueChanged="@OnDiscountTypeChanged"
-                        class="w-full !border-gray-300">
+                        class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                     <SelectItem Value="@((string?)null)">All Types</SelectItem>
                     <SelectItem Value="@("percent")">Percentage</SelectItem>
                     <SelectItem Value="@("fixed")">Fixed Amount</SelectItem>
@@ -140,7 +140,7 @@
                 <Select TValue="string"
                         SelectedValue="searchCriteria.ApplyType"
                         SelectedValueChanged="@OnApplyTypeChanged"
-                        class="w-full !border-gray-300">
+                        class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                     <SelectItem Value="@((string?)null)">All Apply Types</SelectItem>
                     <SelectItem Value="@("order")">Order</SelectItem>
                     <SelectItem Value="@("product")">Specific Product</SelectItem>
@@ -158,12 +158,12 @@
                               Date="searchCriteria.StartDate"
                               DateChanged="@OnStartDateChanged"
                               Placeholder="Start"
-                              class="w-full !border-gray-300" />
+                              class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     <DateEdit TValue="DateTime?"
                               Date="searchCriteria.EndDate"
                               DateChanged="@OnEndDateChanged"
                               Placeholder="End"
-                              class="w-full !border-gray-300" />
+                              class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                 </div>
                 @if (!string.IsNullOrEmpty(dateErrorMessage))
                 {
@@ -319,7 +319,7 @@
 <Modal @ref="promotionModal">
     <ModalContent Size="ModalSize.ExtraLarge">
         <ModalHeader class="bg-white border-b border-gray-200">
-            <ModalTitle class="text-gray-900 font-bold">@(isEditMode ? "Edit Promotion" : "Create New Promotion")</ModalTitle>
+            <ModalTitle class="!text-blue-600 !font-bold !text-xl">@(isEditMode ? "Edit Promotion" : "Create New Promotion")</ModalTitle>
             <CloseButton Clicked="CloseModal" />
         </ModalHeader>
         <ModalBody class="bg-white">
@@ -327,11 +327,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Promo Code *</label>
-                        <TextEdit @bind-Text="currentPromotion.PromoCode" Placeholder="e.g., SUMMER2024" class="w-full !border-gray-300 uppercase" />
+                        <TextEdit @bind-Text="currentPromotion.PromoCode" Placeholder="e.g., SUMMER2024" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2 uppercase" />
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Apply Type *</label>
-                        <Select TValue="string" @bind-SelectedValue="currentPromotion.ApplyType" class="w-full !border-gray-300">
+                        <Select TValue="string" @bind-SelectedValue="currentPromotion.ApplyType" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                             <SelectItem Value="@("order")">Entire Order</SelectItem>
                             <SelectItem Value="@("product")">Specific Products</SelectItem>
                             <SelectItem Value="@("combo")">Product Combo</SelectItem>
@@ -342,44 +342,44 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Discount Type *</label>
-                        <Select TValue="string" @bind-SelectedValue="currentPromotion.DiscountType" class="w-full !border-gray-300">
+                        <Select TValue="string" @bind-SelectedValue="currentPromotion.DiscountType" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                             <SelectItem Value="@("percent")">Percentage</SelectItem>
                             <SelectItem Value="@("fixed")">Fixed Amount</SelectItem>
                         </Select>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Discount Value *</label>
-                        <NumericEdit TValue="decimal" @bind-Value="currentPromotion.DiscountValue" Placeholder="0.00" class="w-full !border-gray-300" />
+                        <NumericEdit TValue="decimal" @bind-Value="currentPromotion.DiscountValue" Placeholder="0.00" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Min Order Amount</label>
-                        <NumericEdit TValue="decimal" @bind-Value="currentPromotion.MinOrderAmount" Placeholder="0.00" class="w-full !border-gray-300" />
+                        <NumericEdit TValue="decimal" @bind-Value="currentPromotion.MinOrderAmount" Placeholder="0.00" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Start Date *</label>
-                        <DateEdit TValue="DateTime" @bind-Date="currentPromotion.StartDate" class="w-full !border-gray-300" />
+                        <DateEdit TValue="DateTime" @bind-Date="currentPromotion.StartDate" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">End Date *</label>
-                        <DateEdit TValue="DateTime" @bind-Date="currentPromotion.EndDate" class="w-full !border-gray-300" />
+                        <DateEdit TValue="DateTime" @bind-Date="currentPromotion.EndDate" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Usage Limit (0 = unlimited)</label>
-                        <NumericEdit TValue="int" @bind-Value="currentPromotion.UsageLimit" Placeholder="0" class="w-full !border-gray-300" />
+                        <NumericEdit TValue="int" @bind-Value="currentPromotion.UsageLimit" Placeholder="0" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Description</label>
-                    <MemoEdit @bind-Text="currentPromotion.Description" Rows="2" Placeholder="Enter promotion description" class="w-full !border-gray-300" />
+                    <MemoEdit @bind-Text="currentPromotion.Description" Rows="2" Placeholder="Enter promotion description" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                 </div>
 
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Status</label>
-                    <Select TValue="string" @bind-SelectedValue="currentPromotion.Status" class="w-full !border-gray-300">
+                    <Select TValue="string" @bind-SelectedValue="currentPromotion.Status" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                         <SelectItem Value="@("active")">Active</SelectItem>
                         <SelectItem Value="@("inactive")">Inactive</SelectItem>
                     </Select>

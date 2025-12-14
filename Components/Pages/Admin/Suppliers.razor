@@ -16,7 +16,7 @@
 
 <div class="flex justify-between items-center mb-6">
     <div>
-        <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
+        <Heading Size="HeadingSize.Is3" class="!text-gray-900 font-bold">
             Suppliers
         </Heading>
         <Paragraph class="text-gray-600 mb-0">Manage your supplier information</Paragraph>
@@ -31,10 +31,10 @@
     <CardBody class="p-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <TextEdit @bind-Text="searchTerm" Placeholder="Search by name, phone, address..." class="w-full !border-gray-300" />
+                <TextEdit @bind-Text="searchTerm" Placeholder="Search by name, phone, address..." class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
             </div>
             <div>
-                <Select TValue="string" @bind-SelectedValue="filterStatus" class="w-full !border-gray-300">
+                <Select TValue="string" @bind-SelectedValue="filterStatus" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                     <SelectItem Value="@string.Empty">All Status</SelectItem>
                     <SelectItem Value="@("active")">Active</SelectItem>
                     <SelectItem Value="@("inactive")">Inactive</SelectItem>
@@ -44,7 +44,7 @@
                 <Button Color="Color.Primary" Clicked="ApplyFilters" class="flex-1 !bg-blue-600 hover:!bg-blue-700">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Search" class="mr-2" /> Search
                 </Button>
-                <Button Color="Color.Light" Clicked="ClearFilters" class="!border-2 !border-gray-300 hover:!bg-gray-100">
+                <Button Color="Color.Light" Clicked="ClearFilters" class="!border-2 !border-gray-400 !text-gray-900 !bg-white hover:!bg-gray-100">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Times" />
                 </Button>
             </div>
@@ -58,8 +58,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Total Suppliers</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-gray-900 mb-0">@suppliers?.Count</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Total Suppliers</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-gray-900 mb-0">@suppliers?.Count</Heading>
                 </div>
                 <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.TruckMoving" class="text-blue-600 text-xl" />
@@ -72,8 +72,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Active</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-green-600 mb-0">@suppliers?.Count(s => s.Status == "active")</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Active</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-green-600 mb-0">@suppliers?.Count(s => s.Status == "active")</Heading>
                 </div>
                 <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.CheckCircle" class="text-green-600 text-xl" />
@@ -86,8 +86,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Inactive</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-orange-600 mb-0">@suppliers?.Count(s => s.Status == "inactive")</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Inactive</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-orange-600 mb-0">@suppliers?.Count(s => s.Status == "inactive")</Heading>
                 </div>
                 <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.PauseCircle" class="text-orange-600 text-xl" />
@@ -100,8 +100,8 @@
         <CardBody class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <Paragraph class="text-gray-600 text-sm mb-1">Products</Paragraph>
-                    <Heading Size="HeadingSize.Is3" class="text-purple-600 mb-0">@suppliers?.Sum(s => s.Products?.Count ?? 0)</Heading>
+                    <Paragraph class="!text-gray-600 text-sm mb-1">Products</Paragraph>
+                    <Heading Size="HeadingSize.Is3" class="!text-purple-600 mb-0">@suppliers?.Sum(s => s.Products?.Count ?? 0)</Heading>
                 </div>
                 <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                     <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-purple-600 text-xl" />
@@ -231,35 +231,35 @@
 <Modal @ref="supplierModal">
     <ModalContent Size="ModalSize.Large">
         <ModalHeader class="bg-white border-b border-gray-200">
-            <ModalTitle class="text-gray-900 font-bold">@(isEditMode ? "Edit Supplier" : "Add New Supplier")</ModalTitle>
+            <ModalTitle class="!text-blue-600 !font-bold !text-xl">@(isEditMode ? "Edit Supplier" : "Add New Supplier")</ModalTitle>
             <CloseButton Clicked="CloseModal" />
         </ModalHeader>
         <ModalBody class="bg-white">
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Supplier Name *</label>
-                    <TextEdit @bind-Text="currentSupplier.Name" Placeholder="Enter supplier name" class="w-full !border-gray-300" />
+                    <TextEdit @bind-Text="currentSupplier.Name" Placeholder="Enter supplier name" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Phone</label>
-                        <TextEdit @bind-Text="currentSupplier.Phone" Placeholder="Enter phone number" class="w-full !border-gray-300" />
+                        <TextEdit @bind-Text="currentSupplier.Phone" Placeholder="Enter phone number" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Email</label>
-                        <TextEdit @bind-Text="currentSupplier.Email" Placeholder="Enter email address" class="w-full !border-gray-300" />
+                        <TextEdit @bind-Text="currentSupplier.Email" Placeholder="Enter email address" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Address</label>
-                    <MemoEdit @bind-Text="currentSupplier.Address" Rows="3" Placeholder="Enter supplier address" class="w-full !border-gray-300" />
+                    <MemoEdit @bind-Text="currentSupplier.Address" Rows="3" Placeholder="Enter supplier address" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2" />
                 </div>
 
                 <div>
                     <label class="block text-sm font-bold text-gray-900 mb-2">Status</label>
-                    <Select TValue="string" @bind-SelectedValue="currentSupplier.Status" class="w-full !border-gray-300">
+                    <Select TValue="string" @bind-SelectedValue="currentSupplier.Status" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2">
                         <SelectItem Value="@("active")">Active</SelectItem>
                         <SelectItem Value="@("inactive")">Inactive</SelectItem>
                     </Select>
