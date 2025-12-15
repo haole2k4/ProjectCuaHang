@@ -22,9 +22,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Add Controllers for API endpoints
-builder.Services.AddControllers();
-
 // Add HttpClient for making API calls from Blazor components
 builder.Services.AddHttpClient("LocalApi", client =>
 {
@@ -272,7 +269,7 @@ using (var scope = app.Services.CreateScope())
                     Phone = "0901234567",
                     Email = salesEmail,
                     EmployeeType = "sales",
-                    UserId = salesUser.Id,
+                    UserId = null, // Không dùng foreign key vì bảng users đã bị xóa
                     PlaintextPassword = "Sales123!",
                     Status = "active",
                     CreatedAt = DateTime.Now
@@ -289,7 +286,7 @@ using (var scope = app.Services.CreateScope())
                     Phone = "0907654321",
                     Email = warehouseEmail,
                     EmployeeType = "warehouse",
-                    UserId = warehouseUser.Id,
+                    UserId = null, // Không dùng foreign key vì bảng users đã bị xóa
                     PlaintextPassword = "Warehouse123!",
                     Status = "active",
                     CreatedAt = DateTime.Now
@@ -360,11 +357,9 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// Map Controllers for API endpoints
-app.MapControllers();
-
 // Map Minimal API endpoints
 app.MapProductEndpoints();
+app.MapAuthEndpoints();
 
 // Enable Swagger UI in development
 if (app.Environment.IsDevelopment())

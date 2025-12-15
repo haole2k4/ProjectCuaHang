@@ -101,10 +101,10 @@ namespace StoreManagementAPI.Services
 
         public async Task<EmployeeDto> CreateEmployeeAsync(CreateEmployeeDto dto)
         {
-            // Note: Transaction across contexts (Identity and Store) is tricky. 
+            // Note: Transaction across contexts (Identity and Store) is tricky.
             // Ideally we should use a distributed transaction or just accept eventual consistency.
             // For simplicity, we create User first, then Employee. If Employee fails, we might have an orphan user.
-            
+
             ApplicationUser? user = null;
 
             // Create user if username and password provided
@@ -138,7 +138,7 @@ namespace StoreManagementAPI.Services
                     Phone = dto.Phone,
                     Email = dto.Email,
                     EmployeeType = dto.EmployeeType,
-                    UserId = user?.Id,
+                    UserId = null, // Không dùng foreign key vì bảng users đã bị xóa
                     PlaintextPassword = dto.Password,
                     Status = "active",
                     CreatedAt = DateTime.Now
@@ -209,7 +209,7 @@ namespace StoreManagementAPI.Services
             employee.UpdatedAt = DateTime.Now;
 
             await _employeeRepository.UpdateAsync(employee);
-            
+
             // Optionally disable the user account
             if (!string.IsNullOrEmpty(employee.UserId))
             {
@@ -220,7 +220,7 @@ namespace StoreManagementAPI.Services
                     await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
                 }
             }
-            
+
             return true;
         }
 
