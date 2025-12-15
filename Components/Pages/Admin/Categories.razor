@@ -415,7 +415,7 @@
             allCategories = categoryDtos.ToList();
             FilterCategories();
 
-            if (result.SoftDeleted)
+            if (!result.Success || result.SoftDeleted)
             {
                 await JSRuntime.InvokeVoidAsync("alert", result.Message);
             }

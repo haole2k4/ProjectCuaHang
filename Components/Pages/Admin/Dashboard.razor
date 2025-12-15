@@ -22,9 +22,14 @@
             <h3 class="text-2xl font-bold text-gray-900 mb-1">Dashboard Overview</h3>
             <p class="text-gray-600 mb-0">Welcome back! Here's what's happening with your store.</p>
         </div>
-        <Button Color="Color.Primary" Clicked="RefreshData" Loading="@isLoading" Class="!bg-blue-600 !text-white hover:!bg-blue-700 shadow-md">
-            <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SyncAlt" class="mr-2" /> Refresh
-        </Button>
+        <div class="flex gap-3">
+            <Button Color="Color.Light" Clicked="ToggleFiltersModal" Class="!bg-white !text-gray-900 !border-gray-300 hover:!bg-gray-50 shadow-md">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SlidersH" class="mr-2 text-gray-700" /> Filters
+            </Button>
+            <Button Color="Color.Primary" Clicked="RefreshData" Loading="@isLoading" Class="!bg-blue-600 !text-white hover:!bg-blue-700 shadow-md">
+                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SyncAlt" class="mr-2" /> Refresh
+            </Button>
+        </div>
     </div>
 
     @if (isLoading)
@@ -371,137 +376,7 @@
         </div>
 
         <!-- Third Row: Chart and Top Products -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <!-- Spend Activity Chart -->
-            <div class="lg:col-span-2">
-                <Card class="shadow-xl border border-gray-200 !bg-white rounded-2xl overflow-hidden h-full">
-                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200 p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h5 class="text-xl font-bold text-gray-900 mb-0">Spend Activity</h5>
-                            <div class="flex items-center gap-3">
-                                <Button Color="Color.Light" Size="Size.Small" Class="@GetChartButtonClass("revenue")" Clicked='() => OnChartViewChange("revenue")'>
-                                    <span class="font-semibold">Spend and revenue</span>
-                                </Button>
-                                <Button Color="Color.Light" Size="Size.Small" Class="@GetChartButtonClass("merchant")" Clicked='() => OnChartViewChange("merchant")'>
-                                    <span class="font-semibold">Spend by merchant</span>
-                                </Button>
-                                <Button Color="Color.Light" Size="Size.Small" Clicked="ToggleFiltersModal" Class="!bg-white !text-gray-900 !border-gray-300 hover:!bg-gray-50 shadow-sm rounded-lg px-4">
-                                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.SlidersH" class="mr-2 text-gray-700" /> 
-                                    <span class="font-semibold">Filters</span>
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                    <CardBody class="p-6 bg-white">
-                        @if (chartView == "revenue")
-                        {
-                            <!-- Spend and Revenue View -->
-                            <div class="flex items-center gap-6 mb-4">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                                    <span class="text-sm text-gray-900 font-bold">Spend</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                                    <span class="text-sm text-gray-900 font-bold">Revenue</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Line Chart Representation -->
-                            <div class="chart-container h-64 relative bg-gradient-to-b from-gray-50 to-white rounded-xl p-4">
-                                @if (statistics.RevenueByDate != null && statistics.RevenueByDate.Any())
-                                {
-                                    <svg class="w-full h-full" viewBox="0 0 800 240" preserveAspectRatio="none">
-                                        @{
-                                            var data = statistics.RevenueByDate.TakeLast(30).ToList();
-                                            var maxVal = data.Max(d => d.Revenue);
-                                            if (maxVal == 0) maxVal = 100;
-                                            var points = new List<string>();
-                                            var expensePoints = new List<string>();
-                                            
-                                            for (int i = 0; i < data.Count; i++)
-                                            {
-                                                var x = (i / (float)(data.Count - 1)) * 740 + 40;
-                                                var y = 200 - (float)(data[i].Revenue / maxVal) * 160;
-                                                var expenseY = 200 - (float)(data[i].Revenue * 0.3m / maxVal) * 160;
-                                                points.Add($"{x},{y}");
-                                                expensePoints.Add($"{x},{expenseY}");
-                                            }
-                                        }
-                                        
-                                        <!-- Grid Lines -->
-                                        <line x1="40" y1="30" x2="780" y2="30" stroke="#e5e7eb" stroke-dasharray="5,5" />
-                                        <line x1="40" y1="86" x2="780" y2="86" stroke="#e5e7eb" stroke-dasharray="5,5" />
-                                        <line x1="40" y1="143" x2="780" y2="143" stroke="#e5e7eb" stroke-dasharray="5,5" />
-                                        <line x1="40" y1="200" x2="780" y2="200" stroke="#e5e7eb" stroke-width="2" />
-                                        
-                                        <!-- Expense Line (Red) -->
-                                        <polyline fill="none" stroke="#ef4444" stroke-width="3" points="@string.Join(" ", expensePoints)" />
-                                        
-                                        <!-- Revenue Line (Green) -->
-                                        <polyline fill="none" stroke="#22c55e" stroke-width="3" points="@string.Join(" ", points)" />
-                                        
-                                        <!-- Revenue Area Fill -->
-                                        <polygon fill="url(#greenGradient)" opacity="0.1" points="40,200 @string.Join(" ", points) 780,200" />
-                                        
-                                        <!-- X-Axis Labels -->
-                                        @if (data.Count > 1)
-                                        {
-                                            int step = Math.Max(1, data.Count / 4);
-                                            for (int i = 0; i < data.Count; i += step)
-                                            {
-                                                var x = (i / (float)(data.Count - 1)) * 740 + 40;
-                                                var anchor = "middle";
-                                                if (i == 0) anchor = "start";
-                                                if (i >= data.Count - step) anchor = "end";
-                                                
-                                                <g>
-                                                    <text x="@x" y="225" font-size="11" fill="#6b7280" text-anchor="@anchor" font-weight="600">
-                                                        @DateTime.Parse(data[i].Date).ToString("dd/MM")
-                                                    </text>
-                                                </g>
-                                            }
-                                        }
-
-                                        <defs>
-                                            <linearGradient id="greenGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                <stop offset="0%" style="stop-color:#22c55e;stop-opacity:0.3" />
-                                                <stop offset="100%" style="stop-color:#22c55e;stop-opacity:0" />
-                                            </linearGradient>
-                                        </defs>
-                                    </svg>
-                                    
-                                    <!-- Y-Axis Labels -->
-                                    <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-900 font-bold pt-4 pb-10 pointer-events-none">
-                                        <span>$@((maxVal).ToString("N0"))</span>
-                                        <span>$@((maxVal * 0.66m).ToString("N0"))</span>
-                                        <span>$@((maxVal * 0.33m).ToString("N0"))</span>
-                                        <span>$0</span>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="flex items-center justify-center h-full text-gray-600">
-                                        No data available for the chart
-                                    </div>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <!-- Spend by Merchant View -->
-                            <div class="h-80 bg-gradient-to-b from-gray-50 to-white rounded-xl p-6 flex flex-col items-center justify-center">
-                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.ChartBar" class="text-6xl text-gray-300 mb-4" />
-                                <h4 class="text-xl font-bold text-gray-900 mb-2">Coming Soon</h4>
-                                <p class="text-gray-600 text-center max-w-md">
-                                    Merchant spending analytics will be available soon. Track which merchants you spend the most with.
-                                </p>
-                            </div>
-                        }
-                    </CardBody>
-                </Card>
-            </div>
-
+        <div class="mb-6">
             <!-- Top Selling Products -->
             <div>
                 <Card class="shadow-xl border border-gray-200 h-full !bg-white rounded-2xl overflow-hidden">
@@ -515,28 +390,53 @@
                         <div class="space-y-4">
                             @if (statistics.TopSellingProducts != null && statistics.TopSellingProducts.Any())
                             {
-                                @foreach (var product in statistics.TopSellingProducts.Take(5))
-                                {
-                                    <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all cursor-pointer border border-transparent hover:border-blue-200">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                                            @if (!string.IsNullOrEmpty(product.ImageUrl))
-                                            {
-                                                <img src="@product.ImageUrl" class="w-full h-full object-cover rounded-xl" alt="@product.ProductName" />
-                                            }
-                                            else
-                                            {
-                                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-blue-600 text-lg" />
-                                            }
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="font-bold text-gray-900 mb-0 truncate text-sm">@product.ProductName</p>
-                                            <p class="text-gray-600 text-xs mb-0 font-medium">@product.TotalQuantitySold sold</p>
-                                        </div>
-                                        <div class="text-right">
-                                            <p class="font-bold text-gray-900 mb-0 text-sm">$@product.TotalRevenue.ToString("N0")</p>
-                                        </div>
-                                    </div>
-                                }
+                                <Table Hoverable class="mb-0">
+                                    <TableHeader>
+                                        <TableRow class="bg-gray-50">
+                                            <TableHeaderCell class="text-gray-700 font-bold">ID</TableHeaderCell>
+                                            <TableHeaderCell class="text-gray-700 font-bold">Product</TableHeaderCell>
+                                            <TableHeaderCell class="text-gray-700 font-bold">Category</TableHeaderCell>
+                                            <TableHeaderCell class="text-center text-gray-700 font-bold">Sold</TableHeaderCell>
+                                            <TableHeaderCell class="text-right text-gray-700 font-bold">Revenue</TableHeaderCell>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        @foreach (var product in statistics.TopSellingProducts.Take(5))
+                                        {
+                                            <TableRow class="hover:bg-gray-50 cursor-pointer" @onclick="@(() => NavigationManager.NavigateTo($"/admin/products"))">
+                                                <TableRowCell>
+                                                    <span class="text-gray-600 text-sm font-bold">#@product.ProductId</span>
+                                                </TableRowCell>
+                                                <TableRowCell>
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                                            @if (!string.IsNullOrEmpty(product.ImageUrl))
+                                                            {
+                                                                <img src="@product.ImageUrl" class="w-full h-full object-cover" alt="@product.ProductName" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-gray-400" />
+                                                            }
+                                                        </div>
+                                                        <span class="font-bold text-gray-900 text-sm">@product.ProductName</span>
+                                                    </div>
+                                                </TableRowCell>
+                                                <TableRowCell>
+                                                    <span class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
+                                                        @product.CategoryName
+                                                    </span>
+                                                </TableRowCell>
+                                                <TableRowCell class="text-center">
+                                                    <span class="text-gray-900 font-bold text-sm">@product.TotalQuantitySold</span>
+                                                </TableRowCell>
+                                                <TableRowCell class="text-right">
+                                                    <span class="text-gray-900 font-bold text-sm">$@product.TotalRevenue.ToString("N0")</span>
+                                                </TableRowCell>
+                                            </TableRow>
+                                        }
+                                    </TableBody>
+                                </Table>
                             }
                             else
                             {
@@ -564,30 +464,26 @@
                     </div>
                     
                     <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-bold text-gray-900 mb-2">Date Range</label>
-                            <select class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
-                                <option>Last 7 days</option>
-                                <option>Last 30 days</option>
-                                <option>Last 90 days</option>
-                                <option>This year</option>
-                                <option>Custom range</option>
-                            </select>
+                        <div class="bg-blue-50 p-3 rounded-lg mb-4">
+                            <p class="text-sm text-blue-800 font-medium mb-0">
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.InfoCircle" class="mr-1" />
+                                Thống kê hiển thị cho 7 ngày gần nhất.
+                            </p>
                         </div>
                         
                         <div>
                             <label class="block text-sm font-bold text-gray-900 mb-2">Status</label>
                             <div class="space-y-2">
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" checked />
+                                    <input type="checkbox" @onchange="@(e => UpdateStatusFilter("completed", e.Value))" checked="@(selectedStatuses.Contains("completed"))" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
                                     <span class="text-sm text-gray-900">Completed</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" checked />
+                                    <input type="checkbox" @onchange="@(e => UpdateStatusFilter("pending", e.Value))" checked="@(selectedStatuses.Contains("pending"))" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
                                     <span class="text-sm text-gray-900">Pending</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
+                                    <input type="checkbox" @onchange="@(e => UpdateStatusFilter("cancelled", e.Value))" checked="@(selectedStatuses.Contains("cancelled"))" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500" />
                                     <span class="text-sm text-gray-900">Cancelled</span>
                                 </label>
                             </div>
@@ -709,8 +605,9 @@
     private DashboardStatisticsDto? statistics;
     private List<TransactionDto>? recentTransactions;
     private bool isLoading = true;
-    private string chartView = "revenue";
     private bool showFiltersModal = false;
+    private int selectedDays = 7;
+    private List<string> selectedStatuses = new List<string> { "completed", "pending" };
 
     protected override async Task OnInitializedAsync()
     {
@@ -723,7 +620,7 @@
         
         try
         {
-            statistics = await StatisticsService.GetDashboardStatisticsAsync(30);
+            statistics = await StatisticsService.GetDashboardStatisticsAsync(selectedDays, selectedStatuses);
             recentTransactions = await StatisticsService.GetRecentTransactionsAsync(10);
         }
         catch (Exception ex)
@@ -739,20 +636,30 @@
         await LoadData();
     }
 
-    private void OnChartViewChange(string view)
-    {
-        chartView = view;
-    }
-
     private void ToggleFiltersModal()
     {
         showFiltersModal = !showFiltersModal;
     }
 
-    private void ApplyFilters()
+    private async Task ApplyFilters()
     {
-        // Implement filter logic here
         showFiltersModal = false;
+        await LoadData();
+    }
+
+    private void UpdateStatusFilter(string status, object? isChecked)
+    {
+        if (isChecked is bool checkedValue)
+        {
+            if (checkedValue && !selectedStatuses.Contains(status))
+            {
+                selectedStatuses.Add(status);
+            }
+            else if (!checkedValue && selectedStatuses.Contains(status))
+            {
+                selectedStatuses.Remove(status);
+            }
+        }
     }
 
     private int GetProgressValue(int current, int max)
@@ -760,13 +667,6 @@
         if (max <= 0) return 0;
         var result = (int)Math.Round((current / (decimal)max) * 100);
         return Math.Min(result, 100);
-    }
-
-    private string GetChartButtonClass(string view)
-    {
-        return chartView == view 
-            ? "!bg-blue-600 !text-white shadow-md hover:!bg-blue-700 rounded-lg px-4 transition-all" 
-            : "!bg-white !text-gray-900 !border-gray-300 hover:!bg-gray-100 rounded-lg px-4 transition-all";
     }
 
     private Color GetStatusColor(string status) => status.ToLower() switch

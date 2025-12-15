@@ -205,78 +205,42 @@ namespace StoreManagementAPI.Services
                     };
                 }
 
-                var (userId, username) = GetAuditInfo();
-
                 if (category.Products != null && category.Products.Any())
                 {
-                    var oldStatus = category.Status;
-                    category.Status = "inactive";
-                    await _categoryRepository.UpdateAsync(category);
-
-                    await _auditLogService.LogActionAsync(
-                        action: "SOFT_DELETE",
-                        entityType: "Category",
-                        entityId: category.CategoryId,
-                        entityName: category.CategoryName,
-                        oldValues: new { Status = oldStatus },
-                        newValues: new { Status = "inactive" },
-                        changesSummary: $"?n danh m?c '{category.CategoryName}' (có {category.Products.Count} s?n ph?m, không th? xóa h?n)",
-                        userId: userId,
-                        username: username
-                    );
-
-                    await transaction.CommitAsync();
-
                     return new CategoryDeleteResponseDto
                     {
-                        Success = true,
-                        SoftDeleted = true,
-                        Message = $"Danh m?c có {category.Products.Count} s?n ph?m nên ?ã ???c ?n thay vì xóa",
+                        Success = false,
+                        SoftDeleted = false,
+                        Message = $"Không th? xóa danh m?c '{category.CategoryName}' vì ?ang ch?a {category.Products.Count} s?n ph?m.",
                         CategoryId = category.CategoryId,
                         ProductCount = category.Products.Count
                     };
                 }
 
-                var categoryInfo = new
-                {
-                    CategoryId = category.CategoryId,
-                    CategoryName = category.CategoryName,
-                    Status = category.Status
-                };
+                var oldStatus = category.Status;
+                category.Status = "inactive";
+                await _categoryRepository.UpdateAsync(category);
 
-                var deleted = await _categoryRepository.DeleteAsync(id);
+                var (userId, username) = GetAuditInfo();
+                await _auditLogService.LogActionAsync(
+                    action: "SOFT_DELETE",
+                    entityType: "Category",
+                    entityId: category.CategoryId,
+                    entityName: category.CategoryName,
+                    oldValues: new { Status = oldStatus },
+                    newValues: new { Status = "inactive" },
+                    changesSummary: $"?n danh m?c '{category.CategoryName}' (không có s?n ph?m)",
+                    userId: userId,
+                    username: username
+                );
 
-                if (deleted)
-                {
-                    await _auditLogService.LogActionAsync(
-                        action: "DELETE",
-                        entityType: "Category",
-                        entityId: category.CategoryId,
-                        entityName: category.CategoryName,
-                        oldValues: categoryInfo,
-                        newValues: null,
-                        changesSummary: $"Xóa v?nh vi?n danh m?c '{category.CategoryName}'",
-                        userId: userId,
-                        username: username
-                    );
+                await transaction.CommitAsync();
 
-                    await transaction.CommitAsync();
-
-                    return new CategoryDeleteResponseDto
-                    {
-                        Success = deleted,
-                        SoftDeleted = false,
-                        Message = deleted ? "?ã xóa danh m?c thành công" : "Không th? xóa danh m?c",
-                        CategoryId = category.CategoryId
-                    };
-                }
-
-                await transaction.RollbackAsync();
                 return new CategoryDeleteResponseDto
                 {
-                    Success = false,
-                    SoftDeleted = false,
-                    Message = "Không th? xóa danh m?c",
+                    Success = true,
+                    SoftDeleted = true,
+                    Message = $"?ã ?n danh m?c '{category.CategoryName}' thành công",
                     CategoryId = category.CategoryId
                 };
             }

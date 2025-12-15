@@ -7,7 +7,7 @@ namespace StoreManagementAPI.Services
 {
     public interface IStatisticsService
     {
-        Task<DashboardStatisticsDto> GetDashboardStatisticsAsync(int days = 30);
+        Task<DashboardStatisticsDto> GetDashboardStatisticsAsync(int days = 30, List<string>? statusFilter = null);
         Task<SalesReportDto> GetSalesReportAsync(DateTime? startDate = null, DateTime? endDate = null);
         Task<InventoryStatisticsDto> GetInventoryStatisticsAsync(int lowStockThreshold = 10);
         Task<CustomerStatisticsDto> GetCustomerStatisticsAsync();
@@ -23,7 +23,7 @@ namespace StoreManagementAPI.Services
             _context = context;
         }
 
-        public async Task<DashboardStatisticsDto> GetDashboardStatisticsAsync(int days = 30)
+        public async Task<DashboardStatisticsDto> GetDashboardStatisticsAsync(int days = 30, List<string>? statusFilter = null)
         {
             var now = DateTime.Now;
             var today = now.Date;
@@ -32,11 +32,31 @@ namespace StoreManagementAPI.Services
             var periodStart = today.AddDays(-days);
 
             // Get all orders with related data
-            var allOrders = await _context.Orders
+            var query = _context.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
                 .Include(o => o.Payments)
-                .Where(o => o.Status != "cancelled")
+                .AsQueryable();
+
+            // Apply status filter or default to successful orders for revenue/cashflow
+            if (statusFilter != null && statusFilter.Any())
+            {
+                query = query.Where(o => statusFilter.Contains(o.Status));
+            }
+            else
+            {
+                // Default to successful orders for accurate cashflow/revenue if no filter selected
+                // User requested: "orders c status thnh cng"
+                var successStatuses = new[] { "completed", "paid" };
+                query = query.Where(o => successStatuses.Contains(o.Status));
+            }
+
+            var allOrders = await query.ToListAsync();
+
+            // Get Purchase Orders for Expenses (Spend)
+            // User requested: "d?a vo purchase order"
+            var purchaseOrders = await _context.PurchaseOrders
+                .Where(p => p.Status == "completed")
                 .ToListAsync();
 
             // Today's statistics
@@ -46,9 +66,11 @@ namespace StoreManagementAPI.Services
             // Month statistics
             var monthOrders = allOrders.Where(o => o.OrderDate >= monthStart).ToList();
             var monthRevenue = monthOrders.Sum(o => o.TotalAmount);
-            var monthExpenses = monthOrders
-                .SelectMany(o => o.OrderItems)
-                .Sum(oi => (oi.Product?.CostPrice ?? 0) * oi.Quantity);
+            
+            // Month Expenses from Purchase Orders
+            var monthPurchases = purchaseOrders.Where(p => p.PurchaseDate >= monthStart).ToList();
+            var monthExpenses = monthPurchases.Sum(p => p.TotalAmount);
+            
             var monthProfit = monthRevenue - monthExpenses;
 
             // Calculate growth (comparing to previous month)
@@ -60,9 +82,11 @@ namespace StoreManagementAPI.Services
                 .ToList();
                 
             var prevMonthRevenue = prevMonthOrders.Sum(o => o.TotalAmount);
-            var prevMonthExpenses = prevMonthOrders
-                .SelectMany(o => o.OrderItems)
-                .Sum(oi => (oi.Product?.CostPrice ?? 0) * oi.Quantity);
+            
+            var prevMonthPurchases = purchaseOrders
+                .Where(p => p.PurchaseDate >= prevMonthStart && p.PurchaseDate <= prevMonthEnd)
+                .ToList();
+            var prevMonthExpenses = prevMonthPurchases.Sum(p => p.TotalAmount);
 
             var incomeGrowth = prevMonthRevenue > 0 
                 ? ((monthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100 
@@ -100,11 +124,13 @@ namespace StoreManagementAPI.Services
             // Top selling products
             var topProducts = await _context.OrderItems
                 .Where(oi => oi.Order!.OrderDate >= periodStart && oi.Order.Status != "cancelled")
-                .GroupBy(oi => new { oi.ProductId, oi.Product!.ProductName, oi.Product.ImageUrl })
+                .GroupBy(oi => new { oi.ProductId, oi.Product!.ProductName, oi.Product.ImageUrl, oi.Product.Barcode, oi.Product.Category.CategoryName })
                 .Select(g => new TopProductDto
                 {
                     ProductId = g.Key.ProductId ?? 0,
                     ProductName = g.Key.ProductName ?? string.Empty,
+                    ProductCode = g.Key.Barcode ?? "N/A",
+                    CategoryName = g.Key.CategoryName ?? "Uncategorized",
                     TotalQuantitySold = g.Sum(oi => oi.Quantity),
                     TotalRevenue = g.Sum(oi => oi.Subtotal),
                     ImageUrl = g.Key.ImageUrl
@@ -114,17 +140,49 @@ namespace StoreManagementAPI.Services
                 .ToListAsync();
 
             // Revenue by date (last N days)
-            var revenueByDate = allOrders
+            // Group Orders
+            var revenueByDateMap = allOrders
                 .Where(o => o.OrderDate >= periodStart)
                 .GroupBy(o => o.OrderDate.Date)
-                .Select(g => new RevenueByDateDto
+                .ToDictionary(g => g.Key, g => new 
                 {
-                    Date = g.Key.ToString("yyyy-MM-dd"),
                     Revenue = g.Sum(o => o.TotalAmount),
-                    OrderCount = g.Count()
-                })
-                .OrderBy(r => r.Date)
-                .ToList();
+                    Count = g.Count()
+                });
+
+            // Group Purchases
+            var expensesByDateMap = purchaseOrders
+                .Where(p => p.PurchaseDate >= periodStart)
+                .GroupBy(p => p.PurchaseDate.Date)
+                .ToDictionary(g => g.Key, g => g.Sum(p => p.TotalAmount));
+
+            var revenueByDate = new List<RevenueByDateDto>();
+            for (var d = periodStart; d <= today; d = d.AddDays(1))
+            {
+                var dateKey = d.Date;
+                decimal revenue = 0;
+                int count = 0;
+                decimal expenses = 0;
+
+                if (revenueByDateMap.TryGetValue(dateKey, out var revStats))
+                {
+                    revenue = revStats.Revenue;
+                    count = revStats.Count;
+                }
+
+                if (expensesByDateMap.TryGetValue(dateKey, out var expAmount))
+                {
+                    expenses = expAmount;
+                }
+
+                revenueByDate.Add(new RevenueByDateDto
+                {
+                    Date = d.ToString("yyyy-MM-dd"),
+                    Revenue = revenue,
+                    Expenses = expenses,
+                    OrderCount = count
+                });
+            }
 
             // Orders by status
             var ordersByStatus = await _context.Orders

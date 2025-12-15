@@ -328,7 +328,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Promo Code *@if (isEditMode) { <span class="text-gray-500 text-xs">(readonly)</span> }</label>
-                        <TextEdit @bind-Text="currentPromotion.PromoCode" Placeholder="e.g., SUMMER2024" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2 uppercase" Disabled="@isEditMode" />
+                        <TextEdit Text="@currentPromotion.PromoCode" TextChanged="@OnPromoCodeInput" Immediate="true" Placeholder="e.g., SUMMER2024" class="w-full !border-gray-300 !bg-white !text-gray-900 !border-2 uppercase" Disabled="@isEditMode" />
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-gray-900 mb-2">Apply Type *</label>
@@ -893,5 +893,10 @@
             currentPromotion.ProductIds = selectedValues.Select(int.Parse).ToList();
         }
         StateHasChanged();
+    }
+
+    private void OnPromoCodeInput(string value)
+    {
+        currentPromotion.PromoCode = value?.ToUpper();
     }
 }

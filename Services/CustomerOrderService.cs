@@ -124,6 +124,7 @@ namespace BlazorApp1.Services
         public async Task<List<Order>> GetCustomerOrdersAsync(int customerId)
         {
             return await _context.Orders
+                .AsNoTracking()
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
                 .Include(o => o.Payments)
@@ -135,12 +136,14 @@ namespace BlazorApp1.Services
         public async Task<Order?> GetOrderByIdAsync(int orderId)
         {
             return await _context.Orders
+                .AsNoTracking()
                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
         }
 
         public async Task<Order?> GetOrderWithDetailsAsync(int orderId)
         {
             return await _context.Orders
+                .AsNoTracking()
                 .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
                 .Include(o => o.Payments)

@@ -45,7 +45,9 @@ else
         </Button>
     </div>
 
-    <BillContent Order="order" />
+    <div class="printable-area">
+        <BillContent Order="order" />
+    </div>
 }
 
 @code {
@@ -79,18 +81,13 @@ else
             var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId != null)
             {
-                var customer = await DbContext.Customers
-                    .FirstOrDefaultAsync(c => c.ApplicationUserId == userId);
-                
-                if (customer != null)
-                {
-                    order = await DbContext.Orders
-                        .Include(o => o.Customer)
-                        .Include(o => o.OrderItems)
-                            .ThenInclude(oi => oi.Product)
-                        .Include(o => o.Payments)
-                        .FirstOrDefaultAsync(o => o.OrderId == OrderId && o.CustomerId == customer.CustomerId);
-                }
+                order = await DbContext.Orders
+                    .AsNoTracking()
+                    .Include(o => o.Customer)
+                    .Include(o => o.OrderItems)
+                        .ThenInclude(oi => oi.Product)
+                    .Include(o => o.Payments)
+                    .FirstOrDefaultAsync(o => o.OrderId == OrderId && o.Customer.ApplicationUserId == userId);
             }
         }
         
@@ -110,11 +107,11 @@ else
             visibility: hidden;
         }
 
-        .card-shadow-lg, .card-shadow-lg * {
+        .printable-area, .printable-area * {
             visibility: visible;
         }
 
-        .card-shadow-lg {
+        .printable-area {
             position: absolute;
             left: 0;
             top: 0;
@@ -174,35 +171,35 @@ else
         }
 
         /* Optimize spacing for print */
-        .card-shadow-lg .border-b-2 {
+        .printable-area .border-b-2 {
             padding: 0.75rem 1.5rem !important;
         }
 
-        .card-shadow-lg .p-8 {
+        .printable-area .p-8 {
             padding: 1.25rem !important;
         }
 
-        .card-shadow-lg .gap-8 {
+        .printable-area .gap-8 {
             gap: 0.75rem !important;
         }
 
-        .card-shadow-lg .mb-8 {
+        .printable-area .mb-8 {
             margin-bottom: 0.75rem !important;
         }
 
-        .card-shadow-lg .mt-8 {
+        .printable-area .mt-8 {
             margin-top: 0.75rem !important;
         }
 
-        .card-shadow-lg .pt-8 {
+        .printable-area .pt-8 {
             padding-top: 0.75rem !important;
         }
 
-        .card-shadow-lg .mb-3 {
+        .printable-area .mb-3 {
             margin-bottom: 0.5rem !important;
         }
 
-        .card-shadow-lg .space-y-2 > * + * {
+        .printable-area .space-y-2 > * + * {
             margin-top: 0.35rem !important;
         }
 
@@ -240,7 +237,7 @@ else
         }
 
         /* Reduce icon sizes */
-        .card-shadow-lg svg {
+        .printable-area svg {
             width: 0.9em !important;
             height: 0.9em !important;
         }

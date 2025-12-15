@@ -28,6 +28,8 @@ namespace StoreManagementAPI.DTOs
     {
         public int ProductId { get; set; }
         public string ProductName { get; set; } = string.Empty;
+        public string ProductCode { get; set; } = string.Empty; // Added
+        public string CategoryName { get; set; } = string.Empty; // Added
         public int TotalQuantitySold { get; set; }
         public decimal TotalRevenue { get; set; }
         public string? ImageUrl { get; set; }
@@ -38,6 +40,7 @@ namespace StoreManagementAPI.DTOs
     {
         public string Date { get; set; } = string.Empty;
         public decimal Revenue { get; set; }
+        public decimal Expenses { get; set; }
         public int OrderCount { get; set; }
     }
 
