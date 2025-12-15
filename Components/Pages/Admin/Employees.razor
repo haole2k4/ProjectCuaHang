@@ -9,17 +9,17 @@
 @inject IEmployeeService EmployeeService
 @inject IJSRuntime JSRuntime
 
-<PageTitle>Quản lý nhân viên</PageTitle>
+<PageTitle>Employee Management</PageTitle>
 
 <div class="flex justify-between items-center mb-6">
     <div>
         <Heading Size="HeadingSize.Is3" class="text-gray-900 font-bold">
-            Quản lý nhân viên
+            Employee Management
         </Heading>
-        <Paragraph class="text-gray-600 mb-0">Quản lý thông tin nhân viên và tài khoản</Paragraph>
+        <Paragraph class="text-gray-600 mb-0">Manage employee information and accounts</Paragraph>
     </div>
     <Button Color="Color.Primary" Clicked="OpenCreateModal" class="!text-white !bg-blue-600 hover:!bg-blue-700 shadow-md">
-        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Thêm nhân viên
+        <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-2" /> Add Employee
     </Button>
 </div>
 
@@ -28,32 +28,32 @@
     <CardBody>
         <div class="grid grid-cols-4 gap-4">
             <div>
-                <label class="text-sm font-medium text-gray-700 mb-1 block">Tìm kiếm</label>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">Search</label>
                 <TextEdit Text="@searchTerm"
                           TextChanged="@OnSearchChanged"
-                          Placeholder="Tên, email, SĐT..."
+                          Placeholder="Name, email, phone..."
                           Autocomplete="Autocomplete.Off"
                           class="!bg-white !text-gray-900 !border-2 !border-gray-300" />
             </div>
             <div>
-                <label class="text-sm font-medium text-gray-700 mb-1 block">Loại nhân viên</label>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">Employee Type</label>
                 <Select TValue="string" SelectedValue="@filterType" SelectedValueChanged="@OnTypeChanged" class="!bg-white !text-gray-900 !border-2 !border-gray-300">
-                    <SelectItem Value="@("")">Tất cả</SelectItem>
-                    <SelectItem Value="@("sales")">Bán hàng</SelectItem>
-                    <SelectItem Value="@("warehouse")">Nhập hàng</SelectItem>
+                    <SelectItem Value="@("")">All</SelectItem>
+                    <SelectItem Value="@("sales")">Sales</SelectItem>
+                    <SelectItem Value="@("warehouse")">Warehouse</SelectItem>
                 </Select>
             </div>
             <div>
-                <label class="text-sm font-medium text-gray-700 mb-1 block">Trạng thái</label>
+                <label class="text-sm font-medium text-gray-700 mb-1 block">Status</label>
                 <Select TValue="string" SelectedValue="@filterStatus" SelectedValueChanged="@OnStatusChanged" class="!bg-white !text-gray-900 !border-2 !border-gray-300">
-                    <SelectItem Value="@("")">Tất cả</SelectItem>
-                    <SelectItem Value="@("active")">Hoạt động</SelectItem>
-                    <SelectItem Value="@("inactive")">Không hoạt động</SelectItem>
+                    <SelectItem Value="@("")">All</SelectItem>
+                    <SelectItem Value="@("active")">Active</SelectItem>
+                    <SelectItem Value="@("inactive")">Inactive</SelectItem>
                 </Select>
             </div>
             <div class="flex items-end">
                 <Button Color="Color.Light" Clicked="ClearFilters" class="w-full !border-2 !border-gray-400">
-                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Redo" class="mr-2" /> Xóa bộ lọc
+                    <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Redo" class="mr-2" /> Clear Filters
                 </Button>
             </div>
         </div>
@@ -67,14 +67,14 @@
             <Table class="mb-0 w-full">
                 <TableHeader>
                     <TableRow class="bg-white border-b-2 border-gray-200">
-                        <TableHeaderCell class="px-6 py-4 text-left text-gray-900 font-bold text-sm uppercase">Họ tên</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-left text-gray-900 font-bold text-sm uppercase">Số điện thoại</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-left text-gray-900 font-bold text-sm uppercase">Full Name</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-left text-gray-900 font-bold text-sm uppercase">Phone</TableHeaderCell>
                         <TableHeaderCell class="px-6 py-4 text-left text-gray-900 font-bold text-sm uppercase">Email</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase">Loại</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase">Tài khoản</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase">Mật khẩu</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase">Trạng thái</TableHeaderCell>
-                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase">Thao tác</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase">Type</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase">Account</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase">Password</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase">Status</TableHeaderCell>
+                        <TableHeaderCell class="px-6 py-4 text-center text-gray-900 font-bold text-sm uppercase">Actions</TableHeaderCell>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="bg-white divide-y divide-gray-200">
@@ -91,11 +91,11 @@
                                 <TableRowCell class="px-6 py-4 text-center">
                                     @if (employee.EmployeeType == "sales")
                                     {
-                                        <Badge Color="Color.Primary" class="!bg-blue-100 !text-blue-800">Bán hàng</Badge>
+                                        <Badge Color="Color.Primary" class="!bg-blue-100 !text-blue-800">Sales</Badge>
                                     }
                                     else
                                     {
-                                        <Badge Color="Color.Info" class="!bg-cyan-100 !text-cyan-800">Nhập hàng</Badge>
+                                        <Badge Color="Color.Info" class="!bg-cyan-100 !text-cyan-800">Warehouse</Badge>
                                     }
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">
@@ -105,7 +105,7 @@
                                     }
                                     else
                                     {
-                                        <span class="text-gray-400">Chưa có</span>
+                                        <span class="text-gray-400">Not set</span>
                                     }
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">
@@ -121,11 +121,11 @@
                                 <TableRowCell class="px-6 py-4 text-center">
                                     @if (employee.Status == "active")
                                     {
-                                        <Badge Color="Color.Success" class="!bg-green-100 !text-green-800">Hoạt động</Badge>
+                                        <Badge Color="Color.Success" class="!bg-green-100 !text-green-800">Active</Badge>
                                     }
                                     else
                                     {
-                                        <Badge Color="Color.Secondary" class="!bg-gray-100 !text-gray-800">Không hoạt động</Badge>
+                                        <Badge Color="Color.Secondary" class="!bg-gray-100 !text-gray-800">Inactive</Badge>
                                     }
                                 </TableRowCell>
                                 <TableRowCell class="px-6 py-4 text-center">
@@ -144,7 +144,7 @@
                         <TableRow>
                             <TableRowCell ColumnSpan="7" class="px-6 py-8 text-center text-gray-500">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Inbox" class="text-4xl mb-2" />
-                                <p>Không tìm thấy nhân viên nào</p>
+                                <p>No employees found</p>
                             </TableRowCell>
                         </TableRow>
                     }
@@ -185,8 +185,8 @@
         <ModalBody class="bg-white">
             <div id="employee-form" class="space-y-4">
                 <div>
-                    <label class="text-sm font-semibold text-gray-700 mb-1 block">Họ tên <span class="text-red-500">*</span></label>
-                    <TextEdit @bind-Text="currentEmployee.FullName" Placeholder="Nhập họ tên nhân viên" Autocomplete="Autocomplete.Off" />
+                    <label class="text-sm font-semibold text-gray-700 mb-1 block">Full Name <span class="text-red-500">*</span></label>
+                    <TextEdit @bind-Text="currentEmployee.FullName" Placeholder="Enter full name" Autocomplete="Autocomplete.Off" />
                     @if (validationErrors.ContainsKey("FullName"))
                     {
                         <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["FullName"]</p>
@@ -195,8 +195,8 @@
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="text-sm font-semibold text-gray-700 mb-1 block">Số điện thoại <span class="text-red-500">*</span></label>
-                        <TextEdit @bind-Text="currentEmployee.Phone" Placeholder="Nhập số điện thoại" Autocomplete="Autocomplete.Off" />
+                        <label class="text-sm font-semibold text-gray-700 mb-1 block">Phone <span class="text-red-500">*</span></label>
+                        <TextEdit @bind-Text="currentEmployee.Phone" Placeholder="Enter phone number" Autocomplete="Autocomplete.Off" />
                         @if (validationErrors.ContainsKey("Phone"))
                         {
                             <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Phone"]</p>
@@ -204,7 +204,7 @@
                     </div>
                     <div>
                         <label class="text-sm font-semibold text-gray-700 mb-1 block">Email <span class="text-red-500">*</span></label>
-                        <TextEdit @bind-Text="currentEmployee.Email" Placeholder="Nhập email" Autocomplete="Autocomplete.Off" />
+                        <TextEdit @bind-Text="currentEmployee.Email" Placeholder="Enter email" Autocomplete="Autocomplete.Off" />
                         @if (validationErrors.ContainsKey("Email"))
                         {
                             <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Email"]</p>
@@ -213,10 +213,10 @@
                 </div>
                 
                 <div>
-                    <label class="text-sm font-semibold text-gray-700 mb-1 block">Loại nhân viên <span class="text-red-500">*</span></label>
+                    <label class="text-sm font-semibold text-gray-700 mb-1 block">Employee Type <span class="text-red-500">*</span></label>
                     <Select TValue="string" @bind-SelectedValue="currentEmployee.EmployeeType">
-                        <SelectItem Value="@("sales")">Bán hàng (Quản lý đơn hàng, sản phẩm, danh mục)</SelectItem>
-                        <SelectItem Value="@("warehouse")">Nhập hàng (Quản lý kho, phiếu nhập)</SelectItem>
+                        <SelectItem Value="@("sales")">Sales (Manage orders, products, categories)</SelectItem>
+                        <SelectItem Value="@("warehouse")">Warehouse (Manage warehouse, purchase orders)</SelectItem>
                     </Select>
                 </div>
 
@@ -225,28 +225,28 @@
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <p class="text-sm font-semibold text-blue-900 mb-2">
                             <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.InfoCircle" class="mr-2" />
-                            Tạo tài khoản đăng nhập
+                            Create Login Account
                         </p>
-                        <p class="text-sm text-blue-700">Nhập thông tin để tạo tài khoản đăng nhập cho nhân viên. Bỏ trống nếu chưa cần.</p>
+                        <p class="text-sm text-blue-700">Enter information to create a login account for the employee. Leave blank if not needed.</p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="text-sm font-semibold text-gray-700 mb-1 block">Tên đăng nhập</label>
-                            <TextEdit @bind-Text="currentEmployee.Username" Placeholder="Nhập username" Autocomplete="Autocomplete.Off" />
+                            <label class="text-sm font-semibold text-gray-700 mb-1 block">Username</label>
+                            <TextEdit @bind-Text="currentEmployee.Username" Placeholder="Enter username" Autocomplete="Autocomplete.Off" />
                         </div>
                         <div>
-                            <label class="text-sm font-semibold text-gray-700 mb-1 block">Mật khẩu</label>
-                            <TextEdit @bind-Text="currentEmployee.Password" Role="TextRole.Password" Placeholder="Nhập mật khẩu" Autocomplete="Autocomplete.Off" />
+                            <label class="text-sm font-semibold text-gray-700 mb-1 block">Password</label>
+                            <TextEdit @bind-Text="currentEmployee.Password" Role="TextRole.Password" Placeholder="Enter password" Autocomplete="Autocomplete.Off" />
                         </div>
                     </div>
                 }
             </div>
         </ModalBody>
         <ModalFooter class="bg-gray-50 border-t border-gray-200">
-            <Button Color="Color.Secondary" Clicked="@(() => employeeModal.Hide())" class="!bg-white !border-2 !border-gray-300 !text-gray-900 hover:!bg-gray-100">Hủy</Button>
+            <Button Color="Color.Secondary" Clicked="@(() => employeeModal.Hide())" class="!bg-white !border-2 !border-gray-300 !text-gray-900 hover:!bg-gray-100">Cancel</Button>
             <Button Color="Color.Primary" Clicked="SaveEmployee" class="!bg-blue-600 hover:!bg-blue-700 !text-white shadow-md">
-                Lưu
+                Save
             </Button>
         </ModalFooter>
     </ModalContent>

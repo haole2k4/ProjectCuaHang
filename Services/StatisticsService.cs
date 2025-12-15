@@ -104,7 +104,7 @@ namespace StoreManagementAPI.Services
                 .Select(g => new TopProductDto
                 {
                     ProductId = g.Key.ProductId ?? 0,
-                    ProductName = g.Key.ProductName,
+                    ProductName = g.Key.ProductName ?? string.Empty,
                     TotalQuantitySold = g.Sum(oi => oi.Quantity),
                     TotalRevenue = g.Sum(oi => oi.Subtotal),
                     ImageUrl = g.Key.ImageUrl
@@ -215,7 +215,7 @@ namespace StoreManagementAPI.Services
                 .Select(g => new TopProductDto
                 {
                     ProductId = g.Key.ProductId ?? 0,
-                    ProductName = g.Key.ProductName,
+                    ProductName = g.Key.ProductName ?? string.Empty,
                     TotalQuantitySold = g.Sum(oi => oi.Quantity),
                     TotalRevenue = g.Sum(oi => oi.Subtotal),
                     ImageUrl = g.Key.ImageUrl

@@ -208,7 +208,7 @@ else
   private List<PromotionDisplayDto>? availablePromotions;
   private int? selectedPromoId = null;
   private bool isLoadingPromotions = false;
-  private PromoNotification promoNotification;
+  private PromoNotification promoNotification = default!;
 
   private decimal subtotal => cartItems?.Sum(x => x.Subtotal) ?? 0;
   private decimal discount => CartService.DiscountAmount;

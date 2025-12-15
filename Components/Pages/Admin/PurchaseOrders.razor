@@ -235,7 +235,7 @@
                         <TableRow>
                             <TableRowCell ColumnSpan="8" class="text-center py-12">
                                 <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-gray-400 text-4xl mb-3" />
-                                <p class="text-gray-600">Chưa có phiếu nhập hàng nào</p>
+                                <p class="text-gray-600">No purchase orders found</p>
                             </TableRowCell>
                         </TableRow>
                     }
@@ -270,7 +270,7 @@
 <Modal @ref="createModal">
     <ModalContent Size="ModalSize.Large">
         <ModalHeader class="bg-white border-b border-gray-200">
-            <ModalTitle class="!text-blue-600 !font-bold !text-xl">Tạo Phiếu Nhập Hàng</ModalTitle>
+            <ModalTitle class="!text-blue-600 !font-bold !text-xl">Create Purchase Order</ModalTitle>
             <CloseButton Clicked="CloseCreateModal" />
         </ModalHeader>
         <ModalBody class="bg-white">
@@ -278,9 +278,9 @@
                 <!-- Nhà cung cấp & Kho -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-bold text-gray-900 mb-2">Nhà cung cấp *</label>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Supplier *</label>
                         <Select TValue="int?" @bind-SelectedValue="selectedSupplierId" class="w-full !border-gray-300">
-                            <SelectItem Value="@((int?)null)">-- Chọn nhà cung cấp --</SelectItem>
+                            <SelectItem Value="@((int?)null)">-- Select Supplier --</SelectItem>
                             @if (suppliers != null)
                             {
                                 @foreach (var supplier in suppliers)
@@ -292,9 +292,9 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-bold text-gray-900 mb-2">Kho nhập *</label>
+                        <label class="block text-sm font-bold text-gray-900 mb-2">Warehouse *</label>
                         <Select TValue="int?" @bind-SelectedValue="selectedWarehouseId" class="w-full !border-gray-300">
-                            <SelectItem Value="@((int?)null)">-- Chọn kho --</SelectItem>
+                            <SelectItem Value="@((int?)null)">-- Select Warehouse --</SelectItem>
                             @if (warehouses != null)
                             {
                                 @foreach (var warehouse in warehouses)
@@ -306,36 +306,36 @@
                     </div>
                 </div>
 
-                <!-- Thêm Sản Phẩm -->
+                <!-- Add Products -->
                 <div class="border-t border-gray-200 pt-4">
-                    <h5 class="font-bold text-gray-900 mb-3">Thêm Sản Phẩm</h5>
+                    <h5 class="font-bold text-gray-900 mb-3">Add Products</h5>
 
                     <div class="grid grid-cols-12 gap-3 mb-3">
                         <div class="col-span-6">
-                            <label class="block text-sm font-bold text-gray-900 mb-1">Sản phẩm</label>
+                            <label class="block text-sm font-bold text-gray-900 mb-1">Product</label>
                             <Select TValue="int?" @bind-SelectedValue="selectedProductId" class="w-full !border-gray-300 !rounded-lg">
-                                <SelectItem Value="@((int?)null)">-- Chọn sản phẩm --</SelectItem>
+                                <SelectItem Value="@((int?)null)">-- Select Product --</SelectItem>
                                 @if (products != null)
                                 {
                                     @foreach (var product in products)
                                     {
-                                        <SelectItem Value="@product.ProductId">@product.ProductName (Giá bán $@product.Price.ToString("N2"))</SelectItem>
+                                        <SelectItem Value="@product.ProductId">@product.ProductName (Price $@product.Price.ToString("N2"))</SelectItem>
                                     }
                                 }
                             </Select>
                         </div>
                         <div class="col-span-2">
-                            <label class="block text-sm font-bold text-gray-900 mb-1">Số lượng</label>
+                            <label class="block text-sm font-bold text-gray-900 mb-1">Quantity</label>
                             <NumericEdit TValue="int" @bind-Value="itemQuantity" Min="1" Placeholder="0" class="w-full !border-gray-300 !rounded-lg" />
                         </div>
                         <div class="col-span-2">
-                            <label class="block text-sm font-bold text-gray-900 mb-1">Giá nhập ($)</label>
+                            <label class="block text-sm font-bold text-gray-900 mb-1">Cost Price ($)</label>
                             <NumericEdit TValue="decimal" @bind-Value="itemCostPrice" Min="0" Step="@(0.01m)" Placeholder="0.00" class="w-full !border-gray-300 !rounded-lg" />
                         </div>
                         <div class="col-span-2">
                             <label class="block text-sm font-bold text-gray-900 mb-1 invisible">Action</label>
                             <Button Color="Color.Primary" Clicked="AddItem" class="w-full !bg-blue-600 hover:!bg-blue-700 !text-white !rounded-lg">
-                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-1" /> Thêm
+                                <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.Plus" class="mr-1" /> Add
                             </Button>
                         </div>
                     </div>
@@ -348,10 +348,10 @@
                         <Table class="mb-0">
                             <TableHeader>
                                 <TableRow class="bg-gray-50">
-                                    <TableHeaderCell>Sản phẩm</TableHeaderCell>
-                                    <TableHeaderCell>Số lượng</TableHeaderCell>
-                                    <TableHeaderCell>Giá nhập</TableHeaderCell>
-                                    <TableHeaderCell>Thành tiền</TableHeaderCell>
+                                    <TableHeaderCell>Product</TableHeaderCell>
+                                    <TableHeaderCell>Quantity</TableHeaderCell>
+                                    <TableHeaderCell>Cost Price</TableHeaderCell>
+                                    <TableHeaderCell>Subtotal</TableHeaderCell>
                                     <TableHeaderCell></TableHeaderCell>
                                 </TableRow>
                             </TableHeader>
@@ -376,7 +376,7 @@
                         </Table>
                         <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
                             <div class="flex justify-between items-center">
-                                <span class="text-lg font-bold text-gray-900">Tổng cộng:</span>
+                                <span class="text-lg font-bold text-gray-900">Total:</span>
                                 <span class="text-2xl font-bold text-blue-600">$@CalculateTotal().ToString("N2")</span>
                             </div>
                         </div>
@@ -386,7 +386,7 @@
                 {
                     <div class="text-center py-8 text-gray-500 border border-gray-200 rounded-lg">
                         <Icon Name="Blazorise.Icons.FontAwesome.FontAwesomeIcons.BoxOpen" class="text-4xl mb-2" />
-                        <p>Chưa có sản phẩm nào. Thêm sản phẩm để tạo phiếu nhập.</p>
+                        <p>No products added yet. Add products to create purchase order.</p>
                     </div>
                 }
 
@@ -399,9 +399,9 @@
             </div>
         </ModalBody>
         <ModalFooter class="bg-gray-50 border-t border-gray-200">
-            <Button Color="Color.Secondary" Clicked="CloseCreateModal" class="!bg-white !border-2 !border-gray-300 !text-gray-900 hover:!bg-gray-100">Hủy</Button>
+            <Button Color="Color.Secondary" Clicked="CloseCreateModal" class="!bg-white !border-2 !border-gray-300 !text-gray-900 hover:!bg-gray-100">Cancel</Button>
             <Button Color="Color.Primary" Clicked="SavePurchaseOrder" Loading="isSaving" Disabled="@(!purchaseItems.Any())" class="!bg-blue-600 hover:!bg-blue-700 !text-white shadow-md">
-                Tạo Phiếu Nhập
+                Create Purchase Order
             </Button>
         </ModalFooter>
     </ModalContent>
@@ -411,7 +411,7 @@
 <Modal @ref="detailsModal">
     <ModalContent Size="ModalSize.Large">
         <ModalHeader class="bg-white border-b border-gray-200">
-            <ModalTitle class="!text-blue-600 !font-bold !text-xl">Chi tiết phiếu nhập #PO-@selectedPurchaseOrder?.PurchaseId</ModalTitle>
+            <ModalTitle class="!text-blue-600 !font-bold !text-xl">Purchase Order Details #PO-@selectedPurchaseOrder?.PurchaseId</ModalTitle>
             <CloseButton Clicked="@(() => detailsModal.Hide())" />
         </ModalHeader>
         <ModalBody class="bg-white">
@@ -420,32 +420,32 @@
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="p-4 bg-gray-50 rounded-lg">
-                            <p class="text-sm text-gray-600 mb-1">Nhà cung cấp</p>
+                            <p class="text-sm text-gray-600 mb-1">Supplier</p>
                             <p class="font-bold text-gray-900">@selectedPurchaseOrder.SupplierName</p>
                         </div>
                         <div class="p-4 bg-gray-50 rounded-lg">
-                            <p class="text-sm text-gray-600 mb-1">Kho</p>
+                            <p class="text-sm text-gray-600 mb-1">Warehouse</p>
                             <p class="font-bold text-gray-900">@selectedPurchaseOrder.WarehouseName</p>
                         </div>
                         <div class="p-4 bg-gray-50 rounded-lg">
-                            <p class="text-sm text-gray-600 mb-1">Ngày nhập</p>
+                            <p class="text-sm text-gray-600 mb-1">Purchase Date</p>
                             <p class="font-bold text-gray-900">@selectedPurchaseOrder.PurchaseDate.ToString("dd/MM/yyyy HH:mm")</p>
                         </div>
                         <div class="p-4 bg-gray-50 rounded-lg">
-                            <p class="text-sm text-gray-600 mb-1">Người tạo</p>
+                            <p class="text-sm text-gray-600 mb-1">Created By</p>
                             <p class="font-bold text-gray-900">@selectedPurchaseOrder.Username</p>
                         </div>
                     </div>
 
                     <div>
-                        <h5 class="font-bold text-gray-900 mb-3">Chi tiết sản phẩm</h5>
+                        <h5 class="font-bold text-gray-900 mb-3">Product Details</h5>
                         <Table class="border border-gray-200 rounded-lg">
                             <TableHeader>
                                 <TableRow class="bg-gray-50">
-                                    <TableHeaderCell>Sản phẩm</TableHeaderCell>
-                                    <TableHeaderCell>Số lượng</TableHeaderCell>
-                                    <TableHeaderCell>Giá nhập</TableHeaderCell>
-                                    <TableHeaderCell>Thành tiền</TableHeaderCell>
+                                    <TableHeaderCell>Product</TableHeaderCell>
+                                    <TableHeaderCell>Quantity</TableHeaderCell>
+                                    <TableHeaderCell>Cost Price</TableHeaderCell>
+                                    <TableHeaderCell>Subtotal</TableHeaderCell>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -462,7 +462,7 @@
                         </Table>
                         <div class="bg-blue-50 px-6 py-4 rounded-lg mt-4">
                             <div class="flex justify-between items-center">
-                                <span class="text-lg font-bold text-gray-900">Tổng cộng:</span>
+                                <span class="text-lg font-bold text-gray-900">Total:</span>
                                 <span class="text-2xl font-bold text-blue-600">$@selectedPurchaseOrder.TotalAmount.ToString("N2")</span>
                             </div>
                         </div>
@@ -947,10 +947,12 @@
         toastIcon = icon;
         showToast = true;
 
+        #pragma warning disable CS4014
         Task.Delay(3000).ContinueWith(_ =>
         {
             showToast = false;
             InvokeAsync(StateHasChanged);
         });
+        #pragma warning restore CS4014
     }
 }

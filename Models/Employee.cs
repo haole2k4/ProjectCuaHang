@@ -27,7 +27,7 @@ namespace StoreManagementAPI.Models
 
         [Column("employee_type")]
         [StringLength(20)]
-        public string EmployeeType { get; set; } = "sales"; // sales (bán hàng), warehouse (nhập hàng)
+        public string EmployeeType { get; set; } = "sales"; // sales (sales management), warehouse (warehouse management)
 
         [Column("user_id")]
         public string? UserId { get; set; }

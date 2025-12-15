@@ -333,23 +333,14 @@
                     }
                 </Field>
             }
-            <div class="grid grid-cols-2 gap-4 mt-3">
-                <Field>
-                    <FieldLabel class="!text-gray-900 !font-bold">Phone *</FieldLabel>
-                    <TextEdit @bind-Text="@customerForm.Phone" Placeholder="Enter phone number" class="!bg-white !text-gray-900 !border-2 !border-gray-300" />
-                    @if (validationErrors.ContainsKey("Phone"))
-                    {
-                        <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Phone"]</p>
-                    }
-                </Field>
-                <Field>
-                    <FieldLabel class="!text-gray-900 !font-bold">Role *</FieldLabel>
-                    <Select TValue="string" SelectedValue="@customerForm.Role" SelectedValueChanged="@((value) => customerForm.Role = value)" class="!bg-white !text-gray-900 !border-2 !border-gray-300">
-                        <SelectItem Value="@("Customer")">Customer</SelectItem>
-                        <SelectItem Value="@("Admin")">Admin</SelectItem>
-                    </Select>
-                </Field>
-            </div>
+            <Field class="mt-3">
+                <FieldLabel class="!text-gray-900 !font-bold">Phone *</FieldLabel>
+                <TextEdit @bind-Text="@customerForm.Phone" Placeholder="Enter phone number" class="!bg-white !text-gray-900 !border-2 !border-gray-300" />
+                @if (validationErrors.ContainsKey("Phone"))
+                {
+                    <p class="text-red-600 text-sm mt-1 font-semibold">@validationErrors["Phone"]</p>
+                }
+            </Field>
             <div class="grid grid-cols-2 gap-4 mt-3">
                 <Field>
                     <FieldLabel class="!text-gray-900 !font-bold">Address</FieldLabel>
@@ -681,7 +672,7 @@
                 var result = await UserManager.CreateAsync(user, customerForm.Password);
                 if (result.Succeeded)
                 {
-                    await UserManager.AddToRoleAsync(user, customerForm.Role);
+                    await UserManager.AddToRoleAsync(user, "Customer");
 
                     // Create customer record
                     var customer = new Customer
