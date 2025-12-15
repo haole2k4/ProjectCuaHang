@@ -266,7 +266,10 @@ else
     isLoadingPromotions = true;
     try
     {
-      availablePromotions = await PromotionService.GetValidPromotionsForOrderAsync(subtotal);
+      // Get list of product IDs in cart (distinct)
+      var productIds = cartItems?.Select(item => item.ProductId).Distinct().ToList() ?? new List<int>();
+
+      availablePromotions = await PromotionService.GetValidPromotionsForOrderAsync(subtotal, productIds);
     }
     catch (Exception ex)
     {

@@ -16,7 +16,7 @@ namespace StoreManagementAPI.Services
         Task<Promotion> CreatePromotionAsync(CreatePromotionDto dto);
         Task<Promotion> UpdatePromotionAsync(int promoId, CreatePromotionDto dto);
         Task<bool> DeletePromotionAsync(int promoId);
-        Task<List<PromotionDisplayDto>> GetValidPromotionsForOrderAsync(decimal orderAmount);
+        Task<List<PromotionDisplayDto>> GetValidPromotionsForOrderAsync(decimal orderAmount, List<int>? productIds = null);
     }
 
     public class PromotionService : IPromotionService
@@ -394,20 +394,65 @@ namespace StoreManagementAPI.Services
             };
         }
 
-        public async Task<List<PromotionDisplayDto>> GetValidPromotionsForOrderAsync(decimal orderAmount)
+        public async Task<List<PromotionDisplayDto>> GetValidPromotionsForOrderAsync(decimal orderAmount, List<int>? productIds = null)
         {
             var today = DateTime.Now.Date;
-            
-            var validPromotions = await _context.Promotions
-                .Where(p => p.Status == "active" && 
-                           p.StartDate.Date <= today && 
+
+            // Get all active promotions with their associated products
+            var allPromotions = await _context.Promotions
+                .Include(p => p.PromotionProducts)
+                .Where(p => p.Status == "active" &&
+                           p.StartDate.Date <= today &&
                            p.EndDate.Date >= today &&
                            (p.UsageLimit == 0 || p.UsedCount < p.UsageLimit) &&
-                           p.MinOrderAmount <= orderAmount &&
-                           p.ApplyType == "order")
+                           p.MinOrderAmount <= orderAmount)
                 .ToListAsync();
 
-            var promotionDisplayList = validPromotions.Select(p => 
+            var validPromotions = new List<Promotion>();
+
+            foreach (var promo in allPromotions)
+            {
+                // Always include "order" type promotions
+                if (promo.ApplyType == "order")
+                {
+                    validPromotions.Add(promo);
+                    continue;
+                }
+
+                // Skip if no product IDs provided (can't validate product/combo promotions)
+                if (productIds == null || !productIds.Any())
+                {
+                    continue;
+                }
+
+                // For "product" type: check if any of the cart products matches the promotion product
+                if (promo.ApplyType == "product")
+                {
+                    var promoProductIds = promo.PromotionProducts.Select(pp => pp.ProductId).ToList();
+                    if (promoProductIds.Any(ppId => productIds.Contains(ppId)))
+                    {
+                        validPromotions.Add(promo);
+                    }
+                    continue;
+                }
+
+                // For "combo" type: check if cart contains ALL products in the combo
+                if (promo.ApplyType == "combo")
+                {
+                    var comboProductIds = promo.PromotionProducts.Select(pp => pp.ProductId).ToList();
+
+                    // Check if all combo products are in the cart
+                    bool hasAllComboProducts = comboProductIds.All(cpId => productIds.Contains(cpId));
+
+                    if (hasAllComboProducts)
+                    {
+                        validPromotions.Add(promo);
+                    }
+                    continue;
+                }
+            }
+
+            var promotionDisplayList = validPromotions.Select(p =>
             {
                 decimal discountAmount = 0;
                 string displayText = "";
@@ -427,6 +472,15 @@ namespace StoreManagementAPI.Services
                 {
                     displayText += $" - {p.Description}";
                 }
+
+                // Add type indicator to display text
+                string typeIndicator = p.ApplyType switch
+                {
+                    "product" => " [Sản phẩm]",
+                    "combo" => " [Combo]",
+                    _ => " [Toàn đơn]"
+                };
+                displayText += typeIndicator;
 
                 return new PromotionDisplayDto
                 {
